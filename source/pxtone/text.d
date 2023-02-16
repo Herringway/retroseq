@@ -5,7 +5,7 @@ import std.exception;
 
 import pxtone.descriptor;
 
-void _read4_malloc(ref char[] pp, ref pxtnDescriptor p_doc) @safe {
+private void _read4_malloc(ref char[] pp, ref pxtnDescriptor p_doc) @safe {
 	int p_buf_size;
 	p_doc.r(p_buf_size);
 	enforce(p_buf_size >= 0, "Invalid string size");
@@ -17,7 +17,7 @@ void _read4_malloc(ref char[] pp, ref pxtnDescriptor p_doc) @safe {
 	}
 }
 
-void _write4(const char[] p, ref pxtnDescriptor p_doc) @safe {
+private void _write4(const char[] p, ref pxtnDescriptor p_doc) @safe {
 	p_doc.w_asfile(cast(int)p.length);
 	p_doc.w_asfile(p);
 }
