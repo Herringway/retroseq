@@ -398,7 +398,7 @@ private:
 			}
 		}
 
-		text.set_name_buf(prjc.x1x_name.ptr, ns);
+		text.set_name_buf(prjc.x1x_name[0 .. ns]);
 		master.Set(beat_num, beat_tempo, beat_clock);
 	}
 
@@ -1256,10 +1256,10 @@ public:
 			_moo_b_valid_data = false;
 		}
 
-		if (!text.set_name_buf("", 0)) {
+		if (!text.set_name_buf("")) {
 			return false;
 		}
-		if (!text.set_comment_buf("", 0)) {
+		if (!text.set_comment_buf("")) {
 			return false;
 		}
 
