@@ -208,13 +208,9 @@ private:
 
 	pxtnPulse_NoiseBuilder _ptn_bldr;
 
-	int _delay_num;
 	pxtnDelay[] _delays;
-	int _ovdrv_num;
 	pxtnOverDrive*[] _ovdrvs;
-	int _woice_num;
 	pxtnWoice*[] _woices;
-	int _unit_num;
 	pxtnUnit[] _units;
 
 	int _group_num;
@@ -287,10 +283,7 @@ private:
 			case _enum_Tag.num_UNIT: {
 					int num = 0;
 					_io_UNIT_num_r(p_doc, num);
-					for (int i = 0; i < num; i++) {
-						_units[i] = pxtnUnit.init;
-					}
-					_unit_num = num;
+					_units.length = num;
 					break;
 				}
 			case _enum_Tag.MasterV5:
@@ -406,45 +399,34 @@ private:
 		if (!_b_init) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
-		if (!_delays) {
-			throw new PxtoneException("pxtnService delays not initialized");
-		}
-		if (_delay_num >= _delays.length) {
+		if (pxtnMAX_TUNEDELAYSTRUCT < _delays.length) {
 			throw new PxtoneException("fmt unknown");
 		}
 
 		pxtnDelay delay;
 
 		delay.Read(p_doc);
-		_delays[_delay_num] = delay;
-		_delay_num++;
+		_delays ~= delay;
 	}
 
 	void _io_Read_OverDrive(ref pxtnDescriptor p_doc) @system {
 		if (!_b_init) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
-		if (!_ovdrvs) {
-			throw new PxtoneException("pxtnService overdrives not initialized");
-		}
-		if (_ovdrv_num >= _ovdrvs.length) {
+		if (pxtnMAX_TUNEOVERDRIVESTRUCT < _ovdrvs.length) {
 			throw new PxtoneException("fmt unknown");
 		}
 
 		pxtnOverDrive* ovdrv = new pxtnOverDrive();
 		ovdrv.Read(p_doc);
-		_ovdrvs[_ovdrv_num] = ovdrv;
-		_ovdrv_num++;
+		_ovdrvs ~= ovdrv;
 	}
 
 	void _io_Read_Woice(ref pxtnDescriptor p_doc, pxtnWOICETYPE type) @system {
 		if (!_b_init) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
-		if (!_woices) {
-			throw new PxtoneException("pxtnService woices not initialized");
-		}
-		if (_woice_num >= _woices.length) {
+		if (pxtnMAX_TUNEWOICESTRUCT < _woices.length) {
 			throw new PxtoneException("Too many woices");
 		}
 
@@ -471,18 +453,14 @@ private:
 		default:
 			throw new PxtoneException("fmt unknown");
 		}
-		_woices[_woice_num] = woice;
-		_woice_num++;
+		_woices ~= woice;
 	}
 
 	void _io_Read_OldUnit(ref pxtnDescriptor p_doc, int ver) @system {
 		if (!_b_init) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
-		if (!_units) {
-			throw new PxtoneException("pxtnService units not initialized");
-		}
-		if (_unit_num >= _units.length) {
+		if (pxtnMAX_TUNEUNITSTRUCT < _units.length) {
 			throw new PxtoneException("fmt unknown");
 		}
 
@@ -503,14 +481,12 @@ private:
 			group = _group_num - 1;
 		}
 
-		evels.x4x_Read_Add(0, cast(ubyte) _unit_num, EVENTKIND.GROUPNO, cast(int) group);
+		evels.x4x_Read_Add(0, cast(ubyte) _units.length, EVENTKIND.GROUPNO, cast(int) group);
 		evels.x4x_Read_NewKind();
-		evels.x4x_Read_Add(0, cast(ubyte) _unit_num, EVENTKIND.VOICENO, cast(int) _unit_num);
+		evels.x4x_Read_Add(0, cast(ubyte) _units.length, EVENTKIND.VOICENO, cast(int) _units.length);
 		evels.x4x_Read_NewKind();
 
-	term:
-		_units[_unit_num] = *unit;
-		_unit_num++;
+		_units ~= *unit;
 	}
 
 	/////////////
@@ -577,7 +553,7 @@ private:
 		if (assi.rrr) {
 			throw new PxtoneException("fmt unknown");
 		}
-		if (assi.woice_index >= _woice_num) {
+		if (assi.woice_index >= _woices.length) {
 			throw new PxtoneException("fmt unknown");
 		}
 
@@ -625,7 +601,7 @@ private:
 		if (assi.rrr) {
 			throw new PxtoneException("fmt unknown");
 		}
-		if (assi.unit_index >= _unit_num) {
+		if (assi.unit_index >= _units.length) {
 			throw new PxtoneException("fmt unknown");
 		}
 
@@ -645,7 +621,7 @@ private:
 		_NUM_UNIT data;
 		int size;
 
-		data.num = cast(short) _unit_num;
+		data.num = cast(short) _units.length;
 
 		size = _NUM_UNIT.sizeof;
 		p_doc.w_asfile(size);
@@ -668,7 +644,7 @@ private:
 		if (data.rrr) {
 			throw new PxtoneException("fmt unknown");
 		}
-		if (data.num > _units.length) {
+		if (data.num > pxtnMAX_TUNEUNITSTRUCT) {
 			throw new PxtoneException("fmt new");
 		}
 		if (data.num < 0) {
@@ -683,12 +659,12 @@ private:
 			return false;
 		}
 
-		if (_unit_num > _woice_num) {
+		if (_units.length > _woices.length) {
 			return false;
 		}
 
-		for (int u = 0; u < _unit_num; u++) {
-			if (u >= _woice_num) {
+		for (int u = 0; u < _units.length; u++) {
+			if (u >= _woices.length) {
 				return false;
 			}
 
@@ -708,11 +684,11 @@ private:
 			return false;
 		}
 
-		if (_unit_num > _woice_num) {
+		if (_units.length > _woices.length) {
 			return false;
 		}
 
-		for (int u = 0; u < _unit_num; u++) {
+		for (int u = 0; u < _units.length; u++) {
 			float tuning = _woices[u].get_x3x_tuning();
 			if (tuning) {
 				evels.Record_Add_f(0, cast(ubyte) u, EVENTKIND.TUNING, tuning);
@@ -727,7 +703,7 @@ private:
 			return false;
 		}
 
-		for (int i = 0; i < _woice_num; i++) {
+		for (int i = 0; i < _woices.length; i++) {
 			char[pxtnMAX_TUNEWOICENAME + 1] name = 0;
 			try {
 				sformat(name[], "voice_%02d", i);
@@ -812,16 +788,16 @@ private:
 		}
 
 		// delay
-		_delays = new pxtnDelay[](pxtnMAX_TUNEDELAYSTRUCT);
+		_delays.reserve(pxtnMAX_TUNEDELAYSTRUCT);
 
 		// over-drive
-		_ovdrvs = new pxtnOverDrive*[](pxtnMAX_TUNEOVERDRIVESTRUCT);
+		_ovdrvs.reserve(pxtnMAX_TUNEOVERDRIVESTRUCT);
 
 		// woice
-		_woices = new pxtnWoice*[](pxtnMAX_TUNEWOICESTRUCT);
+		_woices.reserve(pxtnMAX_TUNEWOICESTRUCT);
 
 		// unit
-		_units = new pxtnUnit[](pxtnMAX_TUNEUNITSTRUCT);
+		_units.reserve(pxtnMAX_TUNEUNITSTRUCT);
 
 		_group_num = pxtnMAX_TUNEGROUPNUM;
 
@@ -1015,7 +991,7 @@ private:
 		if (!_moo_b_init) {
 			return false;
 		}
-		for (int u = 0; u < _unit_num; u++) {
+		for (int u = 0; u < _units.length; u++) {
 			pxtnUnit* p_u = Unit_Get(u);
 			p_u.Tone_Init();
 			_moo_ResetVoiceOn(p_u, EVENTDEFAULT_VOICENO);
@@ -1029,7 +1005,7 @@ private:
 		}
 
 		// envelope..
-		for (int u = 0; u < _unit_num; u++) {
+		for (int u = 0; u < _units.length; u++) {
 			_units[u].Tone_Envelope();
 		}
 
@@ -1148,7 +1124,7 @@ private:
 		}
 
 		// sampling..
-		for (int u = 0; u < _unit_num; u++) {
+		for (int u = 0; u < _units.length; u++) {
 			_units[u].Tone_Sample(_moo_b_mute_by_unit, _dst_ch_num, _moo_time_pan_index, _moo_smp_smooth);
 		}
 
@@ -1156,13 +1132,13 @@ private:
 			for (int g = 0; g < _group_num; g++) {
 				_moo_group_smps[g] = 0;
 			}
-			for (int u = 0; u < _unit_num; u++) {
+			for (int u = 0; u < _units.length; u++) {
 				_units[u].Tone_Supple(_moo_group_smps, ch, _moo_time_pan_index);
 			}
-			for (int o = 0; o < _ovdrv_num; o++) {
+			for (int o = 0; o < _ovdrvs.length; o++) {
 				_ovdrvs[o].Tone_Supple(_moo_group_smps);
 			}
-			for (int d = 0; d < _delay_num; d++) {
+			for (int d = 0; d < _delays.length; d++) {
 				_delays[d].Tone_Supple(ch, _moo_group_smps);
 			}
 
@@ -1196,13 +1172,13 @@ private:
 		_moo_smp_count++;
 		_moo_time_pan_index = (_moo_time_pan_index + 1) & (pxtnBUFSIZE_TIMEPAN - 1);
 
-		for (int u = 0; u < _unit_num; u++) {
+		for (int u = 0; u < _units.length; u++) {
 			int key_now = _units[u].Tone_Increment_Key();
 			_units[u].Tone_Increment_Sample(_moo_freq.Get2(key_now) * _moo_smp_stride);
 		}
 
 		// delay
-		for (int d = 0; d < _delay_num; d++) {
+		for (int d = 0; d < _delays.length; d++) {
 			_delays[d].Tone_Increment();
 		}
 
@@ -1282,12 +1258,10 @@ public:
 
 		evels.Clear();
 
-		_delay_num = 0;
-		_ovdrvs[0 .. _ovdrv_num] = null;
-		_ovdrv_num = 0;
-		_woices[0 .. _woice_num] = null;
-		_woice_num = 0;
-		_unit_num = 0;
+		_delays = _delays.init;
+		_ovdrvs = _ovdrvs.init;
+		_woices = _woices.init;
+		_units = _units.init;
 
 		master.Reset();
 
@@ -1344,19 +1318,19 @@ public:
 		}
 
 		// delay
-		for (int d = 0; d < _delay_num; d++) {
+		for (int d = 0; d < _delays.length; d++) {
 			p_doc.w_asfile(_code_effeDELA);
 			_delays[d].Write(p_doc);
 		}
 
 		// overdrive
-		for (int o = 0; o < _ovdrv_num; o++) {
+		for (int o = 0; o < _ovdrvs.length; o++) {
 			p_doc.w_asfile(_code_effeOVER);
 			_ovdrvs[o].Write(p_doc);
 		}
 
 		// woice
-		for (int w = 0; w < _woice_num; w++) {
+		for (int w = 0; w < _woices.length; w++) {
 			pxtnWoice* p_w = _woices[w];
 
 			switch (p_w.get_type()) {
@@ -1401,7 +1375,7 @@ public:
 		p_doc.w_asfile(_code_num_UNIT);
 		_io_UNIT_num_w(p_doc);
 
-		for (int u = 0; u < _unit_num; u++) {
+		for (int u = 0; u < _units.length; u++) {
 			if (!b_tune && _units[u].is_name_buf()) {
 				p_doc.w_asfile(_code_assiUNIT);
 				if (!_io_assiUNIT_w(p_doc, u)) {
@@ -1501,13 +1475,13 @@ public:
 		int beat_num = master.get_beat_num();
 		float beat_tempo = master.get_beat_tempo();
 
-		for (int i = 0; i < _delay_num; i++) {
+		for (int i = 0; i < _delays.length; i++) {
 			_delays[i].Tone_Ready(beat_num, beat_tempo, _dst_sps);
 		}
-		for (int i = 0; i < _ovdrv_num; i++) {
+		for (int i = 0; i < _ovdrvs.length; i++) {
 			_ovdrvs[i].Tone_Ready();
 		}
-		for (int i = 0; i < _woice_num; i++) {
+		for (int i = 0; i < _woices.length; i++) {
 			_woices[i].Tone_Ready(_ptn_bldr, _dst_sps);
 		}
 	}
@@ -1516,10 +1490,10 @@ public:
 		if (!_b_init) {
 			return false;
 		}
-		for (int i = 0; i < _delay_num; i++) {
+		for (int i = 0; i < _delays.length; i++) {
 			_delays[i].Tone_Clear();
 		}
-		for (int i = 0; i < _unit_num; i++) {
+		for (int i = 0; i < _units.length; i++) {
 			_units[i].Tone_Clear();
 		}
 		return true;
@@ -1534,7 +1508,7 @@ public:
 	// ---------------------------
 
 	int Delay_Num() const nothrow @safe {
-		return _b_init ? _delay_num : 0;
+		return _b_init ? cast(int)_delays.length : 0;
 	}
 
 	int Delay_Max() const nothrow @safe {
@@ -1545,7 +1519,7 @@ public:
 		if (!_b_init) {
 			return false;
 		}
-		if (idx >= _delay_num) {
+		if (idx >= _delays.length) {
 			return false;
 		}
 		_delays[idx].Set(unit, freq, rate, group);
@@ -1556,12 +1530,12 @@ public:
 		if (!_b_init) {
 			return false;
 		}
-		if (_delay_num >= _delays.length) {
+		if (_delays.length >= pxtnMAX_TUNEDELAYSTRUCT) {
 			return false;
 		}
-		_delays[_delay_num] = pxtnDelay.init;
-		_delays[_delay_num].Set(unit, freq, rate, group);
-		_delay_num++;
+		_delays.length++;
+		_delays[$ - 1] = pxtnDelay.init;
+		_delays[$ - 1].Set(unit, freq, rate, group);
 		return true;
 	}
 
@@ -1569,15 +1543,14 @@ public:
 		if (!_b_init) {
 			return false;
 		}
-		if (idx >= _delay_num) {
+		if (idx >= _delays.length) {
 			return false;
 		}
 
-		_delay_num--;
-		for (int i = idx; i < _delay_num; i++) {
+		for (int i = idx; i < _delays.length; i++) {
 			_delays[i] = _delays[i + 1];
 		}
-		_delays[_delay_num] = pxtnDelay.init;
+		_delays.length--;
 		return true;
 	}
 
@@ -1585,7 +1558,7 @@ public:
 		if (!_b_init) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
-		if (idx < 0 || idx >= _delay_num) {
+		if (idx < 0 || idx >= _delays.length) {
 			throw new PxtoneException("param");
 		}
 		_delays[idx].Tone_Ready(master.get_beat_num(), master.get_beat_tempo(), _dst_sps);
@@ -1595,7 +1568,7 @@ public:
 		if (!_b_init) {
 			return null;
 		}
-		if (idx < 0 || idx >= _delay_num) {
+		if (idx < 0 || idx >= _delays.length) {
 			return null;
 		}
 		return &_delays[idx];
@@ -1606,7 +1579,7 @@ public:
 	// ---------------------------
 
 	int OverDrive_Num() const nothrow @safe {
-		return _b_init ? _ovdrv_num : 0;
+		return _b_init ? cast(int)_ovdrvs.length : 0;
 	}
 
 	int OverDrive_Max() const nothrow @safe {
@@ -1617,7 +1590,7 @@ public:
 		if (!_b_init) {
 			return false;
 		}
-		if (idx >= _ovdrv_num) {
+		if (idx >= _ovdrvs.length) {
 			return false;
 		}
 		_ovdrvs[idx].Set(cut, amp, group);
@@ -1628,12 +1601,11 @@ public:
 		if (!_b_init) {
 			return false;
 		}
-		if (_ovdrv_num >= _ovdrvs.length) {
+		if (_ovdrvs.length >= _ovdrvs.length) {
 			return false;
 		}
-		_ovdrvs[_ovdrv_num] = new pxtnOverDrive();
-		_ovdrvs[_ovdrv_num].Set(cut, amp, group);
-		_ovdrv_num++;
+		_ovdrvs ~= new pxtnOverDrive();
+		_ovdrvs[$ - 1].Set(cut, amp, group);
 		return true;
 	}
 
@@ -1641,16 +1613,15 @@ public:
 		if (!_b_init) {
 			return false;
 		}
-		if (idx >= _ovdrv_num) {
+		if (idx >= _ovdrvs.length) {
 			return false;
 		}
 
 		_ovdrvs[idx] = null;
-		_ovdrv_num--;
-		for (int i = idx; i < _ovdrv_num; i++) {
+		for (int i = idx; i < _ovdrvs.length; i++) {
 			_ovdrvs[i] = _ovdrvs[i + 1];
 		}
-		_ovdrvs[_ovdrv_num] = null;
+		_ovdrvs.length--;
 		return true;
 	}
 
@@ -1658,7 +1629,7 @@ public:
 		if (!_b_init) {
 			return false;
 		}
-		if (idx < 0 || idx >= _ovdrv_num) {
+		if (idx < 0 || idx >= _ovdrvs.length) {
 			return false;
 		}
 		_ovdrvs[idx].Tone_Ready();
@@ -1669,7 +1640,7 @@ public:
 		if (!_b_init) {
 			return null;
 		}
-		if (idx < 0 || idx >= _ovdrv_num) {
+		if (idx < 0 || idx >= _ovdrvs.length) {
 			return null;
 		}
 		return _ovdrvs[idx];
@@ -1680,7 +1651,7 @@ public:
 	// ---------------------------
 
 	int Woice_Num() const nothrow @safe {
-		return _b_init ? _woice_num : 0;
+		return _b_init ? cast(int)_woices.length : 0;
 	}
 
 	int Woice_Max() const nothrow @safe {
@@ -1691,7 +1662,7 @@ public:
 		if (!_b_init) {
 			return null;
 		}
-		if (idx < 0 || idx >= _woice_num) {
+		if (idx < 0 || idx >= _woices.length) {
 			return null;
 		}
 		return _woices[idx];
@@ -1704,12 +1675,11 @@ public:
 		if (idx < 0 || idx >= _woices.length) {
 			throw new PxtoneException("param");
 		}
-		if (idx > _woice_num) {
+		if (idx > _woices.length) {
 			throw new PxtoneException("param");
 		}
-		if (idx == _woice_num) {
-			_woices[idx] = new pxtnWoice();
-			_woice_num++;
+		if (idx == _woices.length) {
+			_woices ~= new pxtnWoice();
 		}
 
 		scope(failure) {
@@ -1722,7 +1692,7 @@ public:
 		if (!_b_init) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
-		if (idx < 0 || idx >= _woice_num) {
+		if (idx < 0 || idx >= _woices.length) {
 			throw new PxtoneException("param");
 		}
 		_woices[idx].Tone_Ready(_ptn_bldr, _dst_sps);
@@ -1732,15 +1702,14 @@ public:
 		if (!_b_init) {
 			return false;
 		}
-		if (idx < 0 || idx >= _woice_num) {
+		if (idx < 0 || idx >= _woices.length) {
 			return false;
 		}
 		_woices[idx] = null;
-		_woice_num--;
-		for (int i = idx; i < _woice_num; i++) {
+		for (int i = idx; i < _woices.length - 1; i++) {
 			_woices[i] = _woices[i + 1];
 		}
-		_woices[_woice_num] = null;
+		_woices.length--;
 		return true;
 	}
 
@@ -1750,7 +1719,7 @@ public:
 		}
 
 		pxtnWoice* p_w = _woices[old_place];
-		int max_place = _woice_num - 1;
+		int max_place = cast(int)_woices.length - 1;
 
 		if (new_place > max_place) {
 			new_place = max_place;
@@ -1782,7 +1751,7 @@ public:
 	// ---------------------------
 
 	int Unit_Num() const nothrow @safe {
-		return _b_init ? _unit_num : 0;
+		return _b_init ? cast(int)_units.length : 0;
 	}
 
 	int Unit_Max() const nothrow @safe {
@@ -1793,7 +1762,7 @@ public:
 		if (!_b_init) {
 			return null;
 		}
-		if (idx < 0 || idx >= _unit_num) {
+		if (idx < 0 || idx >= _units.length) {
 			return null;
 		}
 		return &_units[idx];
@@ -1803,14 +1772,13 @@ public:
 		if (!_b_init) {
 			return false;
 		}
-		if (idx < 0 || idx >= _unit_num) {
+		if (idx < 0 || idx >= _units.length) {
 			return false;
 		}
-		_unit_num--;
-		for (int i = idx; i < _unit_num; i++) {
+		for (int i = idx; i < _units.length; i++) {
 			_units[i] = _units[i + 1];
 		}
-		_units[_unit_num] = pxtnUnit.init;
+		_units.length--;
 		return true;
 	}
 
@@ -1820,7 +1788,7 @@ public:
 		}
 
 		pxtnUnit p_w = _units[old_place];
-		int max_place = _unit_num - 1;
+		int max_place = cast(int)_units.length - 1;
 
 		if (new_place > max_place) {
 			new_place = max_place;
@@ -1843,11 +1811,11 @@ public:
 	}
 
 	bool Unit_AddNew() nothrow @system {
-		if (_unit_num >= _units.length) {
+		if (pxtnMAX_TUNEUNITSTRUCT < _units.length) {
 			return false;
 		}
-		_units[_unit_num] = pxtnUnit.init;
-		_unit_num++;
+		_units.length++;
+		_units[$ - 1] = pxtnUnit.init;
 		return true;
 	}
 
@@ -1855,7 +1823,7 @@ public:
 		if (!_b_init) {
 			return false;
 		}
-		for (int u = 0; u < _unit_num; u++) {
+		for (int u = 0; u < _units.length; u++) {
 			_units[u].set_operated(b);
 			if (b) {
 				_units[u].set_played(true);
@@ -1868,7 +1836,7 @@ public:
 		if (!_b_init) {
 			return false;
 		}
-		for (int u = 0; u < _unit_num; u++) {
+		for (int u = 0; u < _units.length; u++) {
 			if (u == idx) {
 				_units[u].set_played(true);
 			} else {
