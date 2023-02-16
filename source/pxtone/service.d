@@ -326,10 +326,10 @@ private:
 				_io_Read_OverDrive(p_doc);
 				break;
 			case _enum_Tag.textNAME:
-				text.Name_r(p_doc);
+				text.set_name_buf(_read4_tag(p_doc));
 				break;
 			case _enum_Tag.textCOMM:
-				text.Comment_r(p_doc);
+				text.set_comment_buf(_read4_tag(p_doc));
 				break;
 			case _enum_Tag.assiWOIC:
 				_io_assiWOIC_r(p_doc);
@@ -511,6 +511,27 @@ private:
 	term:
 		_units[_unit_num] = *unit;
 		_unit_num++;
+	}
+
+	/////////////
+	// comments
+	/////////////
+
+	const(char)[] _read4_tag(ref pxtnDescriptor p_doc) @safe {
+		char[] result;
+		int p_buf_size;
+		p_doc.r(p_buf_size);
+		enforce(p_buf_size >= 0, "Invalid string size");
+
+		if (p_buf_size) {
+			result = new char[](p_buf_size);
+			p_doc.r(result[0 .. p_buf_size]);
+		}
+		return result;
+	}
+	private void _write4_tag(const char[] p, ref pxtnDescriptor p_doc) @safe {
+		p_doc.w_asfile(cast(int)p.length);
+		p_doc.w_asfile(p);
 	}
 
 	/////////////
@@ -1313,17 +1334,13 @@ public:
 		// name
 		if (text.is_name_buf()) {
 			p_doc.w_asfile(_code_textNAME);
-			if (!text.Name_w(p_doc)) {
-				throw new PxtoneException("desc w");
-			}
+			_write4_tag(text.get_name_buf(), p_doc);
 		}
 
 		// comment
 		if (text.is_comment_buf()) {
 			p_doc.w_asfile(_code_textCOMM);
-			if (!text.Comment_w(p_doc)) {
-				throw new PxtoneException("desc w");
-			}
+			_write4_tag(text.get_comment_buf(), p_doc);
 		}
 
 		// delay
