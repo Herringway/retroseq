@@ -409,7 +409,7 @@ private:
 		_delays ~= delay;
 	}
 
-	void _io_Read_OverDrive(ref pxtnDescriptor p_doc) @system {
+	void _io_Read_OverDrive(ref pxtnDescriptor p_doc) @safe {
 		if (!_b_init) {
 			throw new PxtoneException("pxtnService not initialized");
 		}

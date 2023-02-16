@@ -83,7 +83,7 @@ struct pxtnOverDrive {
 		p_doc.w_asfile(over);
 	}
 
-	void Read(ref pxtnDescriptor p_doc) @system {
+	void Read(ref pxtnDescriptor p_doc) @safe {
 		_OVERDRIVESTRUCT over;
 		int size = 0;
 
