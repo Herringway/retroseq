@@ -43,10 +43,7 @@ public:
 	}
 
 	bool is_comment_buf() const nothrow @safe {
-		if (_p_comment_buf != null) {
-			return true;
-		}
-		return false;
+		return _p_comment_buf != null;
 	}
 
 	bool set_name_buf(scope const(char)[] name) nothrow @safe {
@@ -63,10 +60,7 @@ public:
 	}
 
 	bool is_name_buf() const nothrow @safe {
-		if (_p_name_buf != null) {
-			return true;
-		}
-		return false;
+		return _p_name_buf != null;
 	}
 
 	void Comment_r(ref pxtnDescriptor p_doc) @safe {
