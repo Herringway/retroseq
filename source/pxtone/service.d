@@ -1268,7 +1268,7 @@ public:
 		return _init(fix_evels_num, true);
 	}
 
-	bool clear() nothrow @system {
+	bool clear() nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}

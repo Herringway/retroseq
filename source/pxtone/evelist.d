@@ -174,13 +174,13 @@ private:
 
 public:
 
-	void Release() nothrow @system {
+	void Release() nothrow @safe {
 		_eves = null;
 		_start = null;
 		_eve_allocated_num = 0;
 	}
 
-	void Clear() nothrow @system {
+	void Clear() nothrow @safe {
 		if (_eves) {
 			_eves[0 .. _eve_allocated_num] = EVERECORD.init;
 		}
