@@ -814,9 +814,9 @@ private:
 
 	}
 
-	bool _release() nothrow @system {
+	void _release() @system {
 		if (!_b_init) {
-			return false;
+			throw new PxtoneException("pxtnService not initialized");
 		}
 		_b_init = false;
 
@@ -826,7 +826,6 @@ private:
 		_ovdrvs = null;
 		_woices = null;
 		_units = null;
-		return true;
 	}
 
 	void _pre_count_event(ref pxtnDescriptor p_doc, out int p_count) @system {
@@ -1226,10 +1225,6 @@ public:
 		desc.set_file_r(fd);
 		read(desc);
 		tones_ready();
-	}
-
-	 ~this() nothrow @system {
-		_release();
 	}
 
 	pxtnText text;
