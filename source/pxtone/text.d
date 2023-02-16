@@ -29,13 +29,11 @@ private:
 	char[] _p_name_buf;
 
 public:
-	bool set_comment_buf(scope const(char)[] comment) nothrow @safe {
-		_p_comment_buf = null;
+	void set_comment_buf(scope const(char)[] comment) nothrow @safe {
 		if (comment.length == 0) {
-			return true;
+			_p_comment_buf = null;
 		}
 		_p_comment_buf = comment.dup;
-		return true;
 	}
 
 	const(char)[] get_comment_buf() const nothrow @safe {
@@ -46,13 +44,11 @@ public:
 		return _p_comment_buf != null;
 	}
 
-	bool set_name_buf(scope const(char)[] name) nothrow @safe {
-		_p_name_buf = null;
+	void set_name_buf(scope const(char)[] name) nothrow @safe {
 		if (name.length == 0) {
-			return true;
+			_p_name_buf = null;
 		}
 		_p_name_buf = name.dup;
-		return true;
 	}
 
 	const(char)[] get_name_buf() const nothrow @safe {

@@ -1256,12 +1256,8 @@ public:
 			_moo_b_valid_data = false;
 		}
 
-		if (!text.set_name_buf("")) {
-			return false;
-		}
-		if (!text.set_comment_buf("")) {
-			return false;
-		}
+		text.set_name_buf("");
+		text.set_comment_buf("");
 
 		evels.Clear();
 
