@@ -50,7 +50,7 @@ bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* use
 
 extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
 	pxtnService* pxtn = cast(pxtnService*) user;
-	pxtn.Moo(buf[0 .. bufSize]);
+	pxtn.Moo(cast(short[])(buf[0 .. bufSize]));
 }
 
 int main(string[] args) {

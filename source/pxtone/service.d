@@ -998,7 +998,7 @@ private:
 		return true;
 	}
 
-	bool _moo_PXTONE_SAMPLE(ubyte[] p_data) nothrow @safe {
+	bool _moo_PXTONE_SAMPLE(short[] p_data) nothrow @safe {
 		if (!_moo_b_init) {
 			return false;
 		}
@@ -1162,7 +1162,7 @@ private:
 			if (work < -_moo_top) {
 				work = -_moo_top;
 			}
-			(cast(short[])p_data)[ch] = cast(short)(work);
+			p_data[ch] = cast(short)(work);
 		}
 
 		// --------------
@@ -1858,7 +1858,6 @@ public:
 
 		_dst_ch_num = ch_num;
 		_dst_sps = sps;
-		_dst_byte_per_smp = pxtnBITPERSAMPLE / 8 * ch_num;
 	}
 
 	void get_destination_quality(int* p_ch_num, int* p_sps) const @safe {
@@ -1980,7 +1979,6 @@ public:
 		enforce(_moo_b_valid_data, new PxtoneException("no valid data loaded"));
 		enforce(_dst_ch_num, new PxtoneException("invalid channel number specified"));
 		enforce(_dst_sps, new PxtoneException("invalid sample rate specified"));
-		enforce(_dst_byte_per_smp, new PxtoneException("invalid sample size"));
 
 		int meas_end = master.get_play_meas();
 		int meas_repeat = master.get_repeat_meas();
@@ -2047,7 +2045,7 @@ public:
 	//
 	////////////////////
 
-	bool Moo(ubyte[] p_buf) nothrow @system {
+	bool Moo(short[] p_buf) nothrow @system {
 		if (!_moo_b_init) {
 			return false;
 		}
@@ -2062,28 +2060,27 @@ public:
 
 		int smp_w = 0;
 
-		if (p_buf.length % _dst_byte_per_smp) {
+		if (p_buf.length % _dst_ch_num) {
 			return false;
 		}
 
-		int smp_num = cast(int)(p_buf.length / _dst_byte_per_smp);
+		int smp_num = cast(int)(p_buf.length / _dst_ch_num);
 
 		{
-			short[] p16 = cast(short[]) p_buf;
 			short[2] sample;
 
 			for (smp_w = 0; smp_w < smp_num; smp_w++) {
-				if (!_moo_PXTONE_SAMPLE(cast(ubyte[])(sample[]))) {
+				if (!_moo_PXTONE_SAMPLE(sample[])) {
 					_moo_b_end_vomit = true;
 					break;
 				}
-				for (int ch = 0; ch < _dst_ch_num; ch++, p16 = p16[1 .. $]) {
-					p16[0] = sample[ch];
+				for (int ch = 0; ch < _dst_ch_num; ch++, p_buf = p_buf[1 .. $]) {
+					p_buf[0] = sample[ch];
 				}
 			}
 			for (; smp_w < smp_num; smp_w++) {
-				for (int ch = 0; ch < _dst_ch_num; ch++, p16 = p16[1 .. $]) {
-					p16[0] = 0;
+				for (int ch = 0; ch < _dst_ch_num; ch++, p_buf = p_buf[1 .. $]) {
+					p_buf[0] = 0;
 				}
 			}
 		}
