@@ -6,14 +6,14 @@ import std.math;
 
 struct pxtnPulse_Oscillator {
 private:
-	pxtnPOINT[] _p_point = null;
+	const(pxtnPOINT)[] _p_point = null;
 	int _point_num = 0;
 	int _point_reso = 0;
 	int _volume = 0;
 	int _sample_num = 0;
 
 public:
-	void ReadyGetSample(pxtnPOINT[] p_point, int point_num, int volume, int sample_num, int point_reso) nothrow @safe {
+	void ReadyGetSample(const pxtnPOINT[] p_point, int point_num, int volume, int sample_num, int point_reso) nothrow @safe {
 		_volume = volume;
 		_p_point = p_point;
 		_sample_num = sample_num;

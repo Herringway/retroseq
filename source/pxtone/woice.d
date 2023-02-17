@@ -246,7 +246,7 @@ struct _MATERIALSTRUCT_OGGV {
 ////////////////////////
 
 struct pxtnWoice {
-private:
+package:
 	int _voice_num;
 
 	char[pxtnMAX_TUNEWOICENAME + 1] _name_buf;
@@ -833,7 +833,7 @@ public:
 		}
 	}
 
-	void Tone_Ready_sample(const pxtnPulse_NoiseBuilder ptn_bldr) @system {
+	void Tone_Ready_sample(pxtnVOICEINSTANCE[] voinsts, pxtnVOICEUNIT[] voices, const pxtnPulse_NoiseBuilder ptn_bldr) const @system {
 		pxtnVOICEINSTANCE* p_vi = null;
 		pxtnVOICEUNIT* p_vc = null;
 		pxtnPulse_PCM pcm_work;
@@ -843,7 +843,7 @@ public:
 		int bps = 16;
 
 		for (int v = 0; v < _voice_num; v++) {
-			p_vi = &_voinsts[v];
+			p_vi = &voinsts[v];
 			p_vi.p_smp_w = null;
 			p_vi.smp_head_w = 0;
 			p_vi.smp_body_w = 0;
@@ -851,7 +851,7 @@ public:
 		}
 		scope (failure) {
 			for (int v = 0; v < _voice_num; v++) {
-				p_vi = &_voinsts[v];
+				p_vi = &voinsts[v];
 				p_vi.p_smp_w = null;
 				p_vi.smp_head_w = 0;
 				p_vi.smp_body_w = 0;
@@ -860,8 +860,8 @@ public:
 		}
 
 		for (int v = 0; v < _voice_num; v++) {
-			p_vi = &_voinsts[v];
-			p_vc = &_voices[v];
+			p_vi = &voinsts[v];
+			p_vc = &voices[v];
 
 			switch (p_vc.type) {
 			case pxtnVOICETYPE.OggVorbis:
@@ -910,18 +910,18 @@ public:
 		}
 	}
 
-	void Tone_Ready_envelope(int sps) @system {
+	void Tone_Ready_envelope(pxtnVOICEINSTANCE[] voinsts, pxtnVOICEUNIT[] voices, int sps) const @system {
 		int e = 0;
 		pxtnPOINT[] p_point = null;
 
 		scope(failure) {
 			for (int v = 0; v < _voice_num; v++) {
-				_voinsts[v].p_env = null;
+				voinsts[v].p_env = null;
 			}
 		}
 		for (int v = 0; v < _voice_num; v++) {
-			pxtnVOICEINSTANCE* p_vi = &_voinsts[v];
-			pxtnVOICEUNIT* p_vc = &_voices[v];
+			pxtnVOICEINSTANCE* p_vi = &voinsts[v];
+			pxtnVOICEUNIT* p_vc = &voices[v];
 			pxtnVOICEENVELOPE* p_enve = &p_vc.envelope;
 			int size = 0;
 
@@ -979,8 +979,8 @@ public:
 		p_point = null;
 	}
 
-	void Tone_Ready(const pxtnPulse_NoiseBuilder ptn_bldr, int sps) @system {
-		Tone_Ready_sample(ptn_bldr);
-		Tone_Ready_envelope(sps);
+	void Tone_Ready(pxtnWoice* woice, const pxtnPulse_NoiseBuilder ptn_bldr, int sps) const @system {
+		Tone_Ready_sample(woice._voinsts, woice._voices, ptn_bldr);
+		Tone_Ready_envelope(woice._voinsts, woice._voices, sps);
 	}
 }

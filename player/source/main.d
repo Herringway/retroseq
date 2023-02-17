@@ -60,7 +60,7 @@ int main(string[] args) {
 	(cast()sharedLog).logLevel = LogLevel.trace;
 
 	auto filePath = args[1];
-	auto file = cast(ubyte[])read(args[1]);
+	const file = PxToneSong(cast(ubyte[])read(args[1]));
 
 	// pxtone initialization
 	auto pxtn = pxtnService();
@@ -89,8 +89,8 @@ int main(string[] args) {
 	trace("SDL audio init success");
 
 	writefln!"file: %s"(filePath.baseName);
-	writefln!"name: %s"(pxtn.text.get_name_buf());
-	writefln!"comment: %s"(pxtn.text.get_comment_buf());
+	writefln!"name: %s"(file.text.get_name_buf());
+	writefln!"comment: %s"(file.text.get_comment_buf());
 
 	debug foreach (voice; 0 .. pxtn.Woice_Num()) {
 		import std.algorithm : map;

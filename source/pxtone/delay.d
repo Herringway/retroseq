@@ -140,39 +140,4 @@ public:
 			_bufs[i][0 .. _smp_num] = def;
 		}
 	}
-
-	void Write(ref pxtnDescriptor p_doc) const @system {
-		_DELAYSTRUCT dela;
-		int size;
-
-		dela.unit = cast(ushort) _unit;
-		dela.group = cast(ushort) _group;
-		dela.rate = _rate;
-		dela.freq = _freq;
-
-		// dela ----------
-		size = _DELAYSTRUCT.sizeof;
-		p_doc.w_asfile(size);
-		p_doc.w_asfile(dela);
-	}
-
-	void Read(ref pxtnDescriptor p_doc) @system {
-		_DELAYSTRUCT dela;
-		int size = 0;
-
-		p_doc.r(size);
-		p_doc.r(dela);
-		if (dela.unit >= DELAYUNIT.num) {
-			throw new PxtoneException("fmt unknown");
-		}
-
-		_unit = cast(DELAYUNIT) dela.unit;
-		_freq = dela.freq;
-		_rate = dela.rate;
-		_group = dela.group;
-
-		if (_group >= pxtnMAX_TUNEGROUPNUM) {
-			_group = 0;
-		}
-	}
 }

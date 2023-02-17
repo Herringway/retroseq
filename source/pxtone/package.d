@@ -16,6 +16,7 @@ public import pxtone.pulse.oscillator;
 public import pxtone.pulse.pcm;
 public import pxtone.pxtn;
 public import pxtone.service;
+public import pxtone.song;
 public import pxtone.text;
 public import pxtone.unit;
 public import pxtone.woice;
