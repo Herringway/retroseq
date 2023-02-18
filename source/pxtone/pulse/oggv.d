@@ -9,6 +9,7 @@ import pxtone.descriptor;
 import pxtone.error;
 import pxtone.pulse.pcm;
 
+import std.exception;
 import std.stdio;
 
 struct OVMEM {
@@ -19,9 +20,10 @@ struct OVMEM {
 
 // 4 callbacks below:
 
-extern (C) size_t _mread(void* p, size_t size, size_t nmemb, void* p_void) nothrow @system {
-	OVMEM* pom = cast(OVMEM*) p_void;
-
+private extern (C) size_t _mread(void* p, size_t size, size_t nmemb, void* p_void) nothrow @trusted {
+	return _mread((cast(ubyte*)p)[0 .. size * nmemb], size, nmemb, cast(OVMEM*)p_void);
+}
+private size_t _mread(ubyte[] p, size_t size, size_t nmemb, OVMEM* pom) nothrow @safe {
 	if (!pom) {
 		return -1;
 	}
@@ -35,20 +37,22 @@ extern (C) size_t _mread(void* p, size_t size, size_t nmemb, void* p_void) nothr
 	int left = pom.size - pom.pos;
 
 	if (cast(int)(size * nmemb) >= left) {
-		p[0 .. pom.size - pom.pos] = cast(void[])pom.p_buf[pom.pos .. pom.size];
+		p[0 .. pom.size - pom.pos] = pom.p_buf[pom.pos .. pom.size];
 		pom.pos = pom.size;
 		return left / size;
 	}
 
-	p[0 .. nmemb * size] = cast(void[])pom.p_buf[pom.pos .. pom.pos + nmemb * size];
+	p[] = pom.p_buf[pom.pos .. pom.pos + nmemb * size];
 	pom.pos += cast(int)(nmemb * size);
 
 	return nmemb;
 }
 
-extern (C) int _mseek(void* p_void, long offset, int mode) nothrow @system {
+private extern (C) int _mseek(void* pom, long offset, int mode) nothrow @trusted {
+	return _mseek(cast(OVMEM*)pom, offset, mode);
+}
+private int _mseek(OVMEM* pom, long offset, int mode) nothrow @safe {
 	int newpos;
-	OVMEM* pom = cast(OVMEM*) p_void;
 
 	if (!pom || pom.pos < 0) {
 		return -1;
@@ -80,16 +84,20 @@ extern (C) int _mseek(void* p_void, long offset, int mode) nothrow @system {
 	return 0;
 }
 
-extern (C) c_long _mtell(void* p_void) nothrow @system {
-	OVMEM* pom = cast(OVMEM*) p_void;
+private extern (C) c_long _mtell(void* p_void) nothrow @trusted {
+	return _mtell(cast(OVMEM*)p_void);
+}
+private c_long _mtell(OVMEM* pom) nothrow @safe {
 	if (!pom) {
 		return -1;
 	}
 	return pom.pos;
 }
 
-extern (C) int _mclose_dummy(void* p_void) nothrow @system {
-	OVMEM* pom = cast(OVMEM*) p_void;
+private extern (C) int _mclose_dummy(void* p_void) nothrow @trusted {
+	return _mclose_dummy(cast(OVMEM*)p_void);
+}
+private int _mclose_dummy(OVMEM* pom) nothrow @safe {
 	if (!pom) {
 		return -1;
 	}
@@ -108,7 +116,7 @@ private:
 	int _size;
 	ubyte[] _p_data;
 
-	bool _SetInformation() nothrow @system {
+	bool _SetInformation() @safe {
 		bool b_ret = false;
 
 		OVMEM ovmem;
@@ -127,29 +135,16 @@ private:
 
 		vorbis_info* vi;
 
-		switch (ov_open_callbacks(&ovmem, &vf, null, 0, oc)) {
-		case OV_EREAD:
-			goto End; //{printf("A read from media returned an error.\n");exit(1);}
-		case OV_ENOTVORBIS:
-			goto End; //{printf("Bitstream is not Vorbis data. \n");exit(1);}
-		case OV_EVERSION:
-			goto End; //{printf("Vorbis version mismatch. \n");exit(1);}
-		case OV_EBADHEADER:
-			goto End; //{printf("Invalid Vorbis bitstream header. \n");exit(1);}
-		case OV_EFAULT:
-			goto End; //{printf("Internal logic fault; indicates a bug or heap/stack corruption. \n");exit(1);}
-		default:
-			break;
-		}
+		trustedOvOpenCallbacks(ovmem, vf, null, oc);
 
-		vi = ov_info(&vf, -1);
+		vi = trustedOvInfo(vf, -1);
 
 		_ch = vi.channels;
 		_sps2 = vi.rate;
-		_smp_num = cast(int) ov_pcm_total(&vf, -1);
+		_smp_num = cast(int) trustedOvPCMTotal(vf, -1);
 
 		// end.
-		ov_clear(&vf);
+		trustedOvClear(vf);
 
 		b_ret = true;
 
@@ -159,18 +154,18 @@ private:
 	}
 
 public:
-	 ~this() nothrow @system {
+	 ~this() nothrow @safe {
 		Release();
 	}
 
-	void Decode(pxtnPulse_PCM* p_pcm) const @system {
+	void Decode(pxtnPulse_PCM* p_pcm) const @safe {
 		OggVorbis_File vf;
 		vorbis_info* vi;
 		ov_callbacks oc;
 
 		OVMEM ovmem;
 		int current_section;
-		ubyte[4096] pcmout = 0; //take 4k out of the data segment, not the stack
+		byte[4096] pcmout = 0; //take 4k out of the data segment, not the stack
 
 		ovmem.p_buf = _p_data;
 		ovmem.pos = 0;
@@ -182,25 +177,12 @@ public:
 		oc.close_func = &_mclose_dummy;
 		oc.tell_func = &_mtell;
 
-		switch (ov_open_callbacks(&ovmem, &vf, null, 0, oc)) {
-		case OV_EREAD:
-			throw new PxtoneException("A read from media returned an error");
-		case OV_ENOTVORBIS:
-			throw new PxtoneException("Bitstream is not Vorbis data");
-		case OV_EVERSION:
-			throw new PxtoneException("Vorbis version mismatch");
-		case OV_EBADHEADER:
-			throw new PxtoneException("Invalid Vorbis bitstream header");
-		case OV_EFAULT:
-			throw new PxtoneException("Internal logic fault; indicates a bug or heap/stack corruption");
-		default:
-			break;
-		}
+		trustedOvOpenCallbacks(ovmem, vf, null, oc);
 
-		vi = ov_info(&vf, -1);
+		vi = trustedOvInfo(vf, -1);
 
 		{
-			int smp_num = cast(int) ov_pcm_total(&vf, -1);
+			int smp_num = cast(int) trustedOvPCMTotal(vf, -1);
 			uint bytes;
 
 			bytes = vi.channels * 2 * smp_num;
@@ -210,22 +192,22 @@ public:
 		// decode..
 		{
 			int ret = 0;
-			ubyte* p = p_pcm.get_p_buf().ptr;
+			ubyte[] p = p_pcm.get_p_buf();
 			do {
-				ret = cast(int)ov_read(&vf, cast(byte*) pcmout.ptr, 4096, 0, 2, 1, &current_section);
+				ret = cast(int)trustedOvRead(vf, pcmout[], 0, 2, 1, current_section);
 				if (ret > 0) {
-					p[0 .. ret] = pcmout[0 .. ret]; //fwrite( pcmout, 1, ret, of );
+					p[0 .. ret] = cast(ubyte[])(pcmout[0 .. ret]);
 				}
-				p += ret;
+				p = p[ret .. $];
 			}
 			while (ret);
 		}
 
 		// end.
-		ov_clear(&vf);
+		trustedOvClear(vf);
 	}
 
-	void Release() nothrow @system {
+	void Release() nothrow @safe {
 		_p_data = null;
 		_ch = 0;
 		_sps2 = 0;
@@ -258,11 +240,11 @@ public:
 		return cast(int)(int.sizeof * 4 + _size);
 	}
 
-	void ogg_write(ref pxtnDescriptor desc) const @system {
+	void ogg_write(ref pxtnDescriptor desc) const @safe {
 		desc.w_asfile(_p_data);
 	}
 
-	void ogg_read(ref pxtnDescriptor desc) @system {
+	void ogg_read(ref pxtnDescriptor desc) @safe {
 		_size = desc.get_size_bytes();
 		if (!(_size)) {
 			throw new PxtoneException("desc r");
@@ -278,7 +260,7 @@ public:
 		}
 	}
 
-	void pxtn_write(ref pxtnDescriptor p_doc) const @system {
+	void pxtn_write(ref pxtnDescriptor p_doc) const @safe {
 		if (!_p_data) {
 			throw new PxtoneException("No data");
 		}
@@ -290,7 +272,7 @@ public:
 		p_doc.w_asfile(_p_data);
 	}
 
-	void pxtn_read(ref pxtnDescriptor p_doc) @system {
+	void pxtn_read(ref pxtnDescriptor p_doc) @safe {
 		p_doc.r(_ch);
 		p_doc.r(_sps2);
 		p_doc.r(_smp_num);
@@ -308,7 +290,7 @@ public:
 		p_doc.r(_p_data);
 	}
 
-	bool Copy(ref pxtnPulse_Oggv p_dst) const nothrow @system {
+	bool Copy(ref pxtnPulse_Oggv p_dst) const nothrow @safe {
 		p_dst.Release();
 		if (!_p_data) {
 			return true;
@@ -327,4 +309,46 @@ public:
 
 		return true;
 	}
+}
+
+private void trustedOvOpenCallbacks(T)(scope ref T datasource, scope ref OggVorbis_File vf, scope ubyte[] initial, ov_callbacks callbacks) @trusted {
+	switch(ov_open_callbacks(cast(void*)&datasource, &vf, cast(char*)initial.ptr, cast(int)initial.length, callbacks)) {
+		case 0: break;
+		case OV_EREAD:
+			throw new PxtoneException("A read from media returned an error");
+		case OV_ENOTVORBIS:
+			throw new PxtoneException("Bitstream is not Vorbis data");
+		case OV_EVERSION:
+			throw new PxtoneException("Vorbis version mismatch");
+		case OV_EBADHEADER:
+			throw new PxtoneException("Invalid Vorbis bitstream header");
+		case OV_EFAULT:
+			throw new PxtoneException("Internal logic fault; indicates a bug or heap/stack corruption");
+		default:
+			throw new PxtoneException("Unknown error");
+	}
+}
+
+private c_long trustedOvRead(scope ref OggVorbis_File vf, scope byte[] buffer, bool bigEndianPacking, int wordSize, bool signed, ref int bitstream) @trusted {
+	auto result = ov_read(&vf, buffer.ptr, cast(int)buffer.length, bigEndianPacking, wordSize, signed, &bitstream);
+	enforce!PxtoneException(result != OV_HOLE, "Vorbis data interrupted");
+	enforce!PxtoneException(result != OV_EBADLINK, "Invalid Vorbis stream section or requested link corrupt");
+	enforce!PxtoneException(result != OV_EINVAL, "Initial Vorbis headers could not be read or are corrupt");
+	enforce!PxtoneException(result >= 0, "Unknown Vorbis error");
+	return result;
+}
+private vorbis_info* trustedOvInfo(scope ref OggVorbis_File vf, int link) @trusted {
+	auto result = ov_info(&vf, link);
+	enforce(result !is null);
+	return result;
+}
+
+private long trustedOvPCMTotal(scope ref OggVorbis_File vf, int link) @trusted {
+	auto result = ov_pcm_total(&vf, link);
+	enforce(result != OV_EINVAL);
+	return result;
+}
+
+private void trustedOvClear(scope ref OggVorbis_File vf) @trusted {
+	enforce(ov_clear(&vf) == 0);
 }

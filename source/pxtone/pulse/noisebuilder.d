@@ -116,7 +116,7 @@ private:
 	pxtnPulse_Frequency _freq;
 
 public:
-	pxtnPulse_PCM BuildNoise(ref pxtnPulse_Noise p_noise, int ch, int sps, int bps) const @system {
+	pxtnPulse_PCM BuildNoise(ref pxtnPulse_Noise p_noise, int ch, int sps, int bps) const @safe {
 		int offset = 0;
 		double work = 0;
 		double vol = 0;
@@ -124,7 +124,7 @@ public:
 		double store = 0;
 		int byte4 = 0;
 		int unit_num = 0;
-		ubyte* p = null;
+		ubyte[] p = null;
 		int smp_num = 0;
 
 		_UNIT[] units = null;
@@ -186,7 +186,7 @@ public:
 
 		p_pcm = pxtnPulse_PCM.init;
 		p_pcm.Create(ch, sps, bps, smp_num);
-		p = p_pcm.get_p_buf().ptr;
+		p = p_pcm.get_p_buf();
 
 		for (int s = 0; s < smp_num; s++) {
 			for (int c = 0; c < ch; c++) {
@@ -272,12 +272,12 @@ public:
 					byte4 = -_SAMPLING_TOP;
 				}
 				if (bps == 8) {
-					*p = cast(ubyte)((byte4 >> 8) + 128);
-					p += 1;
+					p[0] = cast(ubyte)((byte4 >> 8) + 128);
+					p = p[1 .. $];
 				}  //  8bit
 				else {
-					*(cast(short*) p) = cast(short) byte4;
-					p += 2;
+					((cast(short[])(p[0 .. 2])))[0] = cast(short) byte4;
+					p = p[2 .. $];
 				} // 16bit
 			}
 
@@ -338,7 +338,7 @@ public:
 	}
 }
 
-short[][pxWAVETYPE.num] genTables() {
+short[][pxWAVETYPE.num] genTables() @safe {
 	pxtnPOINT[1] overtones_sine = [{1, 128}];
 	pxtnPOINT[16] overtones_saw2 = [{1, 128}, {2, 128}, {3, 128}, {4, 128}, {5, 128}, {6, 128}, {7, 128}, {8, 128}, {9, 128}, {10, 128}, {11, 128}, {12, 128}, {13, 128}, {14, 128}, {15, 128}, {16, 128},];
 	pxtnPOINT[8] overtones_rect2 = [{1, 128}, {3, 128}, {5, 128}, {7, 128}, {9, 128}, {11, 128}, {13, 128}, {15, 128},];
@@ -350,7 +350,7 @@ short[][pxWAVETYPE.num] genTables() {
 
 	int a;
 	short v;
-	pxtnPulse_Oscillator osci;
+	scope pxtnPulse_Oscillator osci;
 	int[2] _rand_buf;
 
 	void _random_reset() nothrow @safe {
@@ -358,7 +358,7 @@ short[][pxWAVETYPE.num] genTables() {
 		_rand_buf[1] = 0x8888;
 	}
 
-	short _random_get() nothrow @system {
+	short _random_get() nothrow @safe {
 		ubyte[2] w1, w2;
 
         short tmp = cast(short)(_rand_buf[0] + _rand_buf[1]);

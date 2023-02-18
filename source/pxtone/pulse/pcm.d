@@ -26,7 +26,7 @@ private:
 	ubyte[] _p_smp;
 
 	// stereo / mono
-	bool _Convert_ChannelNum(int new_ch) nothrow @system {
+	bool _Convert_ChannelNum(int new_ch) nothrow @safe {
 		ubyte[] p_work = null;
 		int sample_size;
 		int work_size;
@@ -94,9 +94,9 @@ private:
 			case 16:
 				b = 0;
 				for (a = 0; a < sample_size; a += 4) {
-					temp1 = *(cast(short*)(&_p_smp[a]));
-					temp2 = *(cast(short*)(&_p_smp[a + 2]));
-					*cast(short*)(&p_work[b]) = cast(short)((temp1 + temp2) / 2);
+					temp1 = (cast(short[])_p_smp[a + 0 .. a + 2])[0];
+					temp2 = (cast(short[])_p_smp[a + 2 .. a + 4])[0];
+					(cast(short[])(p_work[b .. b + 2]))[0] = cast(short)((temp1 + temp2) / 2);
 					b += 2;
 				}
 				break;
@@ -121,7 +121,7 @@ private:
 	}
 
 	// change bps
-	bool _Convert_BitPerSample(int new_bps) nothrow @system {
+	bool _Convert_BitPerSample(int new_bps) nothrow @safe {
 		ubyte[] p_work;
 		int sample_size;
 		int work_size;
@@ -147,7 +147,7 @@ private:
 			}
 			b = 0;
 			for (a = 0; a < sample_size; a += 2) {
-				temp1 = *(cast(short*)(&_p_smp[a]));
+				temp1 = ((cast(short[])(_p_smp[a .. a + 2])))[0];
 				temp1 = (temp1 / 0x100) + 128;
 				p_work[b] = cast(ubyte) temp1;
 				b++;
@@ -164,7 +164,7 @@ private:
 			for (a = 0; a < sample_size; a++) {
 				temp1 = _p_smp[a];
 				temp1 = (temp1 - 128) * 0x100;
-				*(cast(short*)(&p_work[b])) = cast(short) temp1;
+				((cast(short[])(p_work[b .. b + 2])))[0] = cast(short) temp1;
 				b += 2;
 			}
 			break;
@@ -188,7 +188,7 @@ private:
 		return true;
 	}
 	// sps
-	bool _Convert_SamplePerSecond(int new_sps) nothrow @system {
+	bool _Convert_SamplePerSecond(int new_sps) nothrow @safe {
 		bool b_ret = false;
 		int sample_num;
 		int work_size;
@@ -279,9 +279,9 @@ private:
 		}
 
 		if (p4byte_work) {
-			_p_smp[0 .. work_size] = (cast(ubyte*)p4byte_work)[0 .. work_size];
+			_p_smp[0 .. work_size] = (cast(ubyte[])p4byte_work)[0 .. work_size];
 		} else if (p2byte_work) {
-			_p_smp[0 .. work_size] = (cast(ubyte*)p2byte_work)[0 .. work_size];
+			_p_smp[0 .. work_size] = (cast(ubyte[])p2byte_work)[0 .. work_size];
 		} else if (p1byte_work) {
 			_p_smp[0 .. work_size] = p1byte_work[0 .. work_size];
 		} else {
@@ -304,11 +304,11 @@ private:
 	}
 
 public:
-	 ~this() nothrow @system {
+	 ~this() nothrow @safe {
 		Release();
 	}
 
-	void Create(int ch, int sps, int bps, int sample_num) @system {
+	void Create(int ch, int sps, int bps, int sample_num) @safe {
 		Release();
 
 		if (bps != 8 && bps != 16) {
@@ -337,7 +337,7 @@ public:
 		}
 	}
 
-	void Release() nothrow @system {
+	void Release() nothrow @safe {
 		_p_smp = null;
 		_ch = 0;
 		_sps = 0;
@@ -347,7 +347,7 @@ public:
 		_smp_tail = 0;
 	}
 
-	void read(ref pxtnDescriptor doc) @system {
+	void read(ref pxtnDescriptor doc) @safe {
 		char[16] buf = 0;
 		uint size = 0;
 		WAVEFORMATCHUNK format;
@@ -396,7 +396,7 @@ public:
 		doc.r(_p_smp[0 .. size]);
 	}
 
-	void write(ref pxtnDescriptor doc, const char[] pstrLIST) const @system {
+	void write(ref pxtnDescriptor doc, const char[] pstrLIST) const @safe {
 		if (!_p_smp) {
 			throw new PxtoneException("_p_smp");
 		}
@@ -474,7 +474,7 @@ public:
 	}
 
 	// convert..
-	void Convert(int new_ch, int new_sps, int new_bps) @system {
+	void Convert(int new_ch, int new_sps, int new_bps) @safe {
 		if (!_Convert_ChannelNum(new_ch)) {
 			throw new PxtoneException("_Convert_ChannelNum");
 		}
@@ -516,7 +516,7 @@ public:
 		return true;
 	}
 
-	void Copy(ref pxtnPulse_PCM p_dst) const @system {
+	void Copy(ref pxtnPulse_PCM p_dst) const @safe {
 		if (!_p_smp) {
 			p_dst.Release();
 			return;
@@ -526,7 +526,7 @@ public:
 		p_dst._p_smp[0 .. size] =_p_smp[0 .. size];
 	}
 
-	bool Copy_(ref pxtnPulse_PCM p_dst, int start, int end) const @system {
+	bool Copy_(ref pxtnPulse_PCM p_dst, int start, int end) const @safe {
 		int size, offset;
 
 		if (_smp_head || _smp_tail) {

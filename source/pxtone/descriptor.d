@@ -185,7 +185,7 @@ public:
 		_size += bytes;
 	}
 	// 可変長読み込み（int  までを保証）
-	void v_r(ref int p) @safe {
+	void v_r(T)(ref T p) {
 		enforce(isOpen && _b_read, new PxtoneException("File must be opened for reading"));
 
 		int i;

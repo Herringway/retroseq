@@ -98,7 +98,7 @@ immutable _code = "PTNOISE-";
 //_ver =  20051028 ; -v.0.9.2.3
 __gshared const uint _ver = 20120418; // 16 wave types.
 
-void _WriteOscillator(const(pxNOISEDESIGN_OSCILLATOR)* p_osc, ref pxtnDescriptor p_doc, ref int p_add) @system {
+void _WriteOscillator(const(pxNOISEDESIGN_OSCILLATOR)* p_osc, ref pxtnDescriptor p_doc, ref int p_add) @safe {
 	int work;
 	work = cast(int) p_osc.type;
 	p_doc.v_w_asfile(work, p_add);
@@ -112,7 +112,7 @@ void _WriteOscillator(const(pxNOISEDESIGN_OSCILLATOR)* p_osc, ref pxtnDescriptor
 	p_doc.v_w_asfile(work, p_add);
 }
 
-void _ReadOscillator(pxNOISEDESIGN_OSCILLATOR* p_osc, ref pxtnDescriptor p_doc) @system {
+void _ReadOscillator(pxNOISEDESIGN_OSCILLATOR* p_osc, ref pxtnDescriptor p_doc) @safe {
 	int work;
 	p_doc.v_r(work);
 	p_osc.type = cast(pxWAVETYPE) work;
@@ -173,11 +173,11 @@ private:
 	pxNOISEDESIGN_UNIT[] _units;
 
 public:
-	 ~this() nothrow @system {
+	 ~this() nothrow @safe {
 		Release();
 	}
 
-	void write(ref pxtnDescriptor p_doc, int* p_add) const @system {
+	void write(ref pxtnDescriptor p_doc, int* p_add) const @safe {
 		bool b_ret = false;
 		int u, e, seek, num_seek, flags;
 		char _byte;
@@ -248,7 +248,7 @@ public:
 		}
 	}
 
-	void read(ref pxtnDescriptor p_doc) @system {
+	void read(ref pxtnDescriptor p_doc) @safe {
 		uint flags = 0;
 		char unit_num = 0;
 		char _byte = 0;
@@ -287,7 +287,7 @@ public:
 			pU = &_units[u];
 			pU.bEnable = true;
 
-			p_doc.v_r(*cast(int*)&flags);
+			p_doc.v_r(flags);
 			if (flags & NOISEEDITFLAG_UNCOVERED) {
 				throw new PxtoneException("fmt unknown");
 			}
@@ -322,14 +322,14 @@ public:
 		}
 	}
 
-	void Release() nothrow @system {
+	void Release() nothrow @safe {
 		if (_units) {
 			_units = null;
 			_unit_num = 0;
 		}
 	}
 
-	bool Allocate(int unit_num, int envelope_num) nothrow @system {
+	bool Allocate(int unit_num, int envelope_num) nothrow @safe {
 		bool b_ret = false;
 
 		Release();
@@ -358,7 +358,7 @@ public:
 		return b_ret;
 	}
 
-	bool Copy(ref pxtnPulse_Noise p_dst) const nothrow @system {
+	bool Copy(ref pxtnPulse_Noise p_dst) const nothrow @safe {
 		bool b_ret = false;
 
 		p_dst.Release();
