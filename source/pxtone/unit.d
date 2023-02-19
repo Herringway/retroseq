@@ -316,11 +316,8 @@ public:
 		return true;
 	}
 
-	const(char)* get_name_buf(int* p_buf_size) const return nothrow @system {
-		if (p_buf_size) {
-			*p_buf_size = _name_size;
-		}
-		return _name_buf.ptr;
+	const(char)[] get_name_buf() const return nothrow @safe {
+		return _name_buf[0 .. _name_size];
 	}
 
 	bool is_name_buf() const nothrow @safe {
@@ -350,7 +347,7 @@ public:
 		return _bPlayed;
 	}
 
-	void Read_v3x(ref pxtnDescriptor p_doc, int* p_group) @system {
+	void Read_v3x(ref pxtnDescriptor p_doc, out int p_group) @safe {
 		_x3x_UNIT unit;
 		int size = 0;
 
@@ -359,10 +356,10 @@ public:
 		if (cast(pxtnWOICETYPE) unit.type != pxtnWOICETYPE.PCM && cast(pxtnWOICETYPE) unit.type != pxtnWOICETYPE.PTV && cast(pxtnWOICETYPE) unit.type != pxtnWOICETYPE.PTN) {
 			throw new PxtoneException("fmt unknown");
 		}
-		*p_group = unit.group;
+		p_group = unit.group;
 	}
 
-	void Read_v1x(ref pxtnDescriptor p_doc, int* p_group) @system {
+	void Read_v1x(ref pxtnDescriptor p_doc, out int p_group) @safe {
 		_x1x_UNIT unit;
 		int size;
 
@@ -372,6 +369,6 @@ public:
 
 		_name_buf[0 .. pxtnMAX_TUNEUNITNAME] = unit.name[0 .. pxtnMAX_TUNEUNITNAME];
 		_name_buf[pxtnMAX_TUNEUNITNAME] = '\0';
-		*p_group = unit.group;
+		p_group = unit.group;
 	}
 }

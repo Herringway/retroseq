@@ -69,7 +69,7 @@ struct pxtnOverDrive {
 		group_smps[_group] = cast(int)(cast(float) work * _amp_f);
 	}
 
-	void Write(ref pxtnDescriptor p_doc) const @system {
+	void Write(ref pxtnDescriptor p_doc) const @safe {
 		_OVERDRIVESTRUCT over;
 		int size;
 

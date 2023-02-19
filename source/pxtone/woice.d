@@ -11,6 +11,7 @@ import pxtone.pulse.noisebuilder;
 import pxtone.pulse.oscillator;
 import pxtone.pulse.pcm;
 import pxtone.pulse.oggv;
+import pxtone.util;
 import pxtone.woiceptv;
 
 enum pxtnMAX_TUNEWOICENAME = 16; // fixture.
@@ -106,7 +107,7 @@ struct pxtnVOICETONE {
 	int smooth_volume;
 }
 
-private void _Voice_Release(pxtnVOICEUNIT* p_vc, pxtnVOICEINSTANCE* p_vi) nothrow @system {
+private void _Voice_Release(pxtnVOICEUNIT* p_vc, pxtnVOICEINSTANCE* p_vi) nothrow @safe {
 	if (p_vc) {
 		p_vc.envelope.points = null;
 		p_vc.envelope = pxtnVOICEENVELOPE.init;
@@ -120,7 +121,7 @@ private void _Voice_Release(pxtnVOICEUNIT* p_vc, pxtnVOICEINSTANCE* p_vi) nothro
 	}
 }
 
-void _UpdateWavePTV(pxtnVOICEUNIT* p_vc, pxtnVOICEINSTANCE* p_vi, int ch, int sps, int bps) nothrow @system {
+void _UpdateWavePTV(pxtnVOICEUNIT* p_vc, pxtnVOICEINSTANCE* p_vi, int ch, int sps, int bps) nothrow @safe {
 	double work, osc;
 	int long_;
 	int[2] pan_volume = [64, 64];
@@ -147,7 +148,7 @@ void _UpdateWavePTV(pxtnVOICEUNIT* p_vc, pxtnVOICEINSTANCE* p_vi, int ch, int sp
 
 	//  8bit
 	if (bps == 8) {
-		ubyte* p = cast(ubyte*) p_vi.p_smp_w;
+		ubyte[] p = p_vi.p_smp_w;
 		for (int s = 0; s < p_vi.smp_body_w; s++) {
 			if (b_ovt) {
 				osc = osci.GetOneSample_Overtone(s);
@@ -169,7 +170,7 @@ void _UpdateWavePTV(pxtnVOICEUNIT* p_vc, pxtnVOICEINSTANCE* p_vi, int ch, int sp
 
 		// 16bit
 	} else {
-		short* p = cast(short*) p_vi.p_smp_w;
+		short[] p = cast(short[]) p_vi.p_smp_w;
 		for (int s = 0; s < p_vi.smp_body_w; s++) {
 			if (b_ovt) {
 				osc = osci.GetOneSample_Overtone(s);
@@ -261,7 +262,7 @@ package:
 
 public:
 
-	 ~this() nothrow @system {
+	 ~this() nothrow @safe {
 		Voice_Release();
 	}
 
@@ -318,7 +319,7 @@ public:
 		return false;
 	}
 
-	void Voice_Allocate(int voice_num) @system {
+	void Voice_Allocate(int voice_num) @safe {
 		Voice_Release();
 
 		scope(failure) {
@@ -345,7 +346,7 @@ public:
 		}
 	}
 
-	void Voice_Release() nothrow @system {
+	void Voice_Release() nothrow @safe {
 		for (int v = 0; v < _voice_num; v++) {
 			_Voice_Release(&_voices[v], &_voinsts[v]);
 		}
@@ -354,7 +355,7 @@ public:
 		_voice_num = 0;
 	}
 
-	bool Copy(pxtnWoice* p_dst) const @system {
+	bool Copy(pxtnWoice* p_dst) const @safe {
 		bool b_ret = false;
 		int v, num;
 		size_t size;
@@ -425,7 +426,7 @@ public:
 		return b_ret;
 	}
 
-	void Slim() nothrow @system {
+	void Slim() nothrow @safe {
 		for (int i = _voice_num - 1; i >= 0; i--) {
 			bool b_remove = false;
 
@@ -448,7 +449,7 @@ public:
 		}
 	}
 
-	void read(ref pxtnDescriptor desc, pxtnWOICETYPE type) @system {
+	void read(ref pxtnDescriptor desc, pxtnWOICETYPE type) @safe {
 		switch (type) {
 			// PCM
 		case pxtnWOICETYPE.PCM: {
@@ -505,7 +506,7 @@ public:
 		}
 	}
 
-	bool PTV_Write(ref pxtnDescriptor p_doc, int* p_total) const @system {
+	bool PTV_Write(ref pxtnDescriptor p_doc, scope int* p_total) const @safe {
 		bool b_ret = false;
 		const(pxtnVOICEUNIT)* p_vc = null;
 		uint work = 0;
@@ -534,7 +535,7 @@ public:
 			p_doc.v_w_asfile(p_vc.basic_key, total);
 			p_doc.v_w_asfile(p_vc.volume, total);
 			p_doc.v_w_asfile(p_vc.pan, total);
-			work = *(cast(uint*)&p_vc.tuning);
+			work = reinterpretFloat(p_vc.tuning);
 			p_doc.v_w_asfile(work, total);
 			p_doc.v_w_asfile(p_vc.voice_flags, total);
 			p_doc.v_w_asfile(p_vc.data_flags, total);
@@ -561,7 +562,7 @@ public:
 		return b_ret;
 	}
 
-	void PTV_Read(ref pxtnDescriptor p_doc) @system {
+	void PTV_Read(ref pxtnDescriptor p_doc) @safe {
 		pxtnVOICEUNIT* p_vc = null;
 		ubyte[8] code = 0;
 		int version_ = 0;
@@ -600,7 +601,7 @@ public:
 			p_doc.v_r(p_vc.volume);
 			p_doc.v_r(p_vc.pan);
 			p_doc.v_r(work1);
-			p_vc.tuning = *(cast(float*)&work1);
+			p_vc.tuning = reinterpretInt(work1);
 			p_doc.v_r(*cast(int*)&p_vc.voice_flags);
 			p_doc.v_r(*cast(int*)&p_vc.data_flags);
 
@@ -621,7 +622,7 @@ public:
 		_type = pxtnWOICETYPE.PTV;
 	}
 
-	void io_matePCM_w(ref pxtnDescriptor p_doc) const @system {
+	void io_matePCM_w(ref pxtnDescriptor p_doc) const @safe {
 		const pxtnPulse_PCM* p_pcm = &_voices[0].p_pcm;
 		const(pxtnVOICEUNIT)* p_vc = &_voices[0];
 		_MATERIALSTRUCT_PCM pcm;
@@ -641,7 +642,7 @@ public:
 		p_doc.w_asfile(p_pcm.get_p_buf());
 	}
 
-	void io_matePCM_r(ref pxtnDescriptor p_doc) @system {
+	void io_matePCM_r(ref pxtnDescriptor p_doc) @safe {
 		_MATERIALSTRUCT_PCM pcm;
 		int size = 0;
 
@@ -674,7 +675,7 @@ public:
 		}
 	}
 
-	void io_matePTN_w(ref pxtnDescriptor p_doc) const @system {
+	void io_matePTN_w(ref pxtnDescriptor p_doc) const @safe {
 		_MATERIALSTRUCT_PTN ptn;
 		const(pxtnVOICEUNIT)* p_vc;
 		int size = 0;
@@ -692,13 +693,13 @@ public:
 		p_doc.w_asfile(size);
 		p_doc.w_asfile(ptn);
 		size += _MATERIALSTRUCT_PTN.sizeof;
-		p_vc.p_ptn.write(p_doc, &size);
+		p_vc.p_ptn.write(p_doc, size);
 		p_doc.seek(pxtnSEEK.cur, cast(int)(-size - int.sizeof));
 		p_doc.w_asfile(size);
 		p_doc.seek(pxtnSEEK.cur, size);
 	}
 
-	void io_matePTN_r(ref pxtnDescriptor p_doc) @system {
+	void io_matePTN_r(ref pxtnDescriptor p_doc) @safe {
 		_MATERIALSTRUCT_PTN ptn;
 		int size = 0;
 
@@ -731,7 +732,7 @@ public:
 		_x3x_tuning = 0;
 	}
 
-	bool io_matePTV_w(ref pxtnDescriptor p_doc) const @system {
+	bool io_matePTV_w(ref pxtnDescriptor p_doc) const @safe {
 		_MATERIALSTRUCT_PTV ptv;
 		int head_size = _MATERIALSTRUCT_PTV.sizeof + int.sizeof;
 		int size = 0;
@@ -759,7 +760,7 @@ public:
 		return true;
 	}
 
-	void io_matePTV_r(ref pxtnDescriptor p_doc) @system {
+	void io_matePTV_r(ref pxtnDescriptor p_doc) @safe {
 		_MATERIALSTRUCT_PTV ptv;
 		int size = 0;
 
@@ -778,7 +779,7 @@ public:
 	}
 
 	version (pxINCLUDE_OGGVORBIS) {
-		bool io_mateOGGV_w(ref pxtnDescriptor p_doc) const @system {
+		bool io_mateOGGV_w(ref pxtnDescriptor p_doc) const @safe {
 			if (!_voices) {
 				return false;
 			}
@@ -800,7 +801,7 @@ public:
 			return true;
 		}
 
-		void io_mateOGGV_r(ref pxtnDescriptor p_doc) @system {
+		void io_mateOGGV_r(ref pxtnDescriptor p_doc) @safe {
 			_MATERIALSTRUCT_OGGV mate;
 			int size = 0;
 
@@ -833,7 +834,7 @@ public:
 		}
 	}
 
-	void Tone_Ready_sample(pxtnVOICEINSTANCE[] voinsts, pxtnVOICEUNIT[] voices, const pxtnPulse_NoiseBuilder ptn_bldr) const @system {
+	void Tone_Ready_sample(pxtnVOICEINSTANCE[] voinsts, pxtnVOICEUNIT[] voices, const pxtnPulse_NoiseBuilder ptn_bldr) const @safe {
 		pxtnVOICEINSTANCE* p_vi = null;
 		pxtnVOICEUNIT* p_vc = null;
 		pxtnPulse_PCM pcm_work;
@@ -867,12 +868,12 @@ public:
 			case pxtnVOICETYPE.OggVorbis:
 
 				version (pxINCLUDE_OGGVORBIS) {
-					p_vc.p_oggv.Decode(&pcm_work);
+					p_vc.p_oggv.Decode(pcm_work);
 					pcm_work.Convert(ch, sps, bps);
 					p_vi.smp_head_w = pcm_work.get_smp_head();
 					p_vi.smp_body_w = pcm_work.get_smp_body();
 					p_vi.smp_tail_w = pcm_work.get_smp_tail();
-					p_vi.p_smp_w = cast(ubyte[]) pcm_work.Devolve_SamplingBuffer();
+					p_vi.p_smp_w = pcm_work.Devolve_SamplingBuffer();
 					break;
 				} else {
 					throw new PxtoneException("Ogg Vorbis support is required");
@@ -885,7 +886,7 @@ public:
 				p_vi.smp_head_w = pcm_work.get_smp_head();
 				p_vi.smp_body_w = pcm_work.get_smp_body();
 				p_vi.smp_tail_w = pcm_work.get_smp_tail();
-				p_vi.p_smp_w = cast(ubyte[]) pcm_work.Devolve_SamplingBuffer();
+				p_vi.p_smp_w = pcm_work.Devolve_SamplingBuffer();
 				break;
 
 			case pxtnVOICETYPE.Overtone:
@@ -900,7 +901,7 @@ public:
 
 			case pxtnVOICETYPE.Noise: {
 					pxtnPulse_PCM p_pcm = ptn_bldr.BuildNoise(p_vc.p_ptn, ch, sps, bps);
-					p_vi.p_smp_w = cast(ubyte[]) p_pcm.Devolve_SamplingBuffer();
+					p_vi.p_smp_w = p_pcm.Devolve_SamplingBuffer();
 					p_vi.smp_body_w = p_vc.p_ptn.get_smp_num_44k();
 					break;
 				}
@@ -910,7 +911,7 @@ public:
 		}
 	}
 
-	void Tone_Ready_envelope(pxtnVOICEINSTANCE[] voinsts, pxtnVOICEUNIT[] voices, int sps) const @system {
+	void Tone_Ready_envelope(pxtnVOICEINSTANCE[] voinsts, pxtnVOICEUNIT[] voices, int sps) const @safe {
 		int e = 0;
 		pxtnPOINT[] p_point = null;
 
@@ -979,7 +980,7 @@ public:
 		p_point = null;
 	}
 
-	void Tone_Ready(pxtnWoice* woice, const pxtnPulse_NoiseBuilder ptn_bldr, int sps) const @system {
+	void Tone_Ready(pxtnWoice* woice, const pxtnPulse_NoiseBuilder ptn_bldr, int sps) const @safe {
 		Tone_Ready_sample(woice._voinsts, woice._voices, ptn_bldr);
 		Tone_Ready_envelope(woice._voinsts, woice._voices, sps);
 	}

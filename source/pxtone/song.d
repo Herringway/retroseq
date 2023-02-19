@@ -27,13 +27,13 @@ struct PxToneSong {
 	pxtnWoice*[] _woices;
 	pxtnUnit[] _units;
 
-	this(ubyte[] buffer) @system {
+	this(ubyte[] buffer) @safe {
 		pxtnDescriptor desc;
 		desc.set_memory_r(buffer);
 		read(desc);
 	}
 
-	this(File fd) @system {
+	this(File fd) @safe {
 		pxtnDescriptor desc;
 		desc.set_file_r(fd);
 		read(desc);
@@ -53,7 +53,7 @@ struct PxToneSong {
 
 		evels.Release();
 	}
-	void read(ref pxtnDescriptor p_doc) @system {
+	void read(ref pxtnDescriptor p_doc) @safe {
 		ushort exe_ver = 0;
 		_enum_FMTVER fmt_ver = _enum_FMTVER._enum_FMTVER_unknown;
 		int event_num = 0;
@@ -108,7 +108,7 @@ struct PxToneSong {
 	// save               //////////////////
 	////////////////////////////////////////
 
-	void write(ref pxtnDescriptor p_doc, bool b_tune, ushort exe_ver) @system {
+	void write(ref pxtnDescriptor p_doc, bool b_tune, ushort exe_ver) @safe {
 		bool b_ret = false;
 		int rough = b_tune ? 10 : 1;
 		ushort rrr = 0;
@@ -233,7 +233,7 @@ struct PxToneSong {
 	// Read Project //////////////
 	////////////////////////////////////////
 
-	void _ReadTuneItems(ref pxtnDescriptor p_doc) @system {
+	void _ReadTuneItems(ref pxtnDescriptor p_doc) @safe {
 		bool b_end = false;
 		char[_CODESIZE + 1] code = '\0';
 
@@ -373,7 +373,7 @@ struct PxToneSong {
 		p_doc.r(dummy);
 	}
 
-	void _x1x_Project_Read(ref pxtnDescriptor p_doc) @system {
+	void _x1x_Project_Read(ref pxtnDescriptor p_doc) @safe {
 		_x1x_PROJECT prjc;
 		int beat_num, beat_clock;
 		int size;
@@ -393,11 +393,11 @@ struct PxToneSong {
 			}
 		}
 
-		text.set_name_buf(prjc.x1x_name[0 .. ns]);
+		text.set_name_buf(prjc.x1x_name[0 .. ns].dup);
 		master.Set(beat_num, beat_tempo, beat_clock);
 	}
 
-	void _io_Read_Delay(ref pxtnDescriptor p_doc) @system {
+	void _io_Read_Delay(ref pxtnDescriptor p_doc) @safe {
 		if (pxtnMAX_TUNEDELAYSTRUCT < _delays.length) {
 			throw new PxtoneException("fmt unknown");
 		}
@@ -428,7 +428,7 @@ struct PxToneSong {
 		_ovdrvs ~= ovdrv;
 	}
 
-	void _io_Read_Woice(ref pxtnDescriptor p_doc, pxtnWOICETYPE type) @system {
+	void _io_Read_Woice(ref pxtnDescriptor p_doc, pxtnWOICETYPE type) @safe {
 		if (pxtnMAX_TUNEWOICESTRUCT < _woices.length) {
 			throw new PxtoneException("Too many woices");
 		}
@@ -459,7 +459,7 @@ struct PxToneSong {
 		_woices ~= woice;
 	}
 
-	void _io_Read_OldUnit(ref pxtnDescriptor p_doc, int ver) @system {
+	void _io_Read_OldUnit(ref pxtnDescriptor p_doc, int ver) @safe {
 		if (pxtnMAX_TUNEUNITSTRUCT < _units.length) {
 			throw new PxtoneException("fmt unknown");
 		}
@@ -468,10 +468,10 @@ struct PxToneSong {
 		int group = 0;
 		switch (ver) {
 		case 1:
-			unit.Read_v1x(p_doc, &group);
+			unit.Read_v1x(p_doc, group);
 			break;
 		case 3:
-			unit.Read_v3x(p_doc, &group);
+			unit.Read_v3x(p_doc, group);
 			break;
 		default:
 			throw new PxtoneException("fmt unknown");
@@ -514,7 +514,7 @@ struct PxToneSong {
 	// assi woice
 	/////////////
 
-	bool _io_assiWOIC_w(ref pxtnDescriptor p_doc, int idx) const @system {
+	bool _io_assiWOIC_w(ref pxtnDescriptor p_doc, int idx) const @safe {
 		_ASSIST_WOICE assi;
 		int size;
 		const char[] p_name = _woices[idx].get_name_buf();
@@ -533,7 +533,7 @@ struct PxToneSong {
 		return true;
 	}
 
-	void _io_assiWOIC_r(ref pxtnDescriptor p_doc) @system {
+	void _io_assiWOIC_r(ref pxtnDescriptor p_doc) @safe {
 		_ASSIST_WOICE assi;
 		int size = 0;
 
@@ -549,7 +549,7 @@ struct PxToneSong {
 			throw new PxtoneException("fmt unknown");
 		}
 
-		if (!_woices[assi.woice_index].set_name_buf(assi.name)) {
+		if (!_woices[assi.woice_index].set_name_buf(assi.name.dup)) {
 			throw new PxtoneException("FATAL");
 		}
 	}
@@ -557,13 +557,12 @@ struct PxToneSong {
 	// assi unit.
 	// -----
 
-	bool _io_assiUNIT_w(ref pxtnDescriptor p_doc, int idx) const @system {
+	bool _io_assiUNIT_w(ref pxtnDescriptor p_doc, int idx) const @safe {
 		_ASSIST_UNIT assi;
 		int size;
-		int name_size;
-		const char* p_name = _units[idx].get_name_buf(&name_size);
+		const(char)[] p_name = _units[idx].get_name_buf();
 
-		assi.name[0 .. name_size] = p_name[0 .. name_size];
+		assi.name[0 .. p_name.length] = p_name[];
 		assi.unit_index = cast(ushort) idx;
 
 		size = assi.sizeof;
@@ -597,7 +596,7 @@ struct PxToneSong {
 	// unit num
 	// -----
 
-	void _io_UNIT_num_w(ref pxtnDescriptor p_doc) const @system {
+	void _io_UNIT_num_w(ref pxtnDescriptor p_doc) const @safe {
 		_NUM_UNIT data;
 		int size;
 
@@ -608,7 +607,7 @@ struct PxToneSong {
 		p_doc.w_asfile(data);
 	}
 
-	void _io_UNIT_num_r(ref pxtnDescriptor p_doc, out int p_num) @system {
+	void _io_UNIT_num_r(ref pxtnDescriptor p_doc, out int p_num) @safe {
 		_NUM_UNIT data;
 		int size = 0;
 
@@ -630,7 +629,7 @@ struct PxToneSong {
 	}
 
 	// fix old key event
-	bool _x3x_TuningKeyEvent() nothrow @system {
+	bool _x3x_TuningKeyEvent() nothrow @safe {
 		if (_units.length > _woices.length) {
 			return false;
 		}
@@ -651,7 +650,7 @@ struct PxToneSong {
 	}
 
 	// fix old tuning (1.0)
-	bool _x3x_AddTuningEvent() nothrow @system {
+	bool _x3x_AddTuningEvent() nothrow @safe {
 		if (_units.length > _woices.length) {
 			return false;
 		}
@@ -666,7 +665,7 @@ struct PxToneSong {
 		return true;
 	}
 
-	bool _x3x_SetVoiceNames() nothrow @system {
+	bool _x3x_SetVoiceNames() nothrow @safe {
 		for (int i = 0; i < _woices.length; i++) {
 			char[pxtnMAX_TUNEWOICENAME + 1] name = 0;
 			try {
@@ -674,11 +673,11 @@ struct PxToneSong {
 			} catch (Exception) { //This will never actually happen...
 				return false;
 			}
-			_woices[i].set_name_buf(name);
+			_woices[i].set_name_buf(name.dup);
 		}
 		return true;
 	}
-	void _pre_count_event(ref pxtnDescriptor p_doc, out int p_count) @system {
+	void _pre_count_event(ref pxtnDescriptor p_doc, out int p_count) @safe {
 		bool b_end = false;
 
 		int count = 0;
@@ -714,7 +713,7 @@ struct PxToneSong {
 				count += master.io_r_x4x_EventNum(p_doc);
 				break;
 			case _enum_Tag.x4x_evenUNIT:
-				evels.io_Read_x4x_EventNum(p_doc, &c);
+				evels.io_Read_x4x_EventNum(p_doc, c);
 				count += c;
 				break;
 			case _enum_Tag.pxtoneND:
@@ -763,7 +762,7 @@ struct PxToneSong {
 }
 
 
-private _enum_Tag _CheckTagCode(const char[] p_code) nothrow @safe {
+private _enum_Tag _CheckTagCode(scope const char[] p_code) nothrow @safe {
 	switch(p_code[0 .. _CODESIZE]) {
 		case _code_antiOPER: return _enum_Tag.antiOPER;
 		case _code_x1x_PROJ: return _enum_Tag.x1x_PROJ;

@@ -177,7 +177,7 @@ public:
 		Release();
 	}
 
-	void write(ref pxtnDescriptor p_doc, int* p_add) const @safe {
+	void write(ref pxtnDescriptor p_doc, ref int p_add) const @safe {
 		bool b_ret = false;
 		int u, e, seek, num_seek, flags;
 		char _byte;
@@ -186,11 +186,7 @@ public:
 
 		//	Fix();
 
-		if (p_add) {
-			seek = *p_add;
-		} else {
-			seek = 0;
-		}
+		seek = p_add;
 
 		p_doc.w_asfile(_code);
 		p_doc.w_asfile(_ver);
@@ -236,9 +232,7 @@ public:
 		p_doc.seek(pxtnSEEK.cur, num_seek - seek);
 		p_doc.w_asfile(unit_num);
 		p_doc.seek(pxtnSEEK.cur, seek - num_seek - 1);
-		if (p_add) {
-			*p_add = seek;
-		}
+		p_add = seek;
 
 		b_ret = true;
 	End:

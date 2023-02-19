@@ -45,19 +45,11 @@ public:
 		_beat_clock = beat_clock;
 	}
 
-	void Get(int* p_beat_num, float* p_beat_tempo, int* p_beat_clock, int* p_meas_num) const nothrow @safe {
-		if (p_beat_num) {
-			*p_beat_num = _beat_num;
-		}
-		if (p_beat_tempo) {
-			*p_beat_tempo = _beat_tempo;
-		}
-		if (p_beat_clock) {
-			*p_beat_clock = _beat_clock;
-		}
-		if (p_meas_num) {
-			*p_meas_num = _meas_num;
-		}
+	void Get(out int p_beat_num, out float p_beat_tempo, out int p_beat_clock, out int p_meas_num) const nothrow @safe {
+		p_beat_num = _beat_num;
+		p_beat_tempo = _beat_tempo;
+		p_beat_clock = _beat_clock;
+		p_meas_num = _meas_num;
 	}
 
 	int get_beat_num() const nothrow @safe {

@@ -36,7 +36,7 @@ private:
 
 public:
 
-	 ~this() nothrow @system {
+	 ~this() nothrow @safe {
 		Tone_Release();
 	}
 
@@ -76,12 +76,12 @@ public:
 		return _b_played;
 	}
 
-	void Tone_Release() nothrow @system {
+	void Tone_Release() nothrow @safe {
 		_bufs = null;
 		_smp_num = 0;
 	}
 
-	void Tone_Ready(int beat_num, float beat_tempo, int sps) @system {
+	void Tone_Ready(int beat_num, float beat_tempo, int sps) @safe {
 		Tone_Release();
 
 		scope(failure) {
@@ -131,7 +131,7 @@ public:
 		}
 	}
 
-	void Tone_Clear() nothrow @system {
+	void Tone_Clear() nothrow @safe {
 		if (!_smp_num) {
 			return;
 		}

@@ -187,11 +187,11 @@ public:
 		_start = null;
 	}
 
-	~this() nothrow @system {
+	~this() nothrow @safe {
 		Release();
 	}
 
-	void Allocate(int max_event_num) @system {
+	void Allocate(int max_event_num) @safe {
 		Release();
 		_eves = new EVERECORD[](max_event_num);
 		if (!(_eves)) {
@@ -310,7 +310,7 @@ public:
 		return count;
 	}
 
-	int get_Value(int clock, ubyte unit_no, ubyte kind) const nothrow @system {
+	int get_Value(int clock, ubyte unit_no, ubyte kind) const nothrow @safe {
 		if (!_eves) {
 			return 0;
 		}
@@ -337,7 +337,7 @@ public:
 		return _start;
 	}
 
-	bool Record_Add_i(int clock, ubyte unit_no, ubyte kind, int value) nothrow @system {
+	bool Record_Add_i(int clock, ubyte unit_no, ubyte kind, int value) nothrow @safe {
 		if (!_eves) {
 			return false;
 		}
@@ -428,8 +428,12 @@ public:
 		return true;
 	}
 
-	bool Record_Add_f(int clock, ubyte unit_no, ubyte kind, float value_f) nothrow @system {
-		int value = *(cast(int*)(&value_f));
+	bool Record_Add_f(int clock, ubyte unit_no, ubyte kind, float value_f) nothrow @safe {
+		union Reinterpret {
+			float f;
+			int i;
+		}
+		int value = Reinterpret(value_f).i;
 		return Record_Add_i(clock, unit_no, kind, value);
 	}
 
@@ -437,7 +441,7 @@ public:
 	// linear
 	/////////////////////
 
-	bool Linear_Start() nothrow @system {
+	bool Linear_Start() nothrow @safe {
 		if (!_eves) {
 			return false;
 		}
@@ -446,7 +450,7 @@ public:
 		return true;
 	}
 
-	void Linear_Add_i(int clock, ubyte unit_no, ubyte kind, int value) nothrow @system {
+	void Linear_Add_i(int clock, ubyte unit_no, ubyte kind, int value) nothrow @safe {
 		EVERECORD* p = &_eves[_linear];
 
 		p.clock = clock;
@@ -457,12 +461,16 @@ public:
 		_linear++;
 	}
 
-	void Linear_Add_f(int clock, ubyte unit_no, ubyte kind, float value_f) nothrow @system {
-		int value = *(cast(int*)(&value_f));
+	void Linear_Add_f(int clock, ubyte unit_no, ubyte kind, float value_f) nothrow @safe {
+		union Reinterpret {
+			float f;
+			int i;
+		}
+		int value = Reinterpret(value_f).i;
 		Linear_Add_i(clock, unit_no, kind, value);
 	}
 
-	void Linear_End(bool b_connect) nothrow @system {
+	void Linear_End(bool b_connect) nothrow @safe {
 		if (_eves[0].kind != EVENTKIND.NULL) {
 			_start = &_eves[0];
 		}
@@ -478,7 +486,7 @@ public:
 		}
 	}
 
-	int Record_Clock_Shift(int clock, int shift, ubyte unit_no) nothrow @system  // can't be under 0.
+	int Record_Clock_Shift(int clock, int shift, ubyte unit_no) nothrow @safe  // can't be under 0.
 	{
 		if (!_eves) {
 			return 0;
@@ -842,7 +850,7 @@ public:
 	// io
 	// ------------
 
-	void io_Write(ref pxtnDescriptor p_doc, int rough) const @system {
+	void io_Write(ref pxtnDescriptor p_doc, int rough) const @safe {
 		int eve_num = get_Count();
 		int ralatived_size = 0;
 		int absolute = 0;
@@ -884,7 +892,7 @@ public:
 		}
 	}
 
-	void io_Read(ref pxtnDescriptor p_doc) @system {
+	void io_Read(ref pxtnDescriptor p_doc) @safe {
 		int size = 0;
 		int eve_num = 0;
 
@@ -908,7 +916,7 @@ public:
 		}
 	}
 
-	int io_Read_EventNum(ref pxtnDescriptor p_doc) const @system {
+	int io_Read_EventNum(ref pxtnDescriptor p_doc) const @safe {
 		int size = 0;
 		int eve_num = 0;
 
@@ -935,7 +943,7 @@ public:
 		return eve_num;
 	}
 
-	bool x4x_Read_Start() nothrow @system {
+	bool x4x_Read_Start() nothrow @safe {
 		if (!_eves) {
 			return false;
 		}
@@ -949,7 +957,7 @@ public:
 		_p_x4x_rec = null;
 	}
 
-	void x4x_Read_Add(int clock, ubyte unit_no, ubyte kind, int value) nothrow @system {
+	void x4x_Read_Add(int clock, ubyte unit_no, ubyte kind, int value) nothrow @safe {
 		EVERECORD* p_new = null;
 		EVERECORD* p_prev = null;
 		EVERECORD* p_next = null;
@@ -1013,7 +1021,7 @@ public:
 	}
 
 	// write event.
-	void io_Unit_Read_x4x_EVENT(ref pxtnDescriptor p_doc, bool bTailAbsolute, bool bCheckRRR) @system {
+	void io_Unit_Read_x4x_EVENT(ref pxtnDescriptor p_doc, bool bTailAbsolute, bool bCheckRRR) @safe {
 		_x4x_EVENTSTRUCT evnt;
 		int clock = 0;
 		int value = 0;
@@ -1052,11 +1060,7 @@ public:
 		x4x_Read_NewKind();
 	}
 
-	void io_Read_x4x_EventNum(ref pxtnDescriptor p_doc, int* p_num) const @system {
-		if (!p_num) {
-			throw new PxtoneException("param");
-		}
-
+	void io_Read_x4x_EventNum(ref pxtnDescriptor p_doc, out int p_num) const @safe {
 		_x4x_EVENTSTRUCT evnt;
 		int work = 0;
 		int e = 0;
@@ -1078,6 +1082,6 @@ public:
 			throw new PxtoneException("desc broken");
 		}
 
-		*p_num = evnt.event_num;
+		p_num = evnt.event_num;
 	}
 }

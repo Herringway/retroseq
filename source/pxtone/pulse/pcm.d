@@ -547,8 +547,8 @@ public:
 		return true;
 	}
 
-	void[] Devolve_SamplingBuffer() nothrow @safe {
-		void[] p = _p_smp;
+	ubyte[] Devolve_SamplingBuffer() nothrow @safe {
+		ubyte[] p = _p_smp;
 		_p_smp = null;
 		return p;
 	}

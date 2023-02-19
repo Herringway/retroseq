@@ -8,9 +8,9 @@ import pxtone.error;
 import pxtone.pulse.noise;
 import pxtone.woice;
 
-__gshared int _version = 20060111; // support no-envelope
+immutable int _version = 20060111; // support no-envelope
 
-void _Write_Wave(ref pxtnDescriptor p_doc, const(pxtnVOICEUNIT)* p_vc, ref int p_total) @system {
+void _Write_Wave(ref pxtnDescriptor p_doc, const(pxtnVOICEUNIT)* p_vc, ref int p_total) @safe {
 	int num, i, size;
 	byte sc;
 	ubyte uc;
@@ -66,7 +66,7 @@ void _Write_Wave(ref pxtnDescriptor p_doc, const(pxtnVOICEUNIT)* p_vc, ref int p
 	}
 }
 
-void _Write_Envelope(ref pxtnDescriptor p_doc, const(pxtnVOICEUNIT)* p_vc, ref int p_total) @system {
+void _Write_Envelope(ref pxtnDescriptor p_doc, const(pxtnVOICEUNIT)* p_vc, ref int p_total) @safe {
 	int num, i;
 
 	// envelope. (5)
@@ -82,7 +82,7 @@ void _Write_Envelope(ref pxtnDescriptor p_doc, const(pxtnVOICEUNIT)* p_vc, ref i
 	}
 }
 
-void _Read_Wave(ref pxtnDescriptor p_doc, pxtnVOICEUNIT* p_vc) @system {
+void _Read_Wave(ref pxtnDescriptor p_doc, pxtnVOICEUNIT* p_vc) @safe {
 	int i, num;
 	byte sc;
 	ubyte uc;
@@ -136,7 +136,7 @@ void _Read_Wave(ref pxtnDescriptor p_doc, pxtnVOICEUNIT* p_vc) @system {
 	}
 }
 
-void _Read_Envelope(ref pxtnDescriptor p_doc, pxtnVOICEUNIT* p_vc) @system {
+void _Read_Envelope(ref pxtnDescriptor p_doc, pxtnVOICEUNIT* p_vc) @safe {
 	int num, i;
 
 	scope(failure) {

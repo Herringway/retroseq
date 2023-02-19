@@ -158,7 +158,7 @@ public:
 		Release();
 	}
 
-	void Decode(pxtnPulse_PCM* p_pcm) const @safe {
+	void Decode(out pxtnPulse_PCM p_pcm) const @safe {
 		OggVorbis_File vf;
 		vorbis_info* vi;
 		ov_callbacks oc;

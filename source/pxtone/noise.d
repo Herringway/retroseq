@@ -61,7 +61,7 @@ struct pxtoneNoise {
 		}
 	}
 
-	void generate(ref pxtnDescriptor p_doc, out void[] pp_buf, out int p_size) const @system {
+	void generate(ref pxtnDescriptor p_doc, out void[] pp_buf, out int p_size) const @safe {
 		pxtnPulse_Noise noise;
 
 		noise.read(p_doc);

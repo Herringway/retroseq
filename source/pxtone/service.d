@@ -160,7 +160,7 @@ struct pxtnVOMITPREPARATION {
 	}
 }
 
-alias pxtnSampledCallback = bool function(void* user, const(pxtnService)* pxtn) nothrow;
+alias pxtnSampledCallback = bool function(void* user, scope const(pxtnService)* pxtn) @safe nothrow;
 
 package enum _enum_FMTVER {
 	_enum_FMTVER_unknown = 0,
@@ -226,17 +226,7 @@ private:
 
 	pxtnPulse_Frequency* _moo_freq;
 
-	void _init(int fix_evels_num, bool b_edit) @system {
-		if (_b_init) {
-			throw new PxtoneException("pxtnService not initialized");
-		}
-
-		scope(failure) {
-			_release();
-		}
-
-		int byte_size = 0;
-
+	static void loadVorbis() @trusted {
 		version (pxINCLUDE_OGGVORBIS) {
 			import derelict.vorbis;
 
@@ -247,6 +237,20 @@ private:
 				throw new PxtoneException("Vorbis library failed to load");
 			}
 		}
+	}
+
+	void _init(int fix_evels_num, bool b_edit) @safe {
+		if (_b_init) {
+			throw new PxtoneException("pxtnService not initialized");
+		}
+
+		scope(failure) {
+			_release();
+		}
+
+		int byte_size = 0;
+
+		loadVorbis();
 
 		_ptn_bldr = pxtnPulse_NoiseBuilder.init;
 
@@ -271,7 +275,7 @@ private:
 
 	}
 
-	void _release() @system {
+	void _release() @safe {
 		_b_init = false;
 
 		_moo_destructer();
@@ -282,12 +286,12 @@ private:
 		_units = null;
 	}
 
-	void _moo_destructer() nothrow @system {
+	void _moo_destructer() nothrow @safe {
 
 		_moo_release();
 	}
 
-	bool _moo_init() nothrow @system {
+	bool _moo_init() nothrow @safe {
 		bool b_ret = false;
 
 		_moo_freq = new pxtnPulse_Frequency();
@@ -309,7 +313,7 @@ private:
 		return b_ret;
 	}
 
-	bool _moo_release() nothrow @system {
+	bool _moo_release() nothrow @safe {
 		if (!_moo_b_init) {
 			return false;
 		}
@@ -365,7 +369,7 @@ private:
 		return true;
 	}
 
-	bool _moo_PXTONE_SAMPLE(short[] p_data) nothrow @safe {
+	bool _moo_PXTONE_SAMPLE(scope short[] p_data) nothrow @safe {
 		if (!_moo_b_init) {
 			return false;
 		}
@@ -580,7 +584,7 @@ private:
 
 public:
 
-	void load(const PxToneSong song) @system {
+	void load(const PxToneSong song) @safe {
 		this.song = &[song][0];
 		_delays = new pxtnDelay[](song._delays.length);
 		foreach (idx, ref delay; _delays) {
@@ -637,11 +641,11 @@ public:
 		_moo_b_valid_data = true;
 	}
 
-	void initialize() @system {
+	void initialize() @safe {
 		_init(0, false);
 	}
 
-	void tones_ready() @system {
+	void tones_ready() @safe {
 		if (!_b_init) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
@@ -660,7 +664,7 @@ public:
 		}
 	}
 
-	bool tones_clear() nothrow @system {
+	bool tones_clear() nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}
@@ -689,7 +693,7 @@ public:
 		return _b_init ? cast(int)_delays.length : 0;
 	}
 
-	bool Delay_Set(int idx, DELAYUNIT unit, float freq, float rate, int group) nothrow @system {
+	bool Delay_Set(int idx, DELAYUNIT unit, float freq, float rate, int group) nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}
@@ -700,7 +704,7 @@ public:
 		return true;
 	}
 
-	bool Delay_Add(DELAYUNIT unit, float freq, float rate, int group) nothrow @system {
+	bool Delay_Add(DELAYUNIT unit, float freq, float rate, int group) nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}
@@ -713,7 +717,7 @@ public:
 		return true;
 	}
 
-	bool Delay_Remove(int idx) nothrow @system {
+	bool Delay_Remove(int idx) nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}
@@ -728,7 +732,7 @@ public:
 		return true;
 	}
 
-	void Delay_ReadyTone(int idx) @system {
+	void Delay_ReadyTone(int idx) @safe {
 		if (!_b_init) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
@@ -738,7 +742,7 @@ public:
 		_delays[idx].Tone_Ready(song.master.get_beat_num(), song.master.get_beat_tempo(), _dst_sps);
 	}
 
-	pxtnDelay* Delay_Get(int idx) nothrow @system {
+	pxtnDelay* Delay_Get(int idx) nothrow @safe {
 		if (!_b_init) {
 			return null;
 		}
@@ -760,7 +764,7 @@ public:
 		return _b_init ? cast(int)_ovdrvs.length : 0;
 	}
 
-	bool OverDrive_Set(int idx, float cut, float amp, int group) nothrow @system {
+	bool OverDrive_Set(int idx, float cut, float amp, int group) nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}
@@ -771,7 +775,7 @@ public:
 		return true;
 	}
 
-	bool OverDrive_Add(float cut, float amp, int group) nothrow @system {
+	bool OverDrive_Add(float cut, float amp, int group) nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}
@@ -783,7 +787,7 @@ public:
 		return true;
 	}
 
-	bool OverDrive_Remove(int idx) nothrow @system {
+	bool OverDrive_Remove(int idx) nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}
@@ -799,7 +803,7 @@ public:
 		return true;
 	}
 
-	bool OverDrive_ReadyTone(int idx) nothrow @system {
+	bool OverDrive_ReadyTone(int idx) nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}
@@ -810,7 +814,7 @@ public:
 		return true;
 	}
 
-	pxtnOverDrive* OverDrive_Get(int idx) nothrow @system {
+	pxtnOverDrive* OverDrive_Get(int idx) nothrow @safe {
 		if (!_b_init) {
 			return null;
 		}
@@ -842,7 +846,7 @@ public:
 		return _woices[idx];
 	}
 
-	void Woice_read(int idx, ref pxtnDescriptor desc, pxtnWOICETYPE type) @system {
+	void Woice_read(int idx, ref pxtnDescriptor desc, pxtnWOICETYPE type) @safe {
 		if (!_b_init) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
@@ -862,7 +866,7 @@ public:
 		_woices[idx].read(desc, type);
 	}
 
-	void Woice_ReadyTone(int idx) @system {
+	void Woice_ReadyTone(int idx) @safe {
 		if (!_b_init) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
@@ -872,7 +876,7 @@ public:
 		song._woices[idx].Tone_Ready(_woices[idx], _ptn_bldr, _dst_sps);
 	}
 
-	bool Woice_Remove(int idx) nothrow @system {
+	bool Woice_Remove(int idx) nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}
@@ -887,7 +891,7 @@ public:
 		return true;
 	}
 
-	bool Woice_Replace(int old_place, int new_place) nothrow @system {
+	bool Woice_Replace(int old_place, int new_place) nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}
@@ -942,7 +946,7 @@ public:
 		return &_units[idx];
 	}
 
-	bool Unit_Remove(int idx) nothrow @system {
+	bool Unit_Remove(int idx) nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}
@@ -956,7 +960,7 @@ public:
 		return true;
 	}
 
-	bool Unit_Replace(int old_place, int new_place) nothrow @system {
+	bool Unit_Replace(int old_place, int new_place) nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}
@@ -984,7 +988,7 @@ public:
 		return true;
 	}
 
-	bool Unit_AddNew() nothrow @system {
+	bool Unit_AddNew() nothrow @safe {
 		if (pxtnMAX_TUNEUNITSTRUCT < _units.length) {
 			return false;
 		}
@@ -993,7 +997,7 @@ public:
 		return true;
 	}
 
-	bool Unit_SetOpratedAll(bool b) nothrow @system {
+	bool Unit_SetOpratedAll(bool b) nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}
@@ -1006,7 +1010,7 @@ public:
 		return true;
 	}
 
-	bool Unit_Solo(int idx) nothrow @system {
+	bool Unit_Solo(int idx) nothrow @safe {
 		if (!_b_init) {
 			return false;
 		}
@@ -1111,14 +1115,15 @@ public:
 		_moo_master_vol = v;
 	}
 
-	int moo_get_total_sample() const @system {
+	int moo_get_total_sample() const @safe {
 		enforce(_moo_b_init, new PxtoneException("pxtnService not initialized"));
 		enforce(_moo_b_valid_data, new PxtoneException("no valid data loaded"));
 
 		int meas_num;
 		int beat_num;
+		int _;
 		float beat_tempo;
-		song.master.Get(&beat_num, &beat_tempo, null, &meas_num);
+		song.master.Get(beat_num, beat_tempo, _, meas_num);
 		return pxtnService_moo_CalcSampleNum(meas_num, beat_num, _dst_sps, song.master.get_beat_tempo());
 	}
 
@@ -1147,10 +1152,10 @@ public:
 	}
 
 	// preparation
-	void moo_preparation() @system {
+	void moo_preparation() @safe {
 		return moo_preparation(pxtnVOMITPREPARATION.init);
 	}
-	void moo_preparation(in pxtnVOMITPREPARATION p_prep) @system {
+	void moo_preparation(in pxtnVOMITPREPARATION p_prep) @safe {
 		scope(failure) {
 			_moo_b_end_vomit = true;
 		}
@@ -1205,12 +1210,12 @@ public:
 		start();
 	}
 
-	void setVolume(float volume) @system {
+	void setVolume(float volume) @safe {
 		enforce(!volume.isNaN, "Volume must be a number");
 		_moo_master_vol = clamp(volume, 0.0, 1.0);
 	}
 
-	void start() @system {
+	void start() @safe {
 		tones_clear();
 
 		_moo_p_eve = song.evels.get_Records();
@@ -1224,7 +1229,7 @@ public:
 	//
 	////////////////////
 
-	bool Moo(short[] p_buf) nothrow @system {
+	bool Moo(short[] p_buf) nothrow @safe {
 		if (!_moo_b_init) {
 			return false;
 		}
