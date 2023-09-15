@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"elpen"
+	],
+	"copyright": "Copyright © 2023, elpen",
+	"description": "A minimal D application.",
+	"license": "proprietary",
+	"name": "simplesoftmix"
+}

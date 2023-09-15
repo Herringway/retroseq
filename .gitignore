@@ -1,0 +1,17 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/simplesoftmix
+simplesoftmix.so
+simplesoftmix.dylib
+simplesoftmix.dll
+simplesoftmix.a
+simplesoftmix.lib
+simplesoftmix-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst
+dub.selections.json
