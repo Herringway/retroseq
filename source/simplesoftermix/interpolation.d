@@ -107,6 +107,8 @@ double[length] generateGaussianTableSNES(size_t length)() @safe {
    return result;
 }
 
+// The following tables belong to the public domain, and have been used by many emulators.
+// The means to generate them has been lost, however.
 immutable short[514] cubicTable =
 [
    0,  -4,  -8, -12, -16, -20, -23, -27, -30, -34, -37, -41, -44, -47, -50, -53,
