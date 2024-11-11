@@ -1,74 +1,71 @@
-/*
- * SSEQ Player - Common functions
- * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-18
- *
- * Some code from FeOS Sound System
- * By fincs
- * https://github.com/fincs/FSS
- */
+module sseq.common;
 
-#pragma once
+import core.stdcpp.vector;
+import core.stdcpp.string;
 
-#include <string>
-#include <vector>
-#include <cstring>
-#include <cstdint>
+import core.stdc.string;
 
+alias map(T, T2) = T[T2];
+
+T staticCast(T, F)(F from) {
+	return *(cast(T*) cast(F*) from);
+}
 /*
  * Pseudo-file data structure
  */
 
 struct PseudoFile
 {
-	std::vector<uint8_t> *data;
-	uint32_t pos;
+	vector!ubyte *data = null;
+	uint pos = 0;
 
-	PseudoFile() : data(nullptr), pos(0)
-	{
-	}
-
-	template<typename T> T ReadLE()
+	T ReadLE(T)()
 	{
 		T finalVal = 0;
-		for (size_t i = 0; i < sizeof(T); ++i)
-			finalVal |= (*this->data)[this->pos++] << (i * 8);
+		for (size_t i = 0; i < T.sizeof; ++i)
+			finalVal |= (*this.data)[this.pos++] << (i * 8);
 		return finalVal;
 	}
 
-	template<typename T, size_t N> void ReadLE(T (&arr)[N])
+	void ReadLE(T, size_t N)(ref T[N] arr)
 	{
 		for (size_t i = 0; i < N; ++i)
-			arr[i] = this->ReadLE<T>();
+			arr[i] = this.ReadLE!T();
 	}
 
-	template<size_t N> void ReadLE( uint8_t arr[N])
+	void ReadLE(size_t N)(ref ubyte[N] arr)
 	{
-		memcpy(&arr[0], &(*this->data)[this->pos], N);
-		this->pos += N;
+		memcpy(&arr[0], &(*this.data)[this.pos], N);
+		this.pos += N;
 	}
 
-	template<typename T> void ReadLE(std::vector<T> &arr)
+	void ReadLE(size_t N)(ref byte[N] arr)
 	{
-		for (size_t i = 0, len = arr.size(); i < len; ++i)
-			arr[i] = this->ReadLE<T>();
+		memcpy(&arr[0], &(*this.data)[this.pos], N);
+		this.pos += N;
 	}
 
-	void ReadLE(std::vector<uint8_t> &arr)
+	void ReadLE(T)(T[] arr)
 	{
-		memcpy(&arr[0], &(*this->data)[this->pos], arr.size());
-		this->pos += arr.size();
+		for (size_t i = 0, len = arr.length; i < len; ++i)
+			arr[i] = this.ReadLE!T();
 	}
 
-	std::string ReadNullTerminatedString()
+	void ReadLE(ubyte[] arr)
+	{
+		memcpy(&arr[0], &(*this.data)[this.pos], arr.length);
+		this.pos += arr.length;
+	}
+
+	string ReadNullTerminatedString()
 	{
 		char chr;
-		std::string str;
+		string str;
 		do
 		{
-			chr = static_cast<char>(this->ReadLE<uint8_t>());
+			chr = cast(char)(this.ReadLE!ubyte());
 			if (chr)
-				str += chr;
+				str ~= chr;
 		} while (chr);
 		return str;
 	}
@@ -82,10 +79,10 @@ struct PseudoFile
  * as little-endian formating.
  */
 
-template<typename T> inline T ReadLE(const uint8_t *arr)
+T ReadLE(T)(const ubyte *arr)
 {
 	T finalVal = 0;
-	for (size_t i = 0; i < sizeof(T); ++i)
+	for (size_t i = 0; i < T.sizeof; ++i)
 		finalVal |= arr[i] << (i * 8);
 	return finalVal;
 }
@@ -96,16 +93,16 @@ template<typename T> inline T ReadLE(const uint8_t *arr)
  * integers are in the format of 0x00, 16-bit integers are in the format of
  * 0x0000, and so on.
  */
-template<typename T> inline std::string NumToHexString(const T &num)
+string NumToHexString(T)(ref const T num)
 {
-	std::string hex;
-	uint8_t len = sizeof(T) * 2;
-	for (uint8_t i = 0; i < len; ++i)
+	char[T.sizeof * 2] hex;
+	ubyte len = T.sizeof * 2;
+	for (ubyte i = 0; i < len; ++i)
 	{
-		uint8_t tmp = (num >> (i * 4)) & 0xF;
-		hex = static_cast<char>(tmp < 10 ? tmp + '0' : tmp - 10 + 'a') + hex;
+		ubyte tmp = (num >> (i * 4)) & 0xF;
+		hex[$ - i - 1] = cast(char)(tmp < 10 ? tmp + '0' : tmp - 10 + 'a');
 	}
-	return "0x" + hex;
+	return "0x" ~ hex;
 }
 
 /*
@@ -123,31 +120,30 @@ enum RecordName
 	REC_GROUP,
 	REC_PLAYER2,
 	REC_STRM
-};
+}
 
-template<size_t N> inline bool VerifyHeader(int8_t (&arr)[N], const std::string &header)
+bool VerifyHeader(size_t N)(ref byte[N] arr, const string header)
 {
-	std::string arrHeader = std::string(&arr[0], &arr[N]);
-	return arrHeader == header;
+	return arr[] == header;
 }
 
 /*
  * The remaining functions in this file come from the FeOS Sound System source code.
  */
-inline int Cnv_Attack(int attk)
+int Cnv_Attack(int attk)
 {
-	static const uint8_t lut[] =
-	{
+	static const ubyte[] lut =
+	[
 		0x00, 0x01, 0x05, 0x0E, 0x1A, 0x26, 0x33, 0x3F, 0x49, 0x54,
 		0x5C, 0x64, 0x6D, 0x74, 0x7B, 0x7F, 0x84, 0x89, 0x8F
-	};
+	];
 
 	if (attk & 0x80) // Supposedly invalid value...
 		attk = 0; // Use apparently correct default
 	return attk >= 0x6D ? lut[0x7F - attk] : 0xFF - attk;
 }
 
-inline int Cnv_Fall(int fall)
+int Cnv_Fall(int fall)
 {
 	if (fall & 0x80) // Supposedly invalid value...
 		fall = 0; // Use apparently correct default
@@ -161,10 +157,10 @@ inline int Cnv_Fall(int fall)
 		return (0x1E00 / (0x7E - fall)) & 0xFFFF;
 }
 
-inline int Cnv_Scale(int scale)
+int Cnv_Scale(int scale)
 {
-	static const int16_t lut[] =
-	{
+	static const short[] lut =
+	[
 		-32768, -421, -361, -325, -300, -281, -265, -252,
 		-240, -230, -221, -212, -205, -198, -192, -186,
 		-180, -175, -170, -165, -161, -156, -152, -148,
@@ -181,17 +177,17 @@ inline int Cnv_Scale(int scale)
 		-17, -17, -16, -15, -14, -13, -12, -12,
 		-11, -10, -9, -9, -8, -7, -6, -6,
 		-5, -4, -3, -3, -2, -1, -1, 0
-	};
+	];
 
 	if (scale & 0x80) // Supposedly invalid value...
 		scale = 0x7F; // Use apparently correct default
 	return lut[scale];
 }
 
-inline int Cnv_Sust(int sust)
+int Cnv_Sust(int sust)
 {
-	static const int16_t lut[] =
-	{
+	static const short[] lut =
+	[
 		-32768, -722, -721, -651, -601, -562, -530, -503,
 		-480, -460, -442, -425, -410, -396, -383, -371,
 		-360, -349, -339, -330, -321, -313, -305, -297,
@@ -208,21 +204,21 @@ inline int Cnv_Sust(int sust)
 		-35, -33, -31, -30, -28, -27, -25, -23,
 		-22, -20, -19, -17, -16, -14, -13, -11,
 		-10, -8, -7, -6, -4, -3, -1, 0
-	};
+	];
 
 	if (sust & 0x80) // Supposedly invalid value...
 		sust = 0x7F; // Use apparently correct default
 	return lut[sust];
 }
 
-inline int Cnv_Sine(int arg)
+int Cnv_Sine(int arg)
 {
 	static const int lut_size = 32;
-	static const int8_t lut[] =
-	{
+	static const byte[] lut =
+	[
 		0, 6, 12, 19, 25, 31, 37, 43, 49, 54, 60, 65, 71, 76, 81, 85, 90, 94,
 		98, 102, 106, 109, 112, 115, 117, 120, 122, 123, 125, 126, 126, 127, 127
-	};
+	];
 
 	if (arg < lut_size)
 		return lut[arg];
@@ -234,7 +230,7 @@ inline int Cnv_Sine(int arg)
 	return -lut[4 * lut_size - arg];
 }
 
-inline int read8(const uint8_t **ppData)
+int read8(const(ubyte)**ppData)
 {
 	auto pData = *ppData;
 	int x = *pData;
@@ -242,14 +238,14 @@ inline int read8(const uint8_t **ppData)
 	return x;
 }
 
-inline int read16(const uint8_t **ppData)
+int read16(const(ubyte) **ppData)
 {
 	int x = read8(ppData);
 	x |= read8(ppData) << 8;
 	return x;
 }
 
-inline int read24(const uint8_t **ppData)
+int read24(const(ubyte) **ppData)
 {
 	int x = read8(ppData);
 	x |= read8(ppData) << 8;
@@ -257,7 +253,7 @@ inline int read24(const uint8_t **ppData)
 	return x;
 }
 
-inline int readvl(const uint8_t **ppData)
+int readvl(const(ubyte) **ppData)
 {
 	int x = 0;
 	for (;;)
@@ -271,7 +267,7 @@ inline int readvl(const uint8_t **ppData)
 }
 
 // Clamp a value between a minimum and maximum value
-template<typename T1, typename T2> inline void clamp(T1 &valueToClamp, const T2 &minValue, const T2 &maxValue)
+void clamp(T1, T2)(auto ref T1 valueToClamp, const auto ref T2 minValue, const auto ref T2 maxValue)
 {
 	if (valueToClamp < minValue)
 		valueToClamp = minValue;

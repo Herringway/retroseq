@@ -1,0 +1,12 @@
+{
+	"authors": [
+		"Herringway"
+	],
+	"copyright": "Copyright © 2022, Herringway",
+	"description": "SSEQ library",
+	"license": "BSL-1.0",
+	"name": "sseq",
+	"subPackages": [
+		"player"
+	]
+}
