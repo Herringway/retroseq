@@ -1,8 +1,5 @@
 module sseq.sseq;
 
-import core.stdcpp.string;
-import core.stdcpp.vector;
-
 import sseq.sbnk;
 import sseq.infoentry;
 import sseq.ndsstdheader;

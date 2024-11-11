@@ -1,8 +1,5 @@
 module sseq.common;
 
-import core.stdcpp.vector;
-import core.stdcpp.string;
-
 import core.stdc.string;
 
 alias map(T, T2) = T[T2];
@@ -16,14 +13,14 @@ T staticCast(T, F)(F from) {
 
 struct PseudoFile
 {
-	vector!ubyte *data = null;
+	ubyte[] data;
 	uint pos = 0;
 
 	T ReadLE(T)()
 	{
 		T finalVal = 0;
 		for (size_t i = 0; i < T.sizeof; ++i)
-			finalVal |= (*this.data)[this.pos++] << (i * 8);
+			finalVal |= this.data[this.pos++] << (i * 8);
 		return finalVal;
 	}
 
@@ -35,13 +32,13 @@ struct PseudoFile
 
 	void ReadLE(size_t N)(ref ubyte[N] arr)
 	{
-		memcpy(&arr[0], &(*this.data)[this.pos], N);
+		memcpy(&arr[0], &this.data[this.pos], N);
 		this.pos += N;
 	}
 
 	void ReadLE(size_t N)(ref byte[N] arr)
 	{
-		memcpy(&arr[0], &(*this.data)[this.pos], N);
+		memcpy(&arr[0], &this.data[this.pos], N);
 		this.pos += N;
 	}
 
@@ -53,7 +50,7 @@ struct PseudoFile
 
 	void ReadLE(ubyte[] arr)
 	{
-		memcpy(&arr[0], &(*this.data)[this.pos], arr.length);
+		memcpy(&arr[0], &this.data[this.pos], arr.length);
 		this.pos += arr.length;
 	}
 

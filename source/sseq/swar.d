@@ -1,7 +1,5 @@
 module sseq.swar;
 
-import core.stdcpp.string;
-
 import sseq.swav;
 import sseq.infoentry;
 import sseq.ndsstdheader;

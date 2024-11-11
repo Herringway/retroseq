@@ -1,7 +1,5 @@
 module sseq.player;
 
-import core.stdcpp.vector;
-
 import sseq.common;
 import sseq.sseq;
 import sseq.track;

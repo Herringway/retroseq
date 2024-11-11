@@ -1,7 +1,6 @@
 module sseq.fatsection;
 
 import sseq.common;
-import core.stdcpp.vector;
 
 struct FATRecord
 {

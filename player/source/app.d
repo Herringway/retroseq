@@ -17,7 +17,6 @@ import std.stdio;
 import std.string;
 import std.utf;
 import bindbc.sdl : SDL_AudioCallback, SDL_AudioDeviceID;
-import core.stdcpp.vector;
 
 extern(C) int kbhit();
 extern(C) int getch();
@@ -56,7 +55,7 @@ struct SSEQPlayer {
 	double secondsUntilNextClock;
 	bool stopped;
 	this(ubyte[] file, uint id) {
-		auto pFile = PseudoFile(new vector!ubyte(file));
+		auto pFile = PseudoFile(file);
 
 		sdat = SDAT(pFile);
 		song = sdat.getSSEQ(pFile, id);
@@ -113,7 +112,7 @@ int main(string[] args) {
 
 	auto data = cast(ubyte[])read(args[1]);
 	if (args.length == 2) {
-		auto pFile = PseudoFile(new vector!ubyte(file));
+		auto pFile = PseudoFile(file);
 		auto sdat = SDAT(pFile);
 		foreach (sseq; sdat.sseqs) {
 			infof("%s: %s", sseq.id, sseq.name);

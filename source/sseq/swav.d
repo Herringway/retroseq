@@ -2,8 +2,6 @@ module sseq.swav;
 
 import sseq.common;
 
-import core.stdcpp.vector;
-
 struct SWAV
 {
 	ubyte waveType;
