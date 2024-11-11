@@ -6,7 +6,7 @@ import sseq.consts;
 import sseq.player;
 import sseq.sbnk;
 
-import core.stdc.stdlib;
+import std.random;
 
 enum StackType
 {
@@ -549,7 +549,7 @@ struct Track
 							this.overriding.extraValue = read8(pData);
 						short minVal = cast(short)read16(pData);
 						short maxVal = cast(short)read16(pData);
-						this.overriding.value = (rand() % (maxVal - minVal + 1)) + minVal;
+						this.overriding.value = uniform(0, maxVal - minVal + 1) + minVal;
 						break;
 					}
 
@@ -785,9 +785,9 @@ private short varFuncShift(short var, short value)
 };
 private short varFuncRand(short, short value){
 	if (value < 0)
-		return cast(short)(-(rand() % (-value + 1)));
+		return cast(short)(-uniform(0, -value + 1));
 	else
-		return rand() % (value + 1);
+		return cast(short)uniform(0, value + 1);
 };
 
 private short function(short, short) VarFunc(int cmd)
