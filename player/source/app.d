@@ -67,6 +67,9 @@ struct SSEQPlayer {
 		stopped = true;
 		player.Stop(true);
 	}
+	bool isPlaying() {
+		return !stopped;
+	}
 }
 
 void sampleFunction(ref SSEQPlayer player, short[2][] buffer) {
@@ -81,6 +84,7 @@ extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
 		sampleFunction(*cast(SSEQPlayer*)user, cast(short[2][])buf[0 .. bufSize]);
 	} catch (Throwable e) {
 		assumeWontThrow(writeln(e));
+		(cast(SSEQPlayer*)user).stopped = true;
 	}
 }
 
@@ -131,9 +135,9 @@ int main(string[] args) {
 			getch(); //make sure the key press is actually consumed
 			break;
 		}
-		//if (!nspc.isPlaying) {
-		//	break;
-		//}
+		if (!player.isPlaying) {
+			break;
+		}
 	}
 	player.stop();
 
