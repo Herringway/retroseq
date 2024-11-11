@@ -17,7 +17,7 @@ enum StackType
 struct StackValue
 {
 	StackType type = StackType.STACKTYPE_CALL;
-	const(ubyte) *dest = null;
+	const(ubyte)[] dest = null;
 }
 
 struct Override
@@ -27,7 +27,7 @@ struct Override
 	int value;
 	int extraValue;
 
-	int val(const(ubyte) **pData, int function(const(ubyte) **) @system reader, bool returnExtra = false) @system
+	int val(ref const(ubyte)[] pData, int function(ref const(ubyte)[]) @safe reader, bool returnExtra = false) @safe
 	{
 		if (this.overriding)
 			return returnExtra ? this.extraValue : this.value;
@@ -44,8 +44,8 @@ struct Track
 	ubyte num, prio;
 	Player *ply;
 
-	const(ubyte) *startPos;
-	const(ubyte) *pos;
+	const(ubyte)[] trackData;
+	const(ubyte)[] trackDataCurrent;
 	StackValue[FSS_TRACKSTACKSIZE] stack;
 	ubyte stackPos;
 	ubyte[FSS_TRACKSTACKSIZE] loopCount;
@@ -69,11 +69,11 @@ struct Track
 
 	ubyte[TUF_BITS] updateFlags;
 
-	void Init(ubyte handle, Player *player, const ubyte *dataPos, int n) @safe {
+	void Init(ubyte handle, Player *player, const(ubyte)[] dataPos, int n) @safe {
 		this.trackId = handle;
 		this.num = cast(ubyte)n;
 		this.ply = player;
-		this.startPos = dataPos;
+		this.trackData = dataPos;
 		this.ClearState();
 	}
 	void Zero() @safe {
@@ -83,7 +83,7 @@ struct Track
 		this.num = this.prio = 0;
 		this.ply = null;
 
-		this.startPos = this.pos = null;
+		this.trackDataCurrent = this.trackData = null;
 		this.stack[] = StackValue();
 		this.stackPos = 0;
 		this.loopCount = 0;
@@ -112,7 +112,7 @@ struct Track
 		this.state[TS_NOTEWAIT] = true;
 		this.prio = cast(ubyte)(this.ply.prio + 64);
 
-		this.pos = this.startPos;
+		this.trackDataCurrent = this.trackData;
 		this.stackPos = 0;
 
 		this.wait = 0;
@@ -293,7 +293,7 @@ struct Track
 				chn.Release();
 		}
 	}
-	void Run() @system {
+	void Run() @safe {
 
 		// Indicate "heartbeat" for this track
 		this.updateFlags[TUF_LEN] = true;
@@ -309,21 +309,19 @@ struct Track
 				return;
 		}
 
-		auto pData = &this.pos;
-
 		while (!this.wait)
 		{
 			int cmd;
 			if (this.overriding.overriding)
 				cmd = this.overriding.cmd;
 			else
-				cmd = read8(pData);
+				cmd = read8(this.trackDataCurrent);
 			if (cmd < 0x80)
 			{
 				// Note on
 				int key = cmd + this.transpose;
-				int vel = this.overriding.val(pData, &read8, true);
-				int len = this.overriding.val(pData, &readvl);
+				int vel = this.overriding.val(this.trackDataCurrent, &read8, true);
+				int len = this.overriding.val(this.trackDataCurrent, &readvl);
 				if (this.state[TS_NOTEWAIT])
 					this.wait = len;
 				if (this.state[TS_TIEBIT])
@@ -342,8 +340,8 @@ struct Track
 
 					case SseqCommand.SSEQ_CMD_OPENTRACK:
 					{
-						int tNum = read8(pData);
-						auto trackPos = &this.ply.sseq.data[read24(pData)];
+						int tNum = read8(this.trackDataCurrent);
+						auto trackPos = this.ply.sseq.data[read24(this.trackDataCurrent) .. $];
 						int newTrack = this.ply.TrackAlloc();
 						if (newTrack != -1)
 						{
@@ -354,69 +352,69 @@ struct Track
 					}
 
 					case SseqCommand.SSEQ_CMD_REST:
-						this.wait = this.overriding.val(pData, &readvl);
+						this.wait = this.overriding.val(this.trackDataCurrent, &readvl);
 						break;
 
 					case SseqCommand.SSEQ_CMD_PATCH:
-						this.patch = cast(ushort)this.overriding.val(pData, &readvl);
+						this.patch = cast(ushort)this.overriding.val(this.trackDataCurrent, &readvl);
 						break;
 
 					case SseqCommand.SSEQ_CMD_GOTO:
-						*pData = &this.ply.sseq.data[read24(pData)];
+						this.trackDataCurrent = this.ply.sseq.data[read24(this.trackDataCurrent) .. $];
 						break;
 
 					case SseqCommand.SSEQ_CMD_CALL:
-						value = read24(pData);
+						value = read24(this.trackDataCurrent);
 						if (this.stackPos < FSS_TRACKSTACKSIZE)
 						{
-							const ubyte *dest = &this.ply.sseq.data[value];
-							this.stack[this.stackPos++] = StackValue(StackType.STACKTYPE_CALL, *pData);
-							*pData = dest;
+							const(ubyte)[] dest = this.ply.sseq.data[value .. $];
+							this.stack[this.stackPos++] = StackValue(StackType.STACKTYPE_CALL, this.trackDataCurrent);
+							this.trackDataCurrent = dest;
 						}
 						break;
 
 					case SseqCommand.SSEQ_CMD_RET:
 						if (this.stackPos && this.stack[this.stackPos - 1].type == StackType.STACKTYPE_CALL)
-							*pData = this.stack[--this.stackPos].dest;
+							this.trackDataCurrent = this.stack[--this.stackPos].dest;
 						break;
 
 					case SseqCommand.SSEQ_CMD_PAN:
-						this.pan = cast(byte)(this.overriding.val(pData, &read8) - 64);
+						this.pan = cast(byte)(this.overriding.val(this.trackDataCurrent, &read8) - 64);
 						this.updateFlags[TUF_PAN] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_VOL:
-						this.vol = cast(ubyte)this.overriding.val(pData, &read8);
+						this.vol = cast(ubyte)this.overriding.val(this.trackDataCurrent, &read8);
 						this.updateFlags[TUF_VOL] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_MASTERVOL:
-						this.ply.masterVol = cast(short)Cnv_Sust(this.overriding.val(pData, &read8));
+						this.ply.masterVol = cast(short)Cnv_Sust(this.overriding.val(this.trackDataCurrent, &read8));
 						for (ubyte i = 0; i < this.ply.nTracks; ++i)
 							this.ply.tracks[this.ply.trackIds[i]].updateFlags[TUF_VOL] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_PRIO:
-						this.prio = cast(ubyte)(this.ply.prio + read8(pData));
+						this.prio = cast(ubyte)(this.ply.prio + read8(this.trackDataCurrent));
 						// Update here?
 						break;
 
 					case SseqCommand.SSEQ_CMD_NOTEWAIT:
-						this.state[TS_NOTEWAIT] = !!read8(pData);
+						this.state[TS_NOTEWAIT] = !!read8(this.trackDataCurrent);
 						break;
 
 					case SseqCommand.SSEQ_CMD_TIE:
-						this.state[TS_TIEBIT] = !!read8(pData);
+						this.state[TS_TIEBIT] = !!read8(this.trackDataCurrent);
 						this.ReleaseAllNotes();
 						break;
 
 					case SseqCommand.SSEQ_CMD_EXPR:
-						this.expr = cast(ubyte)this.overriding.val(pData, &read8);
+						this.expr = cast(ubyte)this.overriding.val(this.trackDataCurrent, &read8);
 						this.updateFlags[TUF_VOL] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_TEMPO:
-						this.ply.tempo = cast(ushort)read16(pData);
+						this.ply.tempo = cast(ushort)read16(this.trackDataCurrent);
 						break;
 
 					case SseqCommand.SSEQ_CMD_END:
@@ -424,22 +422,22 @@ struct Track
 						return;
 
 					case SseqCommand.SSEQ_CMD_LOOPSTART:
-						value = this.overriding.val(pData, &read8);
+						value = this.overriding.val(this.trackDataCurrent, &read8);
 						if (this.stackPos < FSS_TRACKSTACKSIZE)
 						{
 							this.loopCount[this.stackPos] = cast(ubyte)value;
-							this.stack[this.stackPos++] = StackValue(StackType.STACKTYPE_LOOP, *pData);
+							this.stack[this.stackPos++] = StackValue(StackType.STACKTYPE_LOOP, this.trackDataCurrent);
 						}
 						break;
 
 					case SseqCommand.SSEQ_CMD_LOOPEND:
 						if (this.stackPos && this.stack[this.stackPos - 1].type == StackType.STACKTYPE_LOOP)
 						{
-							const ubyte *rPos = this.stack[this.stackPos - 1].dest;
+							const(ubyte)[] rPos = this.stack[this.stackPos - 1].dest;
 							ubyte* nR = &this.loopCount[this.stackPos - 1];
 							ubyte prevR = *nR;
-							if (!prevR || --nR)
-								*pData = rPos;
+							if (!prevR || --*nR)
+								this.trackDataCurrent = rPos;
 							else
 								--this.stackPos;
 						}
@@ -450,16 +448,16 @@ struct Track
 					//-----------------------------------------------------------------
 
 					case SseqCommand.SSEQ_CMD_TRANSPOSE:
-						this.transpose = cast(byte)this.overriding.val(pData, &read8);
+						this.transpose = cast(byte)this.overriding.val(this.trackDataCurrent, &read8);
 						break;
 
 					case SseqCommand.SSEQ_CMD_PITCHBEND:
-						this.pitchBend = cast(byte)this.overriding.val(pData, &read8);
+						this.pitchBend = cast(byte)this.overriding.val(this.trackDataCurrent, &read8);
 						this.updateFlags[TUF_TIMER] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_PITCHBENDRANGE:
-						this.pitchBendRange = cast(ubyte)read8(pData);
+						this.pitchBendRange = cast(ubyte)read8(this.trackDataCurrent);
 						this.updateFlags[TUF_TIMER] = true;
 						break;
 
@@ -468,19 +466,19 @@ struct Track
 					//-----------------------------------------------------------------
 
 					case SseqCommand.SSEQ_CMD_ATTACK:
-						this.a = cast(ubyte)this.overriding.val(pData, &read8);
+						this.a = cast(ubyte)this.overriding.val(this.trackDataCurrent, &read8);
 						break;
 
 					case SseqCommand.SSEQ_CMD_DECAY:
-						this.d = cast(ubyte)this.overriding.val(pData, &read8);
+						this.d = cast(ubyte)this.overriding.val(this.trackDataCurrent, &read8);
 						break;
 
 					case SseqCommand.SSEQ_CMD_SUSTAIN:
-						this.s = cast(ubyte)this.overriding.val(pData, &read8);
+						this.s = cast(ubyte)this.overriding.val(this.trackDataCurrent, &read8);
 						break;
 
 					case SseqCommand.SSEQ_CMD_RELEASE:
-						this.r = cast(ubyte)this.overriding.val(pData, &read8);
+						this.r = cast(ubyte)this.overriding.val(this.trackDataCurrent, &read8);
 						break;
 
 					//-----------------------------------------------------------------
@@ -488,23 +486,23 @@ struct Track
 					//-----------------------------------------------------------------
 
 					case SseqCommand.SSEQ_CMD_PORTAKEY:
-						this.portaKey = cast(ubyte)(read8(pData) + this.transpose);
+						this.portaKey = cast(ubyte)(read8(this.trackDataCurrent) + this.transpose);
 						this.state[TS_PORTABIT] = true;
 						// Update here?
 						break;
 
 					case SseqCommand.SSEQ_CMD_PORTAFLAG:
-						this.state[TS_PORTABIT] = !!read8(pData);
+						this.state[TS_PORTABIT] = !!read8(this.trackDataCurrent);
 						// Update here?
 						break;
 
 					case SseqCommand.SSEQ_CMD_PORTATIME:
-						this.portaTime = cast(ubyte)this.overriding.val(pData, &read8);
+						this.portaTime = cast(ubyte)this.overriding.val(this.trackDataCurrent, &read8);
 						// Update here?
 						break;
 
 					case SseqCommand.SSEQ_CMD_SWEEPPITCH:
-						this.sweepPitch = cast(short)this.overriding.val(pData, &read16);
+						this.sweepPitch = cast(short)this.overriding.val(this.trackDataCurrent, &read16);
 						// Update here?
 						break;
 
@@ -513,27 +511,27 @@ struct Track
 					//-----------------------------------------------------------------
 
 					case SseqCommand.SSEQ_CMD_MODDEPTH:
-						this.modDepth = cast(ubyte)this.overriding.val(pData, &read8);
+						this.modDepth = cast(ubyte)this.overriding.val(this.trackDataCurrent, &read8);
 						this.updateFlags[TUF_MOD] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_MODSPEED:
-						this.modSpeed = cast(ubyte)this.overriding.val(pData, &read8);
+						this.modSpeed = cast(ubyte)this.overriding.val(this.trackDataCurrent, &read8);
 						this.updateFlags[TUF_MOD] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_MODTYPE:
-						this.modType = cast(ubyte)read8(pData);
+						this.modType = cast(ubyte)read8(this.trackDataCurrent);
 						this.updateFlags[TUF_MOD] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_MODRANGE:
-						this.modRange = cast(ubyte)read8(pData);
+						this.modRange = cast(ubyte)read8(this.trackDataCurrent);
 						this.updateFlags[TUF_MOD] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_MODDELAY:
-						this.modDelay = cast(ushort)this.overriding.val(pData, &read16);
+						this.modDelay = cast(ushort)this.overriding.val(this.trackDataCurrent, &read16);
 						this.updateFlags[TUF_MOD] = true;
 						break;
 
@@ -544,11 +542,11 @@ struct Track
 					case SseqCommand.SSEQ_CMD_RANDOM:
 					{
 						this.overriding.overriding = true;
-						this.overriding.cmd = read8(pData);
+						this.overriding.cmd = read8(this.trackDataCurrent);
 						if ((this.overriding.cmd >= SseqCommand.SSEQ_CMD_SETVAR && this.overriding.cmd <= SseqCommand.SSEQ_CMD_CMP_NE) || this.overriding.cmd < 0x80)
-							this.overriding.extraValue = read8(pData);
-						short minVal = cast(short)read16(pData);
-						short maxVal = cast(short)read16(pData);
+							this.overriding.extraValue = read8(this.trackDataCurrent);
+						short minVal = cast(short)read16(this.trackDataCurrent);
+						short maxVal = cast(short)read16(this.trackDataCurrent);
 						this.overriding.value = uniform(0, maxVal - minVal + 1) + minVal;
 						break;
 					}
@@ -559,10 +557,10 @@ struct Track
 
 					case SseqCommand.SSEQ_CMD_FROMVAR:
 						this.overriding.overriding = true;
-						this.overriding.cmd = read8(pData);
+						this.overriding.cmd = read8(this.trackDataCurrent);
 						if ((this.overriding.cmd >= SseqCommand.SSEQ_CMD_SETVAR && this.overriding.cmd <= SseqCommand.SSEQ_CMD_CMP_NE) || this.overriding.cmd < 0x80)
-							this.overriding.extraValue = read8(pData);
-						this.overriding.value = this.ply.variables[read8(pData)];
+							this.overriding.extraValue = read8(this.trackDataCurrent);
+						this.overriding.value = this.ply.variables[read8(this.trackDataCurrent)];
 						break;
 
 					case SseqCommand.SSEQ_CMD_SETVAR:
@@ -573,8 +571,8 @@ struct Track
 					case SseqCommand.SSEQ_CMD_SHIFTVAR:
 					case SseqCommand.SSEQ_CMD_RANDVAR:
 					{
-						byte varNo = cast(byte)this.overriding.val(pData, &read8, true);
-						value = this.overriding.val(pData, &read16);
+						byte varNo = cast(byte)this.overriding.val(this.trackDataCurrent, &read8, true);
+						value = this.overriding.val(this.trackDataCurrent, &read16);
 						if (cmd == SseqCommand.SSEQ_CMD_DIVVAR && !value) // Division by 0, skip it to prevent crashing
 						break;
 						this.ply.variables[varNo] = VarFunc(cmd)(this.ply.variables[varNo], cast(short)value);
@@ -592,8 +590,8 @@ struct Track
 					case SseqCommand.SSEQ_CMD_CMP_LT:
 					case SseqCommand.SSEQ_CMD_CMP_NE:
 					{
-						byte varNo = cast(byte)this.overriding.val(pData, &read8, true);
-						value = this.overriding.val(pData, &read16);
+						byte varNo = cast(byte)this.overriding.val(this.trackDataCurrent, &read8, true);
+						value = this.overriding.val(this.trackDataCurrent, &read16);
 						this.lastComparisonResult = CompareFunc(cmd)(this.ply.variables[varNo], cast(short)value);
 						break;
 					}
@@ -601,25 +599,25 @@ struct Track
 					case SseqCommand.SSEQ_CMD_IF:
 						if (!this.lastComparisonResult)
 						{
-							int nextCmd = read8(pData);
+							int nextCmd = read8(this.trackDataCurrent);
 							ubyte cmdBytes = SseqCommandByteCount(nextCmd);
 							bool variableBytes = !!(cmdBytes & VariableByteCount);
 							bool extraByte = !!(cmdBytes & ExtraByteOnNoteOrVarOrCmp);
 							cmdBytes &= ~(VariableByteCount | ExtraByteOnNoteOrVarOrCmp);
 							if (extraByte)
 							{
-								int extraCmd = read8(pData);
+								int extraCmd = read8(this.trackDataCurrent);
 								if ((extraCmd >= SseqCommand.SSEQ_CMD_SETVAR && extraCmd <= SseqCommand.SSEQ_CMD_CMP_NE) || extraCmd < 0x80)
 									++cmdBytes;
 							}
-							*pData += cmdBytes;
+							this.trackDataCurrent = this.trackDataCurrent[cmdBytes .. $];
 							if (variableBytes)
-								readvl(pData);
+								readvl(this.trackDataCurrent);
 						}
 						break;
 
 					default:
-						*pData += SseqCommandByteCount(cmd);
+						this.trackDataCurrent = this.trackDataCurrent[SseqCommandByteCount(cmd) .. $];
 				}
 			}
 

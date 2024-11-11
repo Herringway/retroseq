@@ -69,14 +69,6 @@ struct PseudoFile
  * as little-endian formating.
  */
 
-deprecated T ReadLE(T)(const ubyte *arr)
-{
-	T finalVal = 0;
-	for (size_t i = 0; i < T.sizeof; ++i)
-		finalVal |= arr[i] << (i * 8);
-	return finalVal;
-}
-
 T ReadLE(T)(const(ubyte)[] arr)
 {
 	T finalVal = 0;
@@ -228,22 +220,21 @@ int Cnv_Sine(int arg) @safe
 	return -lut[4 * lut_size - arg];
 }
 
-int read8(const(ubyte)**ppData) @system
+int read8(ref const(ubyte)[] ppData) @safe
 {
-	auto pData = *ppData;
-	int x = *pData;
-	*ppData = pData + 1;
+	int x = ppData[0];
+	ppData = ppData[1 .. $];
 	return x;
 }
 
-int read16(const(ubyte) **ppData) @system
+int read16(ref const(ubyte)[] ppData) @safe
 {
 	int x = read8(ppData);
 	x |= read8(ppData) << 8;
 	return x;
 }
 
-int read24(const(ubyte) **ppData) @system
+int read24(ref const(ubyte)[] ppData) @safe
 {
 	int x = read8(ppData);
 	x |= read8(ppData) << 8;
@@ -251,7 +242,7 @@ int read24(const(ubyte) **ppData) @system
 	return x;
 }
 
-int readvl(const(ubyte) **ppData) @system
+int readvl(ref const(ubyte)[] ppData) @safe
 {
 	int x = 0;
 	for (;;)

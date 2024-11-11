@@ -34,12 +34,10 @@ struct Player
 		int firstTrack = this.TrackAlloc();
 		if (firstTrack == -1)
 			return false;
-		this.tracks[firstTrack].Init(cast(ubyte)firstTrack, &this, null, 0);
+		this.tracks[firstTrack].Init(cast(ubyte)firstTrack, &this, this.sseq.data, 0);
 
 		this.nTracks = 1;
 		this.trackIds[0] = cast(ubyte)firstTrack;
-
-		this.tracks[firstTrack].startPos = this.tracks[firstTrack].pos = &this.sseq.data[0];
 
 		this.secondsPerSample = 1.0 / this.sampleRate;
 
@@ -132,7 +130,7 @@ struct Player
 		}
 		return -1;
 	}
-	void Run() @system {
+	void Run() @safe {
 		while (this.tempoCount >= 240)
 		{
 			this.tempoCount -= 240;
@@ -147,7 +145,7 @@ struct Player
 		for (int i = 0; i < FSS_MAXTRACKS; ++i)
 			this.tracks[i].updateFlags = false;
 	}
-	void Timer() @system {
+	void Timer() @safe {
 		this.UpdateTracks();
 
 		for (int i = 0; i < 16; ++i)
