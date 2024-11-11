@@ -72,7 +72,7 @@ struct SSEQPlayer {
 	}
 }
 
-void sampleFunction(ref SSEQPlayer player, short[2][] buffer) {
+void sampleFunction(ref SSEQPlayer player, short[2][] buffer) @safe {
 	if (player.stopped) {
 		return;
 	}

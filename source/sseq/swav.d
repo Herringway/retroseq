@@ -11,7 +11,6 @@ struct SWAV
 	uint loopOffset;
 	uint nonLoopLength;
 	short[] data;
-	const(short) *dataptr;
 
 	void Read(ref PseudoFile file) @safe {
 
@@ -54,7 +53,6 @@ struct SWAV
 			this.loopOffset *= 8;
 			this.nonLoopLength *= 8;
 		}
-		this.dataptr = &this.data[0];
 	}
 	void DecodeADPCM(const(ubyte)[] origData, uint len) @safe {
 		int predictedValue = origData[0] | (origData[1] << 8);

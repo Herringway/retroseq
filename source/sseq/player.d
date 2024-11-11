@@ -157,7 +157,7 @@ struct Player
 	/* Playback helper */
 	double secondsPerSample, secondsIntoPlayback, secondsUntilNextClock;
 	bool[16] mutes;
-	void GenerateSamples(short[2][] buf) @system {
+	void GenerateSamples(short[2][] buf) @safe {
 		uint offset;
 		const mute = this.mutes;
 

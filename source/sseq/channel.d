@@ -485,14 +485,14 @@ struct Channel
 		else // INTERPOLATION_LINEAR
 			return cast(int)(data[0] + ratio * (data[1] - data[0]));
 	}
-	int GenerateSample() @system {
+	int GenerateSample() @safe {
 		if (this.reg.samplePosition < 0)
 			return 0;
 
 		if (this.reg.format != 3)
 		{
 			if (this.ply.interpolation == Interpolation.INTERPOLATION_NONE)
-				return this.reg.source.dataptr[cast(uint)(this.reg.samplePosition)];
+				return this.reg.source.data[cast(uint)(this.reg.samplePosition)];
 			else
 				return this.Interpolate();
 		}
@@ -528,7 +528,7 @@ struct Channel
 			}
 		}
 	}
-	void IncrementSample() @system {
+	void IncrementSample() @safe {
 		double samplePosition = this.reg.samplePosition + this.reg.sampleIncrease;
 
 		if (this.reg.format != 3 && this.reg.samplePosition >= 0)
@@ -541,7 +541,7 @@ struct Channel
 
 			while (loc != newloc)
 			{
-				this.sampleHistory[this.sampleHistoryPtr] = this.sampleHistory[this.sampleHistoryPtr + 32] = this.reg.source.dataptr[loc++];
+				this.sampleHistory[this.sampleHistoryPtr] = this.sampleHistory[this.sampleHistoryPtr + 32] = this.reg.source.data[loc++];
 
 				this.sampleHistoryPtr = (this.sampleHistoryPtr + 1) & 31;
 
