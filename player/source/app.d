@@ -69,9 +69,6 @@ struct SSEQPlayer {
 	}
 }
 
-int muldiv7(int val, ubyte mul) {
-	return mul == 127 ? val : ((val * mul) >> 7);
-}
 void sampleFunction(ref SSEQPlayer player, short[2][] buffer) {
 	if (player.stopped) {
 		return;
