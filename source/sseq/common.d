@@ -1,10 +1,5 @@
 module sseq.common;
 
-alias map(T, T2) = T[T2];
-
-T staticCast(T, F)(F from) {
-	return *(cast(T*) cast(F*) from);
-}
 /*
  * Pseudo-file data structure
  */
