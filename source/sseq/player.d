@@ -194,10 +194,6 @@ struct Player
 			clamp(rightChannel, -0x8000, 0x7FFF);
 
 			buf[offset++] = [cast(short)leftChannel, cast(short)rightChannel];
-			//buf[offset++] = leftChannel & 0xFF;
-			//buf[offset++] = (leftChannel >> 8) & 0xFF;
-			//buf[offset++] = rightChannel & 0xFF;
-			//buf[offset++] = (rightChannel >> 8) & 0xFF;
 
 			if (this.secondsIntoPlayback > this.secondsUntilNextClock)
 			{
