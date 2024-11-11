@@ -60,7 +60,7 @@ struct SSEQPlayer {
 		sdat = SDAT(pFile);
 		song = sdat.getSSEQ(pFile, id);
 		player.sampleRate = 44100;
-		player.Setup(song.sseq);
+		player.Setup(song);
 		player.Timer();
 	}
 	void stop() {

@@ -4,6 +4,7 @@ import sseq.common;
 import sseq.sseq;
 import sseq.track;
 import sseq.channel;
+import sseq.sdat;
 import sseq.consts;
 
 struct Player
@@ -12,7 +13,7 @@ struct Player
 	ushort tempo, tempoCount, tempoRate /* 8.8 fixed point */;
 	short masterVol, sseqVol;
 
-	const(SSEQ) *sseq;
+	const(Song)* song;
 
 	ubyte[FSS_TRACKCOUNT] trackIds;
 	Track[FSS_MAXTRACKS] tracks;
@@ -22,19 +23,19 @@ struct Player
 	uint sampleRate;
 	Interpolation interpolation;
 
-	bool Setup(const(SSEQ) *sseqToPlay) {
+	bool Setup(const Song song) {
 		for (size_t i = 0; i < 16; ++i)
 		{
 			this.channels[i].initialize();
 			this.channels[i].chnId = cast(byte)i;
 			this.channels[i].ply = &this;
 		}
-		this.sseq = sseqToPlay;
+		this.song = &[song][0];
 
 		int firstTrack = this.TrackAlloc();
 		if (firstTrack == -1)
 			return false;
-		this.tracks[firstTrack].Init(cast(ubyte)firstTrack, &this, this.sseq.data, 0);
+		this.tracks[firstTrack].Init(cast(ubyte)firstTrack, &this, song.sseq.data, 0);
 
 		this.nTracks = 1;
 		this.trackIds[0] = cast(ubyte)firstTrack;

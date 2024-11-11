@@ -95,16 +95,10 @@ struct SBNK
 	string filename;
 	SBNKInstrument[] instruments;
 
-	const(SWAR)*[4] waveArc;
 	INFOEntryBANK info;
 
 	this(const ref string fn) @safe {
 		filename = fn;
-	}
-	this(ref SBNK sbnk) @safe {
-		filename = sbnk.filename;
-		instruments = sbnk.instruments;
-		info = sbnk.info;
 	}
 
 	void Read(ref PseudoFile file) @safe {

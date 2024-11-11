@@ -88,7 +88,6 @@ struct SDAT
 			name = NumToHexString(bank)[2 .. $] ~ " - " ~ symbSection.get.BANKrecord.entries[bank];
 		file.pos = fatSection.records[fileID].offset;
 		SBNK *newSBNK = new SBNK(name);
-		newSSEQ.bank = newSBNK;
 		newSBNK.info = infoSection.BANKrecord.entries[bank];
 		newSBNK.Read(file);
 		song.sbnk = newSBNK;
@@ -104,7 +103,6 @@ struct SDAT
 					name = NumToHexString(waveArc)[2 .. $] ~ " - " ~ symbSection.get.WAVEARCrecord.entries[waveArc];
 				file.pos = fatSection.records[fileID].offset;
 				SWAR *newSWAR = new SWAR(name);
-				newSBNK.waveArc[i] = newSWAR;
 				newSWAR.info = infoSection.WAVEARCrecord.entries[waveArc];
 				newSWAR.Read(file);
 				song.swar[i] = newSWAR;
@@ -113,7 +111,4 @@ struct SDAT
 				song.swar[i] = null;
 		return song;
 	}
-private:
-	this(const ref SDAT);
-	SDAT opAssign(const ref SDAT);
 };

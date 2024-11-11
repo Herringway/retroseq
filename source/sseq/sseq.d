@@ -10,7 +10,6 @@ struct SSEQ
 	string filename;
 	ubyte[] data;
 
-	const(SBNK) *bank;
 	INFOEntrySEQ info;
 
 	this(const string fn) @safe {

@@ -138,7 +138,7 @@ struct Track
 		this.updateFlags = false;
 	}
 	int NoteOn(int key, int vel, int len) @safe {
-		auto sbnk = this.ply.sseq.bank;
+		auto sbnk = this.ply.song.sbnk;
 
 		if (this.patch >= sbnk.instruments.length)
 			return -1;
@@ -215,7 +215,7 @@ struct Track
 				return -1;
 			chn = &this.ply.channels[nCh];
 
-			auto swav = &sbnk.waveArc[noteDef.swar].swavs[noteDef.swav];
+			auto swav = &this.ply.song.swar[noteDef.swar].swavs[noteDef.swav];
 			chn.tempReg.CR = SOUND_FORMAT(swav.waveType & 3) | SOUND_LOOP(!!swav.loop) | SCHANNEL_ENABLE;
 			chn.tempReg.SOURCE = swav;
 			chn.tempReg.TIMER = swav.time;
@@ -341,7 +341,7 @@ struct Track
 					case SseqCommand.SSEQ_CMD_OPENTRACK:
 					{
 						int tNum = read8(this.trackDataCurrent);
-						auto trackPos = this.ply.sseq.data[read24(this.trackDataCurrent) .. $];
+						auto trackPos = this.ply.song.sseq.data[read24(this.trackDataCurrent) .. $];
 						int newTrack = this.ply.TrackAlloc();
 						if (newTrack != -1)
 						{
@@ -360,14 +360,14 @@ struct Track
 						break;
 
 					case SseqCommand.SSEQ_CMD_GOTO:
-						this.trackDataCurrent = this.ply.sseq.data[read24(this.trackDataCurrent) .. $];
+						this.trackDataCurrent = this.ply.song.sseq.data[read24(this.trackDataCurrent) .. $];
 						break;
 
 					case SseqCommand.SSEQ_CMD_CALL:
 						value = read24(this.trackDataCurrent);
 						if (this.stackPos < FSS_TRACKSTACKSIZE)
 						{
-							const(ubyte)[] dest = this.ply.sseq.data[value .. $];
+							const(ubyte)[] dest = this.ply.song.sseq.data[value .. $];
 							this.stack[this.stackPos++] = StackValue(StackType.STACKTYPE_CALL, this.trackDataCurrent);
 							this.trackDataCurrent = dest;
 						}
