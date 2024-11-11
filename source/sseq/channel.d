@@ -48,11 +48,11 @@ struct NDSSoundRegister
 
 	uint totalLength;
 
-	void ClearControlRegister() {
+	void ClearControlRegister() @safe {
 		this.volumeMul = this.volumeDiv = this.panning = this.waveDuty = this.repeatMode = this.format = 0;
 		this.enable = false;
 	}
-	void SetControlRegister(uint reg) {
+	void SetControlRegister(uint reg) @safe {
 		this.volumeMul = reg & 0x7F;
 		this.volumeDiv = (reg >> 8) & 0x03;
 		this.panning = (reg >> 16) & 0x7F;
@@ -137,30 +137,17 @@ struct Channel
 	 * These are static as they will not change between channels or runs
 	 * of the program.
 	 */
-	static __gshared bool initializedLUTs;
-	static __gshared const uint SINC_RESOLUTION = 8192;
-	static __gshared const uint SINC_WIDTH = 8;
-	static __gshared const uint SINC_SAMPLES = SINC_RESOLUTION * SINC_WIDTH;
-	static __gshared double[SINC_SAMPLES + 1] sinc_lut;
-	static __gshared double[SINC_SAMPLES + 1] window_lut;
+	static immutable uint SINC_RESOLUTION = 8192;
+	static immutable uint SINC_WIDTH = 8;
+	static immutable uint SINC_SAMPLES = SINC_RESOLUTION * SINC_WIDTH;
+	static immutable double[SINC_SAMPLES + 1] sinc_lut = prepareSincLUT!(SINC_SAMPLES, SINC_WIDTH)();
+	static immutable double[SINC_SAMPLES + 1] window_lut = prepareWindowLUT!(SINC_SAMPLES, SINC_WIDTH)();
 
-	//this();
-	void initialize() {
+	void initialize() @safe {
 		this.clearHistory();
-		if (!this.initializedLUTs)
-		{
-			double dx = cast(double)(SINC_WIDTH) / SINC_SAMPLES, x = 0.0;
-			for (uint i = 0; i <= SINC_SAMPLES; ++i, x += dx)
-			{
-				double y = x / SINC_WIDTH;
-				this.sinc_lut[i] = abs(x) < SINC_WIDTH ? sinc(x) : 0.0;
-				this.window_lut[i] = (0.40897 + 0.5 * cos(M_PI * y) + 0.09103 * cos(2 * M_PI * y));
-			}
-			this.initializedLUTs = true;
-		}
 	}
 
-	void UpdateVol(const ref Track trk) {
+	void UpdateVol(const ref Track trk) @safe {
 		int finalVol = trk.ply.masterVol;
 		finalVol += trk.ply.sseqVol;
 		finalVol += Cnv_Sust(trk.vol);
@@ -169,22 +156,22 @@ struct Channel
 			finalVol = -AMPL_K;
 		this.extAmpl = cast(short)finalVol;
 	}
-	void UpdatePan(const ref Track trk) {
+	void UpdatePan(const ref Track trk) @safe {
 		this.extPan = trk.pan;
 	}
-	void UpdateTune(const ref Track trk) {
+	void UpdateTune(const ref Track trk) @safe {
 		int tune = (cast(int)(this.key) - cast(int)(this.orgKey)) * 64;
 		tune += (cast(int)(trk.pitchBend) * cast(int)(trk.pitchBendRange)) >> 1;
 		this.extTune = tune;
 	}
-	void UpdateMod(const ref Track trk) {
+	void UpdateMod(const ref Track trk) @safe {
 		this.modType = trk.modType;
 		this.modSpeed = trk.modSpeed;
 		this.modDepth = trk.modDepth;
 		this.modRange = trk.modRange;
 		this.modDelay = trk.modDelay;
 	}
-	void UpdatePorta(const ref Track trk) {
+	void UpdatePorta(const ref Track trk) @safe {
 		this.manualSweep = false;
 		this.sweepPitch = trk.sweepPitch;
 		this.sweepCnt = 0;
@@ -209,12 +196,12 @@ struct Channel
 			this.sweepLen = (abs_sp * sq_time) >> 11;
 		}
 	}
-	void Release() {
+	void Release() @safe {
 		this.noteLength = -1;
 		this.prio = 1;
 		this.state = CS_RELEASE;
 	}
-	void Kill() {
+	void Kill() @safe {
 		this.state = CS_NONE;
 		this.trackId = -1;
 		this.prio = 0;
@@ -223,7 +210,7 @@ struct Channel
 		this.noteLength = -1;
 		this.clearHistory();
 	}
-	void UpdateTrack() {
+	void UpdateTrack() @safe {
 		if (!this.ply)
 			return;
 
@@ -274,7 +261,7 @@ struct Channel
 			}
 		}
 	}
-	void Update() {
+	void Update() @safe {
 		// Kill active channels that aren't physically active
 		if (this.state > CS_START && !this.reg.enable)
 		{
@@ -443,11 +430,11 @@ struct Channel
 			this.reg.SetControlRegister(cr);
 		}
 	}
-	int Interpolate() {
+	int Interpolate() @safe {
 		double ratio = this.reg.samplePosition;
 		ratio -= cast(int)(ratio);
 
-		const data = &this.sampleHistory[this.sampleHistoryPtr + 16];
+		const data = this.sampleHistory[this.sampleHistoryPtr + 16 .. $];
 
 		if (this.ply.interpolation == Interpolation.INTERPOLATION_SINC)
 		{
@@ -498,7 +485,7 @@ struct Channel
 		else // INTERPOLATION_LINEAR
 			return cast(int)(data[0] + ratio * (data[1] - data[0]));
 	}
-	int GenerateSample() {
+	int GenerateSample() @system {
 		if (this.reg.samplePosition < 0)
 			return 0;
 
@@ -541,7 +528,7 @@ struct Channel
 			}
 		}
 	}
-	void IncrementSample() {
+	void IncrementSample() @system {
 		double samplePosition = this.reg.samplePosition + this.reg.sampleIncrease;
 
 		if (this.reg.format != 3 && this.reg.samplePosition >= 0)
@@ -576,13 +563,13 @@ struct Channel
 				this.Kill();
 		}
 	}
-	void clearHistory() {
+	void clearHistory() @safe {
 		this.sampleHistoryPtr = 0;
 		this.sampleHistory = 0;
 	}
 }
 
-static const double M_PI = 3.14159265358979323846;
+private immutable double M_PI = 3.14159265358979323846;
 
 // Code from http://learningcppisfun.blogspot.com/2010/04/comparing-floating-point-numbers.html
 bool fEqual(T)(T x, T y, int N = 1)
@@ -753,7 +740,7 @@ immutable short[8][8] wavedutytbl =
 	[ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF ]
 ];
 
-private ushort Timer_Adjust(ushort basetmr, int pitch)
+private ushort Timer_Adjust(ushort basetmr, int pitch) @safe
 {
 	int shift = 0;
 	pitch = -pitch;
@@ -790,7 +777,7 @@ private ushort Timer_Adjust(ushort basetmr, int pitch)
 	return cast(ushort)(tmr);
 }
 
-private int calcVolDivShift(int x)
+private int calcVolDivShift(int x) @safe
 {
 	// VOLDIV(0) /1  >>0
 	// VOLDIV(1) /2  >>1
@@ -801,7 +788,7 @@ private int calcVolDivShift(int x)
 	return 4;
 }
 
-private int getModFlag(int type)
+private int getModFlag(int type) @safe
 {
 	switch (type)
 	{
@@ -815,7 +802,29 @@ private int getModFlag(int type)
 			return 0;
 	}
 }
-double sinc(double x)
+double sinc(double x) @safe
 {
 	return fEqual(x, 0.0) ? 1.0 : sin(x * M_PI) / (x * M_PI);
+}
+
+private double[SINC_SAMPLES + 1] prepareSincLUT(size_t SINC_SAMPLES, size_t SINC_WIDTH)() {
+	double[SINC_SAMPLES + 1] result;
+	double dx = cast(double)(SINC_WIDTH) / SINC_SAMPLES, x = 0.0;
+	for (uint i = 0; i <= SINC_SAMPLES; ++i, x += dx)
+	{
+		double y = x / SINC_WIDTH;
+		result[i] = abs(x) < SINC_WIDTH ? sinc(x) : 0.0;
+	}
+	return result;
+}
+
+private double[SINC_SAMPLES + 1] prepareWindowLUT(size_t SINC_SAMPLES, size_t SINC_WIDTH)() {
+	double[SINC_SAMPLES + 1] result;
+	double dx = cast(double)(SINC_WIDTH) / SINC_SAMPLES, x = 0.0;
+	for (uint i = 0; i <= SINC_SAMPLES; ++i, x += dx)
+	{
+		double y = x / SINC_WIDTH;
+		result[i] = (0.40897 + 0.5 * cos(M_PI * y) + 0.09103 * cos(2 * M_PI * y));
+	}
+	return result;
 }

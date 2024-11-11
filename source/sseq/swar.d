@@ -15,11 +15,11 @@ struct SWAR
 
 	INFOEntryWAVEARC info;
 
-	this(const ref string fn) {
+	this(const ref string fn) @safe {
 		filename = fn;
 	}
 
-	void Read(ref PseudoFile file) {
+	void Read(ref PseudoFile file) @safe {
 		uint startOfSWAR = file.pos;
 		NDSStdHeader header;
 		header.Read(file);

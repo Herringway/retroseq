@@ -7,14 +7,14 @@ struct NDSStdHeader
 	byte[4] type;
 	uint magic;
 
-	void Read(ref PseudoFile file) {
+	void Read(ref PseudoFile file) @safe {
 		file.ReadLE(this.type);
 		this.magic = file.ReadLE!uint();
 		file.ReadLE!uint(); // file size
 		file.ReadLE!ushort(); // structure size
 		file.ReadLE!ushort(); // # of blocks
 	}
-	void Verify(const string typeToCheck, uint magicToCheck) {
+	void Verify(const string typeToCheck, uint magicToCheck) @safe {
 		if (!VerifyHeader(this.type, typeToCheck) || this.magic != magicToCheck)
 			throw new Exception("NDS Standard Header for " ~ typeToCheck ~ " invalid");
 	}

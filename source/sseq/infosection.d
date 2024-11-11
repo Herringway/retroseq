@@ -7,8 +7,7 @@ struct INFORecord(T)
 {
 	T[uint] entries;
 
-	void Read(ref PseudoFile file, uint startOffset) {
-
+	void Read(ref PseudoFile file, uint startOffset) @safe {
 		uint count = file.ReadLE!uint();
 		auto entryOffsets = new uint[](count);
 		file.ReadLE(entryOffsets);
@@ -28,8 +27,7 @@ struct INFOSection
 	INFORecord!INFOEntryBANK BANKrecord;
 	INFORecord!INFOEntryWAVEARC WAVEARCrecord;
 
-	void Read(ref PseudoFile file) {
-
+	void Read(ref PseudoFile file) @safe {
 		uint startOfINFO = file.pos;
 		byte[4] type;
 		file.ReadLE(type);

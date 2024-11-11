@@ -13,29 +13,11 @@ struct SSEQ
 	const(SBNK) *bank;
 	INFOEntrySEQ info;
 
-	this(const string fn) {
+	this(const string fn) @safe {
 		filename = fn;
 	}
-	this(ref SSEQ sseq) {
-		this.filename = sseq.filename;
-		this.data = sseq.data;
-		this.bank = sseq.bank;
-		this.info = sseq.info;
-	}
-	//SSEQ &operator=(const SSEQ &sseq);
-	SSEQ opAssign(ref SSEQ sseq) {
-		if (&this !is &sseq)
-		{
-			this.filename = sseq.filename;
-			this.data = sseq.data;
 
-			this.bank = sseq.bank;
-			this.info = sseq.info;
-		}
-		return this;
-	}
-
-	void Read(ref PseudoFile file) {
+	void Read(ref PseudoFile file) @safe {
 		uint startOfSSEQ = file.pos;
 		NDSStdHeader header;
 		header.Read(file);

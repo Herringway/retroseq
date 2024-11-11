@@ -6,7 +6,7 @@ struct FATRecord
 {
 	uint offset;
 
-	void Read(ref PseudoFile file) {
+	void Read(ref PseudoFile file) @safe {
 
 		this.offset = file.ReadLE!uint();
 		file.ReadLE!uint(); // size
@@ -19,7 +19,7 @@ struct FATSection
 {
 	FATRecord[] records;
 
-	void Read(ref PseudoFile file) {
+	void Read(ref PseudoFile file) @safe {
 		byte[4] type;
 		file.ReadLE(type);
 		if (!VerifyHeader(type, "FAT "))

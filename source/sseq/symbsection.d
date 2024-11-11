@@ -6,7 +6,7 @@ struct SYMBRecord
 {
 	string[uint] entries;
 
-	void Read(ref PseudoFile file, uint startOffset) {
+	void Read(ref PseudoFile file, uint startOffset) @safe {
 		uint count = file.ReadLE!uint();
 		auto entryOffsets = new uint[](count);
 		file.ReadLE(entryOffsets);
@@ -28,7 +28,7 @@ struct SYMBSection
 	SYMBRecord BANKrecord;
 	SYMBRecord WAVEARCrecord;
 
-	void Read(ref PseudoFile file) {
+	void Read(ref PseudoFile file) @safe {
 		uint startOfSYMB = file.pos;
 		byte[4] type;
 		file.ReadLE(type);

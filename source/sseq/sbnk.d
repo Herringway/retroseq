@@ -19,13 +19,13 @@ struct SBNKInstrumentRange
 	ubyte releaseRate;
 	ubyte pan;
 
-	this(ubyte lowerNote, ubyte upperNote, int recordType) {
+	this(ubyte lowerNote, ubyte upperNote, int recordType) @safe {
 		lowNote = lowerNote;
 		highNote = upperNote;
 		record = cast(ushort)recordType;
 	}
 
-	void Read(ref PseudoFile file) {
+	void Read(ref PseudoFile file) @safe {
 		this.swav = file.ReadLE!ushort();
 		this.swar = file.ReadLE!ushort();
 		this.noteNumber = file.ReadLE!ubyte();
@@ -42,7 +42,7 @@ struct SBNKInstrument
 	ubyte record;
 	SBNKInstrumentRange[] ranges;
 
-	void Read(ref PseudoFile file, uint startOffset) {
+	void Read(ref PseudoFile file, uint startOffset) @safe {
 		this.record = file.ReadLE!ubyte();
 		ushort offset = file.ReadLE!ushort();
 		file.ReadLE!ubyte();
@@ -98,27 +98,16 @@ struct SBNK
 	const(SWAR)*[4] waveArc;
 	INFOEntryBANK info;
 
-	this(const ref string fn) {
+	this(const ref string fn) @safe {
 		filename = fn;
 	}
-	this(ref SBNK sbnk) {
+	this(ref SBNK sbnk) @safe {
 		filename = sbnk.filename;
 		instruments = sbnk.instruments;
 		info = sbnk.info;
 	}
-	SBNK opAssign(ref SBNK sbnk) {
-		if (&this !is &sbnk)
-		{
-			this.filename = sbnk.filename;
-			this.instruments = sbnk.instruments;
 
-			this.waveArc = sbnk.waveArc;
-			this.info = sbnk.info;
-		}
-		return this;
-	}
-
-	void Read(ref PseudoFile file) {
+	void Read(ref PseudoFile file) @safe {
 		uint startOfSBNK = file.pos;
 		NDSStdHeader header;
 		header.Read(file);

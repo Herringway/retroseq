@@ -27,7 +27,7 @@ struct SDAT
 	FATSection fatSection;
 	Nullable!SYMBSection symbSection;
 
-	this(ref PseudoFile file) {
+	this(ref PseudoFile file) @safe {
 		// Read sections
 		header.Read(file);
 		header.Verify("SDAT", 0x0100FEFF);
@@ -63,7 +63,7 @@ struct SDAT
 		}
 		return Result(infoSection.SEQrecord.entries.keys.sort.release, symbSection);
 	}
-	Song getSSEQ(ref PseudoFile file, uint sseqToLoad) {
+	Song getSSEQ(ref PseudoFile file, uint sseqToLoad) @safe {
 		Song song;
 		enforce(infoSection.SEQrecord.entries, "No SSEQ records found in SDAT");
 

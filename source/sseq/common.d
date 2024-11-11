@@ -41,13 +41,13 @@ struct PseudoFile
 			arr[i] = this.ReadLE!T();
 	}
 
-	void ReadLE(ubyte[] arr)
+	void ReadLE(ubyte[] arr) @safe
 	{
 		arr[] = this.data[this.pos .. this.pos + arr.length];
 		this.pos += arr.length;
 	}
 
-	string ReadNullTerminatedString()
+	string ReadNullTerminatedString() @safe
 	{
 		char chr;
 		string str;
@@ -69,7 +69,15 @@ struct PseudoFile
  * as little-endian formating.
  */
 
-T ReadLE(T)(const ubyte *arr)
+deprecated T ReadLE(T)(const ubyte *arr)
+{
+	T finalVal = 0;
+	for (size_t i = 0; i < T.sizeof; ++i)
+		finalVal |= arr[i] << (i * 8);
+	return finalVal;
+}
+
+T ReadLE(T)(const(ubyte)[] arr)
 {
 	T finalVal = 0;
 	for (size_t i = 0; i < T.sizeof; ++i)
@@ -112,7 +120,7 @@ enum RecordName
 	REC_STRM
 }
 
-bool VerifyHeader(size_t N)(ref byte[N] arr, const string header)
+bool VerifyHeader(size_t N)(ref byte[N] arr, const string header) @safe
 {
 	return arr[] == header;
 }
@@ -120,7 +128,7 @@ bool VerifyHeader(size_t N)(ref byte[N] arr, const string header)
 /*
  * The remaining functions in this file come from the FeOS Sound System source code.
  */
-int Cnv_Attack(int attk)
+int Cnv_Attack(int attk) @safe
 {
 	static const ubyte[] lut =
 	[
@@ -133,7 +141,7 @@ int Cnv_Attack(int attk)
 	return attk >= 0x6D ? lut[0x7F - attk] : 0xFF - attk;
 }
 
-int Cnv_Fall(int fall)
+int Cnv_Fall(int fall) @safe
 {
 	if (fall & 0x80) // Supposedly invalid value...
 		fall = 0; // Use apparently correct default
@@ -174,7 +182,7 @@ int Cnv_Scale(int scale)
 	return lut[scale];
 }
 
-int Cnv_Sust(int sust)
+int Cnv_Sust(int sust) @safe
 {
 	static const short[] lut =
 	[
@@ -201,7 +209,7 @@ int Cnv_Sust(int sust)
 	return lut[sust];
 }
 
-int Cnv_Sine(int arg)
+int Cnv_Sine(int arg) @safe
 {
 	static const int lut_size = 32;
 	static const byte[] lut =
@@ -220,7 +228,7 @@ int Cnv_Sine(int arg)
 	return -lut[4 * lut_size - arg];
 }
 
-int read8(const(ubyte)**ppData)
+int read8(const(ubyte)**ppData) @system
 {
 	auto pData = *ppData;
 	int x = *pData;
@@ -228,14 +236,14 @@ int read8(const(ubyte)**ppData)
 	return x;
 }
 
-int read16(const(ubyte) **ppData)
+int read16(const(ubyte) **ppData) @system
 {
 	int x = read8(ppData);
 	x |= read8(ppData) << 8;
 	return x;
 }
 
-int read24(const(ubyte) **ppData)
+int read24(const(ubyte) **ppData) @system
 {
 	int x = read8(ppData);
 	x |= read8(ppData) << 8;
@@ -243,7 +251,7 @@ int read24(const(ubyte) **ppData)
 	return x;
 }
 
-int readvl(const(ubyte) **ppData)
+int readvl(const(ubyte) **ppData) @system
 {
 	int x = 0;
 	for (;;)

@@ -13,7 +13,7 @@ struct SWAV
 	short[] data;
 	const(short) *dataptr;
 
-	void Read(ref PseudoFile file) {
+	void Read(ref PseudoFile file) @safe {
 
 		this.waveType = file.ReadLE!ubyte();
 		this.loop = file.ReadLE!ubyte();
@@ -40,7 +40,7 @@ struct SWAV
 			// PCM signed 16-bit, no conversion
 			this.data.length = size / 2;
 			for (size_t i = 0; i < size / 2; ++i)
-				this.data[i] = ReadLE!short(&origData[2 * i]);
+				this.data[i] = ReadLE!short(origData[2 * i .. $]);
 			this.loopOffset *= 2;
 			this.nonLoopLength *= 2;
 		}
@@ -48,7 +48,7 @@ struct SWAV
 		{
 			// IMA ADPCM . PCM signed 16-bit
 			this.data.length = (size - 4) * 2;
-			this.DecodeADPCM(&origData[0], size - 4);
+			this.DecodeADPCM(origData, size - 4);
 			if (this.loopOffset)
 				--this.loopOffset;
 			this.loopOffset *= 8;
@@ -56,10 +56,10 @@ struct SWAV
 		}
 		this.dataptr = &this.data[0];
 	}
-	void DecodeADPCM(const ubyte *origData, uint len) {
+	void DecodeADPCM(const(ubyte)[] origData, uint len) @safe {
 		int predictedValue = origData[0] | (origData[1] << 8);
 		int stepIndex = origData[2] | (origData[3] << 8);
-		auto finalData = &this.data[0];
+		auto finalData = this.data;
 
 		for (uint i = 0; i < len; ++i)
 		{
@@ -94,7 +94,7 @@ private immutable int[] ima_step_table =
 	15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
 ];
 
-private void DecodeADPCMNibble(int nibble, ref int stepIndex, ref int predictedValue)
+private void DecodeADPCMNibble(int nibble, ref int stepIndex, ref int predictedValue) @safe
 {
 	int step = ima_step_table[stepIndex];
 

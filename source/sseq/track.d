@@ -27,7 +27,7 @@ struct Override
 	int value;
 	int extraValue;
 
-	int val(const(ubyte) **pData, int function(const(ubyte) **) reader, bool returnExtra = false)
+	int val(const(ubyte) **pData, int function(const(ubyte) **) @system reader, bool returnExtra = false) @system
 	{
 		if (this.overriding)
 			return returnExtra ? this.extraValue : this.value;
@@ -69,14 +69,14 @@ struct Track
 
 	ubyte[TUF_BITS] updateFlags;
 
-	void Init(ubyte handle, Player *player, const ubyte *dataPos, int n) {
+	void Init(ubyte handle, Player *player, const ubyte *dataPos, int n) @safe {
 		this.trackId = handle;
 		this.num = cast(ubyte)n;
 		this.ply = player;
 		this.startPos = dataPos;
 		this.ClearState();
 	}
-	void Zero() {
+	void Zero() @safe {
 		this.trackId = -1;
 
 		this.state = false;
@@ -106,7 +106,7 @@ struct Track
 
 		this.updateFlags = false;
 	}
-	void ClearState() {
+	void ClearState() @safe {
 		this.state = false;
 		this.state[TS_ALLOCBIT] = true;
 		this.state[TS_NOTEWAIT] = true;
@@ -133,11 +133,11 @@ struct Track
 		this.modDelay = 0;
 		this.modDepth = 0;
 	}
-	void Free() {
+	void Free() @safe {
 		this.state = false;
 		this.updateFlags = false;
 	}
-	int NoteOn(int key, int vel, int len) {
+	int NoteOn(int key, int vel, int len) @safe {
 		auto sbnk = this.ply.sseq.bank;
 
 		if (this.patch >= sbnk.instruments.length)
@@ -252,7 +252,7 @@ struct Track
 
 		return nCh;
 	}
-	int NoteOnTie(int key, int vel) {
+	int NoteOnTie(int key, int vel) @safe {
 		// Find an existing note
 		int i;
 		Channel *chn = null;
@@ -285,7 +285,7 @@ struct Track
 
 		return i;
 	}
-	void ReleaseAllNotes() {
+	void ReleaseAllNotes() @safe {
 		for (int i = 0; i < 16; ++i)
 		{
 			Channel* chn = &this.ply.channels[i];
@@ -293,7 +293,7 @@ struct Track
 				chn.Release();
 		}
 	}
-	void Run() {
+	void Run() @system {
 
 		// Indicate "heartbeat" for this track
 		this.updateFlags[TUF_LEN] = true;
@@ -697,7 +697,7 @@ enum SseqCommand
 static const ubyte VariableByteCount = 1 << 7;
 static const ubyte ExtraByteOnNoteOrVarOrCmp = 1 << 6;
 
-static ubyte SseqCommandByteCount(int cmd)
+static ubyte SseqCommandByteCount(int cmd) @safe
 {
 	if (cmd < 0x80)
 		return 1 | VariableByteCount;
@@ -771,26 +771,26 @@ static ubyte SseqCommandByteCount(int cmd)
 		}
 }
 
-private short varFuncSet(short, short value) { return value; };
-private short varFuncAdd(short var, short value) { return cast(short)(var + value); };
-private short varFuncSub(short var, short value) { return cast(short)(var - value); };
-private short varFuncMul(short var, short value) { return cast(short)(var * value); };
-private short varFuncDiv(short var, short value) { return cast(short)(var / value); };
-private short varFuncShift(short var, short value)
+private short varFuncSet(short, short value) @safe { return value; };
+private short varFuncAdd(short var, short value) @safe { return cast(short)(var + value); };
+private short varFuncSub(short var, short value) @safe { return cast(short)(var - value); };
+private short varFuncMul(short var, short value) @safe { return cast(short)(var * value); };
+private short varFuncDiv(short var, short value) @safe { return cast(short)(var / value); };
+private short varFuncShift(short var, short value) @safe
 {
 	if (value < 0)
 		return var >> -value;
 	else
 		return cast(short)(var << value);
 };
-private short varFuncRand(short, short value){
+private short varFuncRand(short, short value) @safe {
 	if (value < 0)
 		return cast(short)(-uniform(0, -value + 1));
 	else
 		return cast(short)uniform(0, value + 1);
 };
 
-private short function(short, short) VarFunc(int cmd)
+private short function(short, short) @safe VarFunc(int cmd) @safe
 {
 	switch (cmd)
 	{
@@ -813,14 +813,14 @@ private short function(short, short) VarFunc(int cmd)
 	}
 }
 
-private bool compareFuncEq(short a, short b) { return a == b; }
-private bool compareFuncGe(short a, short b) { return a >= b; }
-private bool compareFuncGt(short a, short b) { return a > b; }
-private bool compareFuncLe(short a, short b) { return a <= b; }
-private bool compareFuncLt(short a, short b) { return a < b; }
-private bool compareFuncNe(short a, short b) { return a != b; }
+private bool compareFuncEq(short a, short b) @safe { return a == b; }
+private bool compareFuncGe(short a, short b) @safe { return a >= b; }
+private bool compareFuncGt(short a, short b) @safe { return a > b; }
+private bool compareFuncLe(short a, short b) @safe { return a <= b; }
+private bool compareFuncLt(short a, short b) @safe { return a < b; }
+private bool compareFuncNe(short a, short b) @safe { return a != b; }
 
-private bool function(short, short) CompareFunc(int cmd)
+private bool function(short, short) @safe CompareFunc(int cmd) @safe
 {
 	switch (cmd)
 	{

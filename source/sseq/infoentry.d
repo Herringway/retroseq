@@ -8,7 +8,7 @@ struct INFOEntrySEQ
 	ushort bank;
 	ubyte vol;
 
-	void Read(ref PseudoFile file) {
+	void Read(ref PseudoFile file) @safe {
 		this.fileID = file.ReadLE!ushort();
 		file.ReadLE!ushort(); // unknown
 		this.bank = file.ReadLE!ushort();
@@ -26,7 +26,7 @@ struct INFOEntryBANK
 	ushort fileID;
 	ushort[4] waveArc;
 
-	void Read(ref PseudoFile file) {
+	void Read(ref PseudoFile file) @safe {
 		this.fileID = file.ReadLE!ushort();
 		file.ReadLE!ushort(); // unknown
 		file.ReadLE(this.waveArc);
@@ -37,7 +37,7 @@ struct INFOEntryWAVEARC
 {
 	ushort fileID;
 
-	void Read(ref PseudoFile file) {
+	void Read(ref PseudoFile file) @safe {
 		this.fileID = file.ReadLE!ushort();
 	}
 };

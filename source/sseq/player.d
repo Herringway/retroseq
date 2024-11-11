@@ -82,7 +82,7 @@ struct Player
 		}
 		this.FreeTracks();
 	}
-	int ChannelAlloc(int type, int priority) {
+	int ChannelAlloc(int type, int priority) @safe {
 
 		static immutable ubyte[] pcmChnArray = [ 4, 5, 6, 7, 2, 0, 3, 1, 8, 9, 10, 11, 14, 12, 15, 13 ];
 		static immutable ubyte[] psgChnArray = [ 8, 9, 10, 11, 12, 13 ];
@@ -118,7 +118,7 @@ struct Player
 		this.channels[curChnNo].clearHistory();
 		return curChnNo;
 	}
-	int TrackAlloc() {
+	int TrackAlloc() @safe {
 		for (int i = 0; i < FSS_MAXTRACKS; ++i)
 		{
 			Track* thisTrk = &this.tracks[i];
@@ -132,7 +132,7 @@ struct Player
 		}
 		return -1;
 	}
-	void Run() {
+	void Run() @system {
 		while (this.tempoCount >= 240)
 		{
 			this.tempoCount -= 240;
@@ -141,13 +141,13 @@ struct Player
 		}
 		this.tempoCount += (cast(int)(this.tempo) * cast(int)(this.tempoRate)) >> 8;
 	}
-	void UpdateTracks() {
+	void UpdateTracks() @safe {
 		for (int i = 0; i < 16; ++i)
 			this.channels[i].UpdateTrack();
 		for (int i = 0; i < FSS_MAXTRACKS; ++i)
 			this.tracks[i].updateFlags = false;
 	}
-	void Timer() {
+	void Timer() @system {
 		this.UpdateTracks();
 
 		for (int i = 0; i < 16; ++i)
@@ -159,7 +159,7 @@ struct Player
 	/* Playback helper */
 	double secondsPerSample, secondsIntoPlayback, secondsUntilNextClock;
 	bool[16] mutes;
-	void GenerateSamples(short[2][] buf) {
+	void GenerateSamples(short[2][] buf) @system {
 		uint offset;
 		const mute = this.mutes;
 
@@ -210,7 +210,7 @@ struct Player
 	}
 }
 
-private int muldiv7(int val, ubyte mul)
+private int muldiv7(int val, ubyte mul) @safe
 {
 	return mul == 127 ? val : ((val * mul) >> 7);
 }
