@@ -2,8 +2,8 @@
 	"authors": [
 		"Herringway"
 	],
-	"copyright": "Copyright © 2022, Herringway",
-	"description": "SSEQ library",
+	"copyright": "Copyright © 2024, Herringway",
+	"description": "Command-line SSEQ player",
 	"license": "BSL-1.0",
 	"dependencies": {
 		"sseq": "*",
