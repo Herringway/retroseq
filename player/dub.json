@@ -7,7 +7,7 @@
 	"license": "BSL-1.0",
 	"dependencies": {
 		"sseq": "*",
-		"bindbc-sdl": "~>1.2.0"
+		"bindbc-sdl": "~>1.4.0"
 	},
 	"name": "player"
 }
