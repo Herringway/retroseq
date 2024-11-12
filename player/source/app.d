@@ -91,9 +91,11 @@ extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
 int main(string[] args) {
 	bool verbose;
 	int sampleRate = 44100;
+	Interpolation interpolation;
 
 	auto help = getopt(args,
 		"f|samplerate", "Sets sample rate (Hz)", &sampleRate,
+		"i|interpolation", "Interpolation method", &interpolation,
 		"v|verbose", "Print more verbose information", &verbose,
 	);
 	if (help.helpWanted || (args.length < 2)) {
@@ -121,6 +123,7 @@ int main(string[] args) {
 		return 0;
 	}
 	auto player = SSEQPlayer(data, args[2].to!uint);
+	player.player.interpolation = interpolation;
 	// Prepare to play music
 	if (!initAudio(&_sampling_func, 2, sampleRate, &player)) {
 		return 1;

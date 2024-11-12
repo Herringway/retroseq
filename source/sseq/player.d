@@ -967,6 +967,7 @@ struct Player
 		ratio -= cast(int)(ratio);
 
 		const data = channel.sampleHistory[channel.sampleHistoryPtr + 16 .. $];
+		const dataWithPast = channel.sampleHistory[channel.sampleHistoryPtr + 14 .. $];
 
 		if (this.interpolation == Interpolation.INTERPOLATION_SINC)
 		{
@@ -984,7 +985,7 @@ struct Player
 			}
 			double sum = 0.0;
 			for (i = 0; i < cast(int)(SINC_WIDTH * 2); ++i)
-				sum += data[i - cast(int)(SINC_WIDTH) + 1] * kernel[i];
+				sum += channel.sampleHistory[channel.sampleHistoryPtr + 16 + i - cast(int)(SINC_WIDTH) + 1] * kernel[i];
 			return cast(int)(sum / kernel_sum);
 		}
 		else if (this.interpolation > Interpolation.INTERPOLATION_LINEAR)
@@ -994,9 +995,9 @@ struct Player
 			if (this.interpolation == Interpolation.INTERPOLATION_6POINTLEGRANGE)
 			{
 				ratio -= 0.5;
-				double even1 = data[-2] + data[3], odd1 = data[-2] - data[3];
-				double even2 = data[-1] + data[2], odd2 = data[-1] - data[2];
-				double even3 = data[0] + data[1], odd3 = data[0] - data[1];
+				double even1 = dataWithPast[0] + dataWithPast[5], odd1 = dataWithPast[0] - dataWithPast[5];
+				double even2 = dataWithPast[1] + dataWithPast[4], odd2 = dataWithPast[1] - dataWithPast[4];
+				double even3 = dataWithPast[2] + dataWithPast[3], odd3 = dataWithPast[2] - dataWithPast[3];
 				c0 = 0.01171875 * even1 - 0.09765625 * even2 + 0.5859375 * even3;
 				c1 = 25 / 384.0 * odd2 - 1.171875 * odd3 - 0.0046875 * odd1;
 				c2 = 0.40625 * even2 - 17 / 48.0 * even3 - 5 / 96.0 * even1;
@@ -1007,10 +1008,10 @@ struct Player
 			}
 			else // INTERPOLATION_4POINTLEAGRANGE
 			{
-				c0 = data[0];
-				c1 = data[1] - 1 / 3.0 * data[-1] - 0.5 * data[0] - 1 / 6.0 * data[2];
-				c2 = 0.5 * (data[-1] + data[1]) - data[0];
-				c3 = 1 / 6.0 * (data[2] - data[-1]) + 0.5 * (data[0] - data[1]);
+				c0 = dataWithPast[2];
+				c1 = dataWithPast[3] - 1 / 3.0 * dataWithPast[1] - 0.5 * dataWithPast[2] - 1 / 6.0 * dataWithPast[4];
+				c2 = 0.5 * (dataWithPast[1] + dataWithPast[3]) - dataWithPast[2];
+				c3 = 1 / 6.0 * (dataWithPast[4] - dataWithPast[1]) + 0.5 * (dataWithPast[2] - dataWithPast[3]);
 				return cast(int)(((c3 * ratio + c2) * ratio + c1) * ratio + c0);
 			}
 		}
