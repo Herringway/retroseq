@@ -37,9 +37,9 @@ immutable uint SCHANNEL_ENABLE = BIT(31);
 
 enum Interpolation
 {
-	INTERPOLATION_NONE,
-	INTERPOLATION_LINEAR,
-	INTERPOLATION_4POINTLEGRANGE,
-	INTERPOLATION_6POINTLEGRANGE,
-	INTERPOLATION_SINC
+	none,
+	linear,
+	lagrange4Point,
+	lagrange6Point,
+	sinc
 }

@@ -969,31 +969,26 @@ struct Player
 		const data = channel.sampleHistory[channel.sampleHistoryPtr + 16 .. $];
 		const dataWithPast = channel.sampleHistory[channel.sampleHistoryPtr + 14 .. $];
 
-		if (this.interpolation == Interpolation.INTERPOLATION_SINC)
-		{
-			double[SINC_WIDTH * 2] kernel = 0.0;
-			double kernel_sum = 0.0;
-			int i = SINC_WIDTH, shift = cast(int)(floor(ratio * SINC_RESOLUTION));
-			int step = channel.reg.sampleIncrease > 1.0 ? cast(int)(SINC_RESOLUTION / channel.reg.sampleIncrease) : SINC_RESOLUTION;
-			int shift_adj = shift * step / SINC_RESOLUTION;
-			const int window_step = SINC_RESOLUTION;
-			for (; i >= -cast(int)(SINC_WIDTH - 1); --i)
-			{
-				int pos = i * step;
-				int window_pos = i * window_step;
-				kernel_sum += kernel[i + SINC_WIDTH - 1] = sinc_lut[abs(shift_adj - pos)] * window_lut[abs(shift - window_pos)];
-			}
-			double sum = 0.0;
-			for (i = 0; i < cast(int)(SINC_WIDTH * 2); ++i)
-				sum += channel.sampleHistory[channel.sampleHistoryPtr + 16 + i - cast(int)(SINC_WIDTH) + 1] * kernel[i];
-			return cast(int)(sum / kernel_sum);
-		}
-		else if (this.interpolation > Interpolation.INTERPOLATION_LINEAR)
-		{
-			double c0, c1, c2, c3, c4, c5;
-
-			if (this.interpolation == Interpolation.INTERPOLATION_6POINTLEGRANGE)
-			{
+		final switch (this.interpolation) {
+			case Interpolation.sinc:
+				double[SINC_WIDTH * 2] kernel = 0.0;
+				double kernel_sum = 0.0;
+				int i = SINC_WIDTH, shift = cast(int)(floor(ratio * SINC_RESOLUTION));
+				int step = channel.reg.sampleIncrease > 1.0 ? cast(int)(SINC_RESOLUTION / channel.reg.sampleIncrease) : SINC_RESOLUTION;
+				int shift_adj = shift * step / SINC_RESOLUTION;
+				const int window_step = SINC_RESOLUTION;
+				for (; i >= -cast(int)(SINC_WIDTH - 1); --i)
+				{
+					int pos = i * step;
+					int window_pos = i * window_step;
+					kernel_sum += kernel[i + SINC_WIDTH - 1] = sinc_lut[abs(shift_adj - pos)] * window_lut[abs(shift - window_pos)];
+				}
+				double sum = 0.0;
+				for (i = 0; i < cast(int)(SINC_WIDTH * 2); ++i)
+					sum += channel.sampleHistory[channel.sampleHistoryPtr + 16 + i - cast(int)(SINC_WIDTH) + 1] * kernel[i];
+				return cast(int)(sum / kernel_sum);
+			case Interpolation.lagrange6Point:
+				double c0, c1, c2, c3, c4, c5;
 				ratio -= 0.5;
 				double even1 = dataWithPast[0] + dataWithPast[5], odd1 = dataWithPast[0] - dataWithPast[5];
 				double even2 = dataWithPast[1] + dataWithPast[4], odd2 = dataWithPast[1] - dataWithPast[4];
@@ -1005,18 +1000,17 @@ struct Player
 				c4 = 1 / 48.0 * even1 - 0.0625 * even2 + 1 / 24.0 * even3;
 				c5 = 1 / 24.0 * odd2 - 1 / 12.0 * odd3 - 1 / 120.0 * odd1;
 				return cast(int)(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
-			}
-			else // INTERPOLATION_4POINTLEAGRANGE
-			{
+			case Interpolation.lagrange4Point:
+				double c0, c1, c2, c3;
 				c0 = dataWithPast[2];
 				c1 = dataWithPast[3] - 1 / 3.0 * dataWithPast[1] - 0.5 * dataWithPast[2] - 1 / 6.0 * dataWithPast[4];
 				c2 = 0.5 * (dataWithPast[1] + dataWithPast[3]) - dataWithPast[2];
 				c3 = 1 / 6.0 * (dataWithPast[4] - dataWithPast[1]) + 0.5 * (dataWithPast[2] - dataWithPast[3]);
 				return cast(int)(((c3 * ratio + c2) * ratio + c1) * ratio + c0);
-			}
+			case Interpolation.linear:
+				return cast(int)(data[0] + ratio * (data[1] - data[0]));
+			case Interpolation.none: assert(0);
 		}
-		else // INTERPOLATION_LINEAR
-			return cast(int)(data[0] + ratio * (data[1] - data[0]));
 	}
 	int GenerateSample(ref Channel channel) @safe {
 		if (channel.reg.samplePosition < 0)
@@ -1024,7 +1018,7 @@ struct Player
 
 		if (channel.reg.format != 3)
 		{
-			if (this.interpolation == Interpolation.INTERPOLATION_NONE)
+			if (this.interpolation == Interpolation.none)
 				return channel.reg.source.data[cast(uint)(channel.reg.samplePosition)];
 			else
 				return Interpolate(channel);
