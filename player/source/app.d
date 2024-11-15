@@ -128,6 +128,7 @@ int main(string[] args) {
 	info("SDL audio init success");
 
 	infof("Now playing %s", player.song.sseq.filename);
+	infof("Sequence: %s, Bank: %s, wave archives: %s", player.song.sseq.filename, player.song.sbnk.filename, player.song.swar[].filter!(x => !!x).map!(x => x.filename));
 
 	writeln("Press enter to exit");
 	while(true) {
