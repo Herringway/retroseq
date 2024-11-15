@@ -254,12 +254,3 @@ int readvl(ref const(ubyte)[] ppData) @safe
 	}
 	return x;
 }
-
-// Clamp a value between a minimum and maximum value
-void clamp(T1, T2)(auto ref T1 valueToClamp, const auto ref T2 minValue, const auto ref T2 maxValue)
-{
-	if (valueToClamp < minValue)
-		valueToClamp = minValue;
-	else if (valueToClamp > maxValue)
-		valueToClamp = maxValue;
-}
