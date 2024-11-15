@@ -110,7 +110,6 @@ int main(string[] args) {
 
 	info("Loading SSEQ file");
 
-	auto data = cast(ubyte[])read(args[1]);
 	if (args.length == 2) {
 		auto pFile = PseudoFile(file);
 		auto sdat = SDAT(pFile);
@@ -119,7 +118,7 @@ int main(string[] args) {
 		}
 		return 0;
 	}
-	auto player = SSEQPlayer(data, args[2].to!uint);
+	auto player = SSEQPlayer(file, args[2].to!uint);
 	player.player.interpolation = interpolation;
 	// Prepare to play music
 	if (!initAudio(&_sampling_func, 2, sampleRate, &player)) {
