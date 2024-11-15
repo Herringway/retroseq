@@ -50,9 +50,6 @@ struct SSEQPlayer {
 	Player player;
 	SDAT sdat;
 	Song song;
-	double secondsPerSample;
-	double secondsIntoPlayback;
-	double secondsUntilNextClock;
 	bool stopped;
 	this(ubyte[] file, uint id) {
 		auto pFile = PseudoFile(file);
