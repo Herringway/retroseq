@@ -49,7 +49,7 @@ void MPlayJumpTableCopy(MPlayFunc[] mplayJumpTable) @safe {
 }
 
 // Ends the current track. (Fine as in the Italian musical word, not English)
-void MP2K_event_fine(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_fine(MusicPlayerInfo*, MusicPlayerTrack *track) {
     MusicPlayerTrack *r5 = track;
     for (SoundChannel *chan = track.chan; chan != null; chan = cast(SoundChannel*)chan.nextChannelPointer) {
         if (chan.statusFlags & 0xC7) {
@@ -61,27 +61,27 @@ void MP2K_event_fine(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
 }
 
 // Sets the track's cmdPtr to the specified address.
-void MP2K_event_goto(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_goto(MusicPlayerInfo*, MusicPlayerTrack *track) {
     track.cmdPtr = offsetPointer!ubyte(*cast(uint *)track.cmdPtr);
 }
 
 // Sets the track's cmdPtr to the specified address after backing up its current position.
-void MP2K_event_patt(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_patt(MusicPlayerInfo* player, MusicPlayerTrack *track) {
     ubyte level = track.patternLevel;
     if (level < 3) {
         track.patternStack[level] = track.cmdPtr + 4;  // sizeof(ubyte *);
         track.patternLevel++;
-        MP2K_event_goto(unused, track);
+        MP2K_event_goto(player, track);
     } else {
         // Stop playing this track, as an indication to the music programmer that they need to quit
         // nesting patterns so darn much.
-        MP2K_event_fine(unused, track);
+        MP2K_event_fine(player, track);
     }
 }
 
 // Marks the end of the current pattern, if there is one, by resetting the pattern to the
 // most recently saved value.
-void MP2K_event_pend(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_pend(MusicPlayerInfo*, MusicPlayerTrack *track) {
     if (track.patternLevel != 0) {
         ubyte index = --track.patternLevel;
         track.cmdPtr = track.patternStack[index];
@@ -89,15 +89,15 @@ void MP2K_event_pend(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
 }
 
 // Loops back until a REPT event has been reached the specified number of times
-void MP2K_event_rept(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_rept(MusicPlayerInfo* player, MusicPlayerTrack *track) {
     if (*track.cmdPtr == 0) {
         // "Repeat 0 times" == loop forever
         track.cmdPtr++;
-        MP2K_event_goto(unused, track);
+        MP2K_event_goto(player, track);
     } else {
         ubyte repeatCount = ++track.repeatCount;
         if (repeatCount < ConsumeTrackByte(track)) {
-            MP2K_event_goto(unused, track);
+            MP2K_event_goto(player, track);
         } else {
             track.repeatCount = 0;
             track.cmdPtr += ubyte.sizeof + uint.sizeof;
@@ -106,7 +106,7 @@ void MP2K_event_rept(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
 }
 
 // Sets the note priority for new notes in this track.
-void MP2K_event_prio(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_prio(MusicPlayerInfo*, MusicPlayerTrack *track) {
     track.priority = ConsumeTrackByte(track);
 }
 
@@ -119,7 +119,7 @@ void MP2K_event_tempo(MusicPlayerInfo *player, MusicPlayerTrack *track) {
     player.tempoInterval = cast(ushort)((bpm * player.tempoScale) / 256);
 }
 
-void MP2K_event_keysh(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_keysh(MusicPlayerInfo*, MusicPlayerTrack *track) {
     track.keyShift = ConsumeTrackByte(track);
     track.flags |= 0xC;
 }
@@ -130,31 +130,31 @@ void MP2K_event_voice(MusicPlayerInfo *player, MusicPlayerTrack *track) {
     track.instrument = *instrument;
 }
 
-void MP2K_event_vol(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_vol(MusicPlayerInfo*, MusicPlayerTrack *track) {
     track.vol = ConsumeTrackByte(track);
     track.flags |= 0x3;
 }
 
-void MP2K_event_pan(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_pan(MusicPlayerInfo*, MusicPlayerTrack *track) {
     track.pan = cast(byte)(ConsumeTrackByte(track) - 0x40);
     track.flags |= 0x3;
 }
 
-void MP2K_event_bend(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_bend(MusicPlayerInfo*, MusicPlayerTrack *track) {
     track.bend = cast(byte)(ConsumeTrackByte(track) - 0x40);
     track.flags |= 0xC;
 }
 
-void MP2K_event_bendr(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_bendr(MusicPlayerInfo*, MusicPlayerTrack *track) {
     track.bendRange = ConsumeTrackByte(track);
     track.flags |= 0xC;
 }
 
-void MP2K_event_lfodl(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_lfodl(MusicPlayerInfo*, MusicPlayerTrack *track) {
     track.lfoDelay = ConsumeTrackByte(track);
 }
 
-void MP2K_event_modt(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_modt(MusicPlayerInfo*, MusicPlayerTrack *track) {
     ubyte type = ConsumeTrackByte(track);
     if (type != track.modType) {
         track.modType = type;
@@ -162,12 +162,12 @@ void MP2K_event_modt(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
     }
 }
 
-void MP2K_event_tune(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_tune(MusicPlayerInfo*, MusicPlayerTrack *track) {
     track.tune = cast(byte)(ConsumeTrackByte(track) - 0x40);
     track.flags |= 0xC;
 }
 
-void MP2K_event_port(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_port(MusicPlayerInfo*, MusicPlayerTrack *track) {
     // I'm really curious whether any games actually use this event...
     // I assume anything done by this command will get immediately overwritten by cgbMixerFunc?
     track.cmdPtr += 2;
@@ -538,7 +538,7 @@ void MP2K_event_nxx(uint clock, MusicPlayerInfo *player, MusicPlayerTrack *track
     track.flags &= ~0xF;
 }
 
-void MP2K_event_endtie(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_endtie(MusicPlayerInfo*, MusicPlayerTrack *track) {
     ubyte key = *track.cmdPtr;
     if (key < 0x80) {
         track.key = key;
@@ -557,14 +557,14 @@ void MP2K_event_endtie(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
     }
 }
 
-void MP2K_event_lfos(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_lfos(MusicPlayerInfo*, MusicPlayerTrack *track) {
     track.lfoSpeed = *(track.cmdPtr++);
     if (track.lfoSpeed == 0) {
         ClearModM(track);
     }
 }
 
-void MP2K_event_mod(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
+void MP2K_event_mod(MusicPlayerInfo*, MusicPlayerTrack *track) {
     track.modDepth = *(track.cmdPtr++);
     if (track.modDepth == 0) {
         ClearModM(track);
