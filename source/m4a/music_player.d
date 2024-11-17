@@ -173,8 +173,7 @@ void MP2K_event_port(MusicPlayerInfo*, MusicPlayerTrack *track) {
     track.cmdPtr += 2;
 }
 
-void MP2KPlayerMain(void *voidPtrPlayer) {
-    MusicPlayerInfo *player = cast(MusicPlayerInfo *)voidPtrPlayer;
+void MP2KPlayerMain(MusicPlayerInfo* player) @system {
     SoundMixerState *mixer = SOUND_INFO_PTR;
 
     if (player.nextPlayerFunc != null) {
@@ -184,7 +183,7 @@ void MP2KPlayerMain(void *voidPtrPlayer) {
     if (player.status & MUSICPLAYER_STATUS_PAUSE) {
         return;
     }
-    FadeOutBody(cast(MusicPlayerInfo*)voidPtrPlayer, null);
+    FadeOutBody(player, null);
     if (player.status & MUSICPLAYER_STATUS_PAUSE) {
         return;
     }
