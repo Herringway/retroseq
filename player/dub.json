@@ -1,0 +1,13 @@
+{
+	"authors": [
+		"Herringway"
+	],
+	"copyright": "Copyright © 2024, Herringway",
+	"description": "Command-line m4a player",
+	"license": "BSL-1.0",
+	"dependencies": {
+		"m4a": "*",
+		"bindbc-sdl": "~>1.4.0"
+	},
+	"name": "player"
+}

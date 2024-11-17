@@ -1,0 +1,8 @@
+{
+	"description": "GBA m4a",
+	"license": "proprietary",
+	"name": "m4a",
+	"subPackages": [
+		"player"
+	]
+}

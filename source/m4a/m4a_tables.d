@@ -1,52 +1,55 @@
-#include <stdint.h>
-#include "m4a_internal.h"
+module m4a.m4a_tables;
+
+import m4a.internal;
+import m4a.m4a;
+import m4a.music_player;
 
 // Some of these functions have different signatures, so we need to make this
 // an array of void pointers or a struct. It's simpler to just make it an array
 // for now.
-void * const gMPlayJumpTableTemplate[] =
-{
-    MP2K_event_fine,
-    MP2K_event_goto,
-    MP2K_event_patt,
-    MP2K_event_pend,
-    MP2K_event_rept,
-    MP2K_event_fine,
-    MP2K_event_fine,
-    MP2K_event_fine,
-    MP2K_event_fine,
-    MP2K_event_prio,
-    MP2K_event_tempo,
-    MP2K_event_keysh,
-    MP2K_event_voice,
-    MP2K_event_vol,
-    MP2K_event_pan,
-    MP2K_event_bend,
-    MP2K_event_bendr,
-    MP2K_event_lfos,
-    MP2K_event_lfodl,
-    MP2K_event_mod,
-    MP2K_event_modt,
-    MP2K_event_fine,
-    MP2K_event_fine,
-    MP2K_event_tune,
-    MP2K_event_fine,
-    MP2K_event_fine,
-    MP2K_event_fine,
-    MP2K_event_port,
-    MP2K_event_fine,
-    MP2K_event_endtie,
-    SampleFreqSet,
-    TrackStop,
-    FadeOutBody,
-    TrkVolPitSet,
-    MP2KClearChain,
-    SoundMainBTM,
-};
+immutable void *[] gMPlayJumpTableTemplate =
+[
+    &MP2K_event_fine,
+    &MP2K_event_goto,
+    &MP2K_event_patt,
+    &MP2K_event_pend,
+    &MP2K_event_rept,
+    &MP2K_event_fine,
+    &MP2K_event_fine,
+    &MP2K_event_fine,
+    &MP2K_event_fine,
+    &MP2K_event_prio,
+    &MP2K_event_tempo,
+    &MP2K_event_keysh,
+    &MP2K_event_voice,
+    &MP2K_event_vol,
+    &MP2K_event_pan,
+    &MP2K_event_bend,
+    &MP2K_event_bendr,
+    &MP2K_event_lfos,
+    &MP2K_event_lfodl,
+    &MP2K_event_mod,
+    &MP2K_event_modt,
+    &MP2K_event_fine,
+    &MP2K_event_fine,
+    &MP2K_event_tune,
+    &MP2K_event_fine,
+    &MP2K_event_fine,
+    &MP2K_event_fine,
+    &MP2K_event_port,
+    &MP2K_event_fine,
+    &MP2K_event_endtie,
+    &SampleFreqSet,
+    &TrackStop,
+    &FadeOutBody,
+    &TrkVolPitSet,
+    &MP2KClearChain,
+    &SoundMainBTM,
+];
 
 // This is a table of deltas between sample values in compressed PCM data.
-const int8_t gDeltaEncodingTable[] =
-{
+immutable byte[] gDeltaEncodingTable =
+[
       0,
       1,
       4,
@@ -63,10 +66,10 @@ const int8_t gDeltaEncodingTable[] =
      -9,
      -4,
      -1,
-};
+];
 
-const uint8_t gScaleTable[] =
-{
+immutable ubyte[] gScaleTable =
+[
     0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA, 0xEB,
     0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9, 0xDA, 0xDB,
     0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9, 0xCA, 0xCB,
@@ -82,10 +85,10 @@ const uint8_t gScaleTable[] =
     0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B,
     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B,
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-};
+];
 
-const uint32_t gFreqTable[] =
-{
+immutable uint[] gFreqTable =
+[
     2147483648u,
     2275179671u,
     2410468894u,
@@ -98,10 +101,10 @@ const uint32_t gFreqTable[] =
     3611622603u,
     3826380858u,
     4053909305u,
-};
+];
 
-const uint16_t gPcmSamplesPerVBlankTable[] =
-{
+immutable ushort[] gPcmSamplesPerVBlankTable =
+[
     96,
     132,
     176,
@@ -114,10 +117,10 @@ const uint16_t gPcmSamplesPerVBlankTable[] =
     608,
     672,
     701,
-};
+];
 
-const uint8_t gCgbScaleTable[] =
-{
+immutable ubyte[] gCgbScaleTable =
+[
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B,
     0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B,
@@ -129,10 +132,10 @@ const uint8_t gCgbScaleTable[] =
     0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B,
     0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0x9B,
     0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xAB,
-};
+];
 
-const int16_t gCgbFreqTable[] =
-{
+immutable short[] gCgbFreqTable =
+[
     -2004,
     -1891,
     -1785,
@@ -145,10 +148,10 @@ const int16_t gCgbFreqTable[] =
     -1192,
     -1125,
     -1062,
-};
+];
 
-const uint8_t gNoiseTable[] =
-{
+immutable ubyte[] gNoiseTable =
+[
     0xD7, 0xD6, 0xD5, 0xD4,
     0xC7, 0xC6, 0xC5, 0xC4,
     0xB7, 0xB6, 0xB5, 0xB4,
@@ -164,19 +167,19 @@ const uint8_t gNoiseTable[] =
     0x17, 0x16, 0x15, 0x14,
     0x07, 0x06, 0x05, 0x04,
     0x03, 0x02, 0x01, 0x00,
-};
+];
 
-const uint8_t gCgb3Vol[] =
-{
+immutable ubyte[] gCgb3Vol =
+[
     0x00, 0x00,
     0x60, 0x60, 0x60, 0x60,
     0x40, 0x40, 0x40, 0x40,
     0x80, 0x80, 0x80, 0x80,
     0x20, 0x20,
-};
+];
 
-const uint8_t gClockTable[] =
-{
+immutable ubyte[] gClockTable =
+[
     0x00,
     0x01,
     0x02,
@@ -226,51 +229,51 @@ const uint8_t gClockTable[] =
     0x5A,
     0x5C,
     0x60,
-};
+];
 
-#define FINE   0xb1
-#define GOTO   0xb2
-#define PATT   0xb3
-#define PEND   0xb4
-#define REPT   0xb5
-#define MEMACC 0xb9
-#define PRIO   0xba
-#define TEMPO  0xbb
-#define KEYSH  0xbc
-#define VOICE  0xbd
-#define VOL    0xbe
-#define PAN    0xbf
-#define BEND   0xc0
-#define BENDR  0xc1
-#define LFOS   0xc2
-#define LFODL  0xc3
-#define MOD    0xc4
-#define MODT   0xc5
-#define TUNE   0xc8
+enum FINE = 0xb1;
+enum GOTO = 0xb2;
+enum PATT = 0xb3;
+enum PEND = 0xb4;
+enum REPT = 0xb5;
+enum MEMACC = 0xb9;
+enum PRIO = 0xba;
+enum TEMPO = 0xbb;
+enum KEYSH = 0xbc;
+enum VOICE = 0xbd;
+enum VOL = 0xbe;
+enum PAN = 0xbf;
+enum BEND = 0xc0;
+enum BENDR = 0xc1;
+enum LFOS = 0xc2;
+enum LFODL = 0xc3;
+enum MOD = 0xc4;
+enum MODT = 0xc5;
+enum TUNE = 0xc8;
 
-#define XCMD   0xcd
-#define xRELE  0x07
-#define xIECV  0x08
-#define xIECL  0x09
+enum XCMD = 0xcd;
+enum xRELE = 0x07;
+enum xIECV = 0x08;
+enum xIECL = 0x09;
 
-#define EOT    0xce
-#define TIE    0xcf
+enum EOT = 0xce;
+enum TIE = 0xcf;
 
 
-const XcmdFunc gXcmdTable[] =
-{
-    ply_xxx,
-    ply_xwave,
-    ply_xtype,
-    ply_xxx,
-    ply_xatta,
-    ply_xdeca,
-    ply_xsust,
-    ply_xrele,
-    ply_xiecv,
-    ply_xiecl,
-    ply_xleng,
-    ply_xswee,
-    ply_xcmd_0C,
-    ply_xcmd_0D,
-};
+immutable XcmdFunc[] gXcmdTable =
+[
+    &ply_xxx,
+    &ply_xwave,
+    &ply_xtype,
+    &ply_xxx,
+    &ply_xatta,
+    &ply_xdeca,
+    &ply_xsust,
+    &ply_xrele,
+    &ply_xiecv,
+    &ply_xiecl,
+    &ply_xleng,
+    &ply_xswee,
+    &ply_xcmd_0C,
+    &ply_xcmd_0D,
+];
