@@ -5,7 +5,7 @@ import m4a.internal;
 import m4a.m4a;
 import m4a.m4a_tables;
 
-uint umul3232H32(uint a, uint b) @safe {
+uint umul3232H32(uint a, uint b) @safe pure {
     ulong result = a;
     result *= b;
     return result >> 32;
@@ -49,36 +49,6 @@ private ubyte SafeDereferenceU8(ubyte *addr) {
 
 private uint SafeDereferenceU32(uint *addr) {
     uint ret = *addr;
-    VERIFY_PTR(addr);
-    return ret;
-}
-
-private ubyte *SafeDereferenceU8Ptr(ubyte **addr) {
-    ubyte *ret = *addr;
-    VERIFY_PTR(addr);
-    return ret;
-}
-
-private uint *SafeDereferenceU32Ptr(uint **addr) {
-    uint *ret = *addr;
-    VERIFY_PTR(addr);
-    return ret;
-}
-
-private WaveData *SafeDereferenceWavDataPtr(WaveData **addr) {
-    WaveData *ret = *addr;
-    VERIFY_PTR(addr);
-    return ret;
-}
-
-private ToneData *SafeDereferenceMP2KInstrumentPtr(ToneData **addr) {
-    ToneData *ret = *addr;
-    VERIFY_PTR(addr);
-    return ret;
-}
-
-private void *SafeDereferenceVoidPtr(void **addr) {
-    void *ret = *addr;
     VERIFY_PTR(addr);
     return ret;
 }

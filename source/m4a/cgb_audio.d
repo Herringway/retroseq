@@ -2,7 +2,6 @@ module m4a.cgb_audio;
 
 import m4a.cgb_tables;
 import m4a.internal;
-import m4a.m4a;
 
 struct AudioCGB {
     ushort ch1Freq;

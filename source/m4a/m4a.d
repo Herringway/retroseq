@@ -32,11 +32,11 @@ T* offsetPointer(T)(uint ptr) @system
     return cast(T*)&musicData[ptr - 0x8000000];
 }
 
-ushort getOrigSampleRate(ubyte rate) @safe {
+ushort getOrigSampleRate(ubyte rate) @safe pure {
     return gPcmSamplesPerVBlankTable[rate];
 }
 
-uint MidiKeyToFreq(WaveData *wav, ubyte key, ubyte fineAdjust) @safe
+uint MidiKeyToFreq(WaveData *wav, ubyte key, ubyte fineAdjust) @safe pure
 {
     uint val1;
     uint val2;
@@ -57,12 +57,12 @@ uint MidiKeyToFreq(WaveData *wav, ubyte key, ubyte fineAdjust) @safe
     return umul3232H32(wav.freq, val1 + umul3232H32(val2 - val1, fineAdjustShifted));
 }
 
-void MPlayContinue(MusicPlayerInfo *mplayInfo) @safe
+void MPlayContinue(MusicPlayerInfo *mplayInfo) @safe pure
 {
     mplayInfo.status &= ~MUSICPLAYER_STATUS_PAUSE;
 }
 
-void MPlayFadeOut(MusicPlayerInfo *mplayInfo, ushort speed) @safe
+void MPlayFadeOut(MusicPlayerInfo *mplayInfo, ushort speed) @safe pure
 {
     mplayInfo.fadeCounter = speed;
     mplayInfo.fadeInterval = speed;
@@ -304,11 +304,11 @@ void SoundInit(SoundMixerState *soundInfo) @system
     soundInfo.mp2kEventFuncTable = gMPlayJumpTable;
 }
 
-void MP2K_event_nothing(MusicPlayerInfo*, MusicPlayerTrack*) {
+void MP2K_event_nothing(MusicPlayerInfo*, MusicPlayerTrack*) @safe pure {
     assert(0);
 }
 
-void SampleFreqSet(SoundMixerState *soundInfo, uint freq) @safe
+void SampleFreqSet(SoundMixerState *soundInfo, uint freq) @safe pure
 {
     soundInfo.samplesPerFrame = cast(uint)((freq / 60.0f) + 0.5f);
 
