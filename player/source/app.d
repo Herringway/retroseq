@@ -60,7 +60,7 @@ bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* use
 	want.freq = sampleRate;
 	want.format = AUDIO_F32;
 	want.channels = channels;
-	want.samples = 512;
+	want.samples = 800;
 	want.callback = fun;
 	want.userdata = userdata;
 	dev = SDL_OpenAudioDevice(null, 0, &want, &have, 0);
