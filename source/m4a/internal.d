@@ -193,7 +193,7 @@ struct SoundChannel
 
 enum MAX_DIRECTSOUND_CHANNELS = 16;
 
-alias MPlayFunc = void function();
+alias MPlayFunc = void function(MusicPlayerInfo*, MusicPlayerTrack*);
 alias PlyNoteFunc = void function(uint, MusicPlayerInfo *, MusicPlayerTrack *);
 alias CgbSoundFunc = void function();
 alias CgbOscOffFunc = void function(ubyte);
@@ -302,7 +302,7 @@ struct SoundMixerState
     CgbSoundFunc cgbMixerFunc;
     CgbOscOffFunc cgbNoteOffFunc;
     MidiKeyToCgbFreqFunc cgbCalcFreqFunc;
-    MPlayFunc *mp2kEventFuncTable;
+    MPlayFunc[] mp2kEventFuncTable;
     PlyNoteFunc mp2kEventNxxFunc;
     ExtVolPitFunc ExtVolPit;
     void *reserved2;

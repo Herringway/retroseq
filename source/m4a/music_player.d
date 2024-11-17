@@ -11,7 +11,7 @@ uint umul3232H32(uint a, uint b) {
     return result >> 32;
 }
 
-void SoundMainBTM(void *ptr)
+void SoundMainBTM(MusicPlayerInfo*, MusicPlayerTrack*)
 {
     //CpuFill32(0, ptr, 0x40);
 }
@@ -88,10 +88,8 @@ ubyte ConsumeTrackByte(MusicPlayerTrack *track) {
     return SafeDereferenceU8(ptr);
 }
 
-void MPlayJumpTableCopy(void **mplayJumpTable) {
-    for (ubyte i = 0; i < 36; i++) {
-        mplayJumpTable[i] = SafeDereferenceVoidPtr(cast(void**)&gMPlayJumpTableTemplate[i]);
-    }
+void MPlayJumpTableCopy(MPlayFunc[] mplayJumpTable) @safe {
+    mplayJumpTable[] = gMPlayJumpTableTemplate;
 }
 
 // Ends the current track. (Fine as in the Italian musical word, not English)
@@ -230,7 +228,7 @@ void MP2KPlayerMain(void *voidPtrPlayer) {
     if (player.status & MUSICPLAYER_STATUS_PAUSE) {
         return;
     }
-    FadeOutBody(cast(MusicPlayerInfo*)voidPtrPlayer);
+    FadeOutBody(cast(MusicPlayerInfo*)voidPtrPlayer, null);
     if (player.status & MUSICPLAYER_STATUS_PAUSE) {
         return;
     }
@@ -280,9 +278,9 @@ void MP2KPlayerMain(void *voidPtrPlayer) {
                 if (event >= 0xCF) {
                     mixer.mp2kEventNxxFunc(event - 0xCF, player, currentTrack);
                 } else if (event >= 0xB1) {
-                    void function(MusicPlayerInfo *, MusicPlayerTrack *) eventFunc;
+                    MPlayFunc eventFunc;
                     player.cmd = cast(ubyte)(event - 0xB1);
-                    eventFunc = cast(void function(MusicPlayerInfo*, MusicPlayerTrack*))mixer.mp2kEventFuncTable[player.cmd];
+                    eventFunc = mixer.mp2kEventFuncTable[player.cmd];
                     eventFunc(player, currentTrack);
 
                     if (currentTrack.flags == 0) {

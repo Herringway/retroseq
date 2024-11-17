@@ -247,15 +247,15 @@ void MPlayExtender(CgbChannel *cgbChans)
         cgb_trigger_note(i);
     }
 
-    gMPlayJumpTable[8] = cast(MPlayFunc)&ply_memacc;
-    gMPlayJumpTable[17] = cast(MPlayFunc)&MP2K_event_lfos;
-    gMPlayJumpTable[19] = cast(MPlayFunc)&MP2K_event_mod;
-    gMPlayJumpTable[28] = cast(MPlayFunc)&ply_xcmd;
-    gMPlayJumpTable[29] = cast(MPlayFunc)&MP2K_event_endtie;
-    gMPlayJumpTable[30] = cast(MPlayFunc)&SampleFreqSet;
-    gMPlayJumpTable[31] = cast(MPlayFunc)&TrackStop;
-    gMPlayJumpTable[32] = cast(MPlayFunc)&FadeOutBody;
-    gMPlayJumpTable[33] = cast(MPlayFunc)&TrkVolPitSet;
+    gMPlayJumpTable[8] = &ply_memacc;
+    gMPlayJumpTable[17] = &MP2K_event_lfos;
+    gMPlayJumpTable[19] = &MP2K_event_mod;
+    gMPlayJumpTable[28] = &ply_xcmd;
+    gMPlayJumpTable[29] = &MP2K_event_endtie;
+    gMPlayJumpTable[30] = &MP2K_event_nothing;
+    gMPlayJumpTable[31] = &TrackStop;
+    gMPlayJumpTable[32] = &FadeOutBody;
+    gMPlayJumpTable[33] = &TrkVolPitSet;
 
     soundInfo.cgbChans = cgbChans;
     soundInfo.cgbMixerFunc = &cgbMixerFunc;
@@ -305,9 +305,13 @@ void SoundInit(SoundMixerState *soundInfo)
     soundInfo.cgbCalcFreqFunc = cast(MidiKeyToCgbFreqFunc)&DummyFunc;
     soundInfo.ExtVolPit = cast(ExtVolPitFunc)&DummyFunc;
 
-    MPlayJumpTableCopy(cast(void**)&gMPlayJumpTable[0]);
+    MPlayJumpTableCopy(gMPlayJumpTable);
 
-    soundInfo.mp2kEventFuncTable = &gMPlayJumpTable[0];
+    soundInfo.mp2kEventFuncTable = gMPlayJumpTable;
+}
+
+void MP2K_event_nothing(MusicPlayerInfo*, MusicPlayerTrack*) {
+    assert(0);
 }
 
 void SampleFreqSet(uint freq)
@@ -517,7 +521,7 @@ void m4aMPlayStop(MusicPlayerInfo *mplayInfo)
     }
 }
 
-void FadeOutBody(MusicPlayerInfo *mplayInfo)
+void FadeOutBody(MusicPlayerInfo *mplayInfo, MusicPlayerTrack*)
 {
     int i;
     MusicPlayerTrack *track;
@@ -1347,7 +1351,7 @@ void ply_memacc(MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
 cond_true:
     {
         // *& is required for matching
-        (cast(typeof(&MP2K_event_goto))(gMPlayJumpTable[1]))(mplayInfo, track);
+        gMPlayJumpTable[1](mplayInfo, track);
         return;
     }
 
@@ -1365,7 +1369,7 @@ void ply_xcmd(MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
 
 void ply_xxx(MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
 {
-    (cast(typeof(&MP2K_event_fine))gMPlayJumpTable[0])(mplayInfo, track);
+    gMPlayJumpTable[0](mplayInfo, track);
 }
 
 void READ_XCMD_BYTE(MusicPlayerTrack* track, ref uint var, size_t n)
