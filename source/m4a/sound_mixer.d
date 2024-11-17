@@ -22,13 +22,13 @@ ubyte RunMixerFrame(SoundMixerState* mixer, float[2][] audioBuffer) @system {
         mixer.cgbMixerFunc();
     }
     samplesPerFrame = mixer.samplesPerFrame;
-    float[] outBuffer = mixer.outBuffer;
-    float[] cgbBuffer = mixer.cgbBuffer;
+    float[2][] outBuffer = mixer.outBuffer;
+    float[2][] cgbBuffer = mixer.cgbBuffer;
 
     int dmaCounter = mixer.dmaCounter;
 
     if (dmaCounter > 1) {
-        outBuffer = outBuffer[samplesPerFrame * (mixer.pcmDmaPeriod - (dmaCounter - 1)) * 2 .. $];
+        outBuffer = outBuffer[samplesPerFrame * (mixer.pcmDmaPeriod - (dmaCounter - 1)) .. $];
     }
 
     //MixerRamFunc mixerRamFunc = ((MixerRamFunc)MixerCodeBuffer);
@@ -36,8 +36,8 @@ ubyte RunMixerFrame(SoundMixerState* mixer, float[2][] audioBuffer) @system {
 
     gb.audio_generate(SOUND_INFO_PTR, cast(ushort)samplesPerFrame, cgbBuffer);
 
-    samplesPerFrame = mixer.samplesPerFrame * 2;
-    float[] m4aBuffer = mixer.outBuffer;
+    samplesPerFrame = mixer.samplesPerFrame;
+    float[2][] m4aBuffer = mixer.outBuffer;
     cgbBuffer = mixer.cgbBuffer;
 
     if (dmaCounter > 1) {
@@ -45,8 +45,8 @@ ubyte RunMixerFrame(SoundMixerState* mixer, float[2][] audioBuffer) @system {
     }
 
     for(uint i = 0; i < audioBuffer.length; i++) {
-        audioBuffer[i][0] = m4aBuffer[i * 2] + cgbBuffer[i * 2];
-        audioBuffer[i][1] = m4aBuffer[i * 2 + 1] + cgbBuffer[i * 2 + 1];
+        audioBuffer[i][0] = m4aBuffer[i][0] + cgbBuffer[i][0];
+        audioBuffer[i][1] = m4aBuffer[i][1] + cgbBuffer[i][1];
     }
 
     if(cast(byte)(--mixer.dmaCounter) <= 0)
@@ -56,34 +56,34 @@ ubyte RunMixerFrame(SoundMixerState* mixer, float[2][] audioBuffer) @system {
 }
 
 //__attribute__((target("thumb")))
-void SampleMixer(SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerFrame, float[] outBuffer, ubyte dmaCounter) @system {
+void SampleMixer(SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerFrame, float[2][] outBuffer, ubyte dmaCounter) @system {
     uint reverb = mixer.reverb;
     if (reverb) {
         // The vanilla reverb effect outputs a mono sound from four sources:
         //  - L/R channels as they were mixer.pcmDmaPeriod frames ago
         //  - L/R channels as they were (mixer.pcmDmaPeriod - 1) frames ago
-        float[] tmp1 = outBuffer;
-        float[] tmp2;
+        float[2][] tmp1 = outBuffer;
+        float[2][] tmp2;
         if (dmaCounter == 2) {
             tmp2 = mixer.outBuffer;
         } else {
-            tmp2 = outBuffer[samplesPerFrame * 2 .. $];
+            tmp2 = outBuffer[samplesPerFrame .. $];
         }
         ushort i = 0;
         do {
-            float s = tmp1[0] + tmp1[1] + tmp2[0] + tmp2[1];
+            float s = tmp1[0][0] + tmp1[0][1] + tmp2[0][0] + tmp2[0][1];
             s *= (cast(float)reverb / 512.0f);
-            tmp1[0] = tmp1[1] = s;
-            tmp1 = tmp1[2 .. $];
-            tmp2 = tmp2[2 .. $];
+            tmp1[0][0] = tmp1[0][1] = s;
+            tmp1 = tmp1[1 .. $];
+            tmp2 = tmp2[1 .. $];
         }
         while(++i < samplesPerFrame);
     } else {
         // memset(outBuffer, 0, samplesPerFrame);
         // memset(outBuffer + maxBufSize, 0, samplesPerFrame);
         for (int i = 0; i < samplesPerFrame; i++) {
-            float[] dst = outBuffer[i*2 .. $];
-            dst[1] = dst[0] = 0.0f;
+            float[2][] dst = outBuffer[i .. i + 1];
+            dst[0][1] = dst[0][0] = 0.0f;
         }
     }
 
@@ -97,7 +97,7 @@ void SampleMixer(SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerFr
         if (TickEnvelope(&chan[0], wav))
         {
 
-            GenerateAudio(mixer, &chan[0], wav, &outBuffer[0], samplesPerFrame, divFreq);
+            GenerateAudio(mixer, &chan[0], wav, outBuffer, samplesPerFrame, divFreq);
         }
     }
 }
@@ -205,7 +205,7 @@ private uint TickEnvelope(SoundChannel *chan, WaveData *wav) {
 }
 
 //__attribute__((target("thumb")))
-private void GenerateAudio(SoundMixerState *mixer, SoundChannel *chan, WaveData *wav, float *outBuffer, ushort samplesPerFrame, float divFreq) {
+private void GenerateAudio(SoundMixerState *mixer, SoundChannel *chan, WaveData *wav, float[2][] outBuffer, ushort samplesPerFrame, float divFreq) {
     ubyte v = cast(ubyte)(chan.envelopeVolume * (mixer.masterVol + 1) / 16U);
     chan.envelopeVolumeRight = chan.rightVolume * v / 256U;
     chan.envelopeVolumeLeft = chan.leftVolume * v / 256U;
@@ -252,13 +252,13 @@ private void GenerateAudio(SoundMixerState *mixer, SoundChannel *chan, WaveData 
     short m = cast(short)(currentPointer[1] - b);
     currentPointer += 1;
 
-    for (ushort i = 0; i < samplesPerFrame; i++, outBuffer+=2) {
+    for (ushort i = 0; i < samplesPerFrame; i++, outBuffer = outBuffer[1 .. $]) {
         // Use linear interpolation to calculate a value between the currentPointer sample in the wav
         // and the nextChannelPointer sample. Also cancel out the 9.23 stuff
         float sample = (finePos * m) + b;
 
-        outBuffer[1] += (sample * envR) / 32768.0f;
-        outBuffer[0] += (sample * envL) / 32768.0f;
+        outBuffer[0][1] += (sample * envR) / 32768.0f;
+        outBuffer[0][0] += (sample * envL) / 32768.0f;
 
         finePos += romSamplesPerOutputSample;
         uint newCoarsePos = cast(uint)finePos;

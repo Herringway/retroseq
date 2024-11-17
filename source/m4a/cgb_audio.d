@@ -87,7 +87,7 @@ struct AudioCGB {
             ch4LFSR[1] = 0x80;
         }
     }
-    void audio_generate(SoundMixerState *soundInfo, ushort samplesPerFrame, float[] outBuffer) @safe pure {
+    void audio_generate(SoundMixerState *soundInfo, ushort samplesPerFrame, float[2][] outBuffer) @safe pure {
         switch(soundInfo.reg.NR11 & 0xC0){
             case 0x00:
                 PU1Table = PU0;
@@ -120,7 +120,7 @@ struct AudioCGB {
             default: break;
         }
 
-        for (ushort i = 0; i < samplesPerFrame; i++, outBuffer = outBuffer[2 .. $]) {
+        for (ushort i = 0; i < samplesPerFrame; i++, outBuffer = outBuffer[1 .. $]) {
             apuFrame += 512;
             if(apuFrame >= sampleRate){
                 apuFrame -= sampleRate;
@@ -227,8 +227,8 @@ struct AudioCGB {
                     if(soundInfo.reg.NR51 & 0x08) outputR += (Vol[3] * sample) / 15.0f;
                 }
             }
-            outBuffer[0] = outputL / 4.0f;
-            outBuffer[1] = outputR / 4.0f;
+            outBuffer[0][0] = outputL / 4.0f;
+            outBuffer[0][1] = outputR / 4.0f;
         }
     }
 }

@@ -314,8 +314,8 @@ struct SoundMixerState
     void *reserved5;
     SoundIO reg;
     SoundChannel[MAX_DIRECTSOUND_CHANNELS] chans;
-    float[] outBuffer;
-    float[] cgbBuffer;
+    float[2][] outBuffer;
+    float[2][] cgbBuffer;
 };
 
 struct SongHeader

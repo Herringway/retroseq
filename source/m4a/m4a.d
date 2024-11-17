@@ -322,10 +322,10 @@ void SampleFreqSet(SoundMixerState *soundInfo, uint freq) @safe
 
     soundInfo.origFreq = (getOrigSampleRate(soundInfo.freq) * 59.727678571);
 
-    soundInfo.outBuffer = new float[](soundInfo.samplesPerDma * 2);
-    soundInfo.outBuffer[] = 0;
-    soundInfo.cgbBuffer = new float[](soundInfo.samplesPerDma * 2);
-    soundInfo.cgbBuffer[] = 0;
+    soundInfo.outBuffer = new float[2][](soundInfo.samplesPerDma);
+    soundInfo.outBuffer[] = [0, 0];
+    soundInfo.cgbBuffer = new float[2][](soundInfo.samplesPerDma);
+    soundInfo.cgbBuffer[] = [0,0];
 }
 
 void m4aSoundMode(SoundMixerState* soundInfo, uint mode) @safe
