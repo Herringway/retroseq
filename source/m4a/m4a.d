@@ -6,9 +6,7 @@ import m4a.m4a_tables;
 import m4a.music_player;
 import m4a.sound_mixer;
 
-import core.stdc.stdlib;
-
-__gshared ubyte *musicData;
+__gshared ubyte[] musicData;
 __gshared uint songTableOffset;
 
 __gshared SoundMixerState *SOUND_INFO_PTR;
@@ -25,24 +23,20 @@ __gshared MusicPlayerTrack[9] gMPlayTrack_SE2;
 __gshared MusicPlayerTrack[1] gMPlayTrack_SE3;
 __gshared ubyte[0x10] gMPlayMemAccArea;
 
-T* offsetPointer(T)(uint ptr)
+T* offsetPointer(T)(uint ptr) @system
     in((ptr == 0) || (ptr >= 0x8000000))
 {
     if (ptr == 0) {
         return null;
     }
-    return cast(T*)(musicData + (ptr - 0x8000000));
-}
-deprecated void offsetPointer(size_t *ptr) {
-    *ptr -= 0x8000000;
-    *ptr += cast(size_t)musicData;
+    return cast(T*)&musicData[ptr - 0x8000000];
 }
 
-ushort getOrigSampleRate(ubyte rate){
+ushort getOrigSampleRate(ubyte rate) @safe {
     return gPcmSamplesPerVBlankTable[rate];
 }
 
-uint MidiKeyToFreq(WaveData *wav, ubyte key, ubyte fineAdjust)
+uint MidiKeyToFreq(WaveData *wav, ubyte key, ubyte fineAdjust) @safe
 {
     uint val1;
     uint val2;
@@ -63,19 +57,19 @@ uint MidiKeyToFreq(WaveData *wav, ubyte key, ubyte fineAdjust)
     return umul3232H32(wav.freq, val1 + umul3232H32(val2 - val1, fineAdjustShifted));
 }
 
-void MPlayContinue(MusicPlayerInfo *mplayInfo)
+void MPlayContinue(MusicPlayerInfo *mplayInfo) @safe
 {
     mplayInfo.status &= ~MUSICPLAYER_STATUS_PAUSE;
 }
 
-void MPlayFadeOut(MusicPlayerInfo *mplayInfo, ushort speed)
+void MPlayFadeOut(MusicPlayerInfo *mplayInfo, ushort speed) @safe
 {
     mplayInfo.fadeCounter = speed;
     mplayInfo.fadeInterval = speed;
     mplayInfo.fadeVolume = (64 << FADE_VOL_SHIFT);
 }
 
-void m4aSoundInit(uint freq, ubyte *_music, uint _songTableAddress, uint _mode)
+void m4aSoundInit(uint freq, ubyte[] _music, uint _songTableAddress, uint _mode) @system
 {
     musicData = _music;
     songTableOffset = _songTableAddress;
@@ -83,15 +77,15 @@ void m4aSoundInit(uint freq, ubyte *_music, uint _songTableAddress, uint _mode)
 
     SoundInit(&gSoundInfo);
     gSoundInfo.freq = cast(ubyte)(((_mode >> 16) & 0xF) - 1);
-    SampleFreqSet(freq);
+    SampleFreqSet(SOUND_INFO_PTR, freq);
     MPlayExtender(&gCgbChans[0]);
-    m4aSoundMode(_mode);
+    m4aSoundMode(SOUND_INFO_PTR, _mode);
 
     MusicPlayerInfo *mplayInfo = &gMPlayInfo_BGM;
     MPlayOpen(mplayInfo, &gMPlayTrack_BGM[0], MAX_MUSICPLAYER_TRACKS);
     mplayInfo.checkSongPriority = 0;
     mplayInfo.memAccArea = &gMPlayMemAccArea[0];
-    cgb_audio_init(freq);
+    gb.initialize(freq);
 }
 
 void m4aSoundMain()
@@ -102,7 +96,7 @@ void m4aSoundMain()
 
 void m4aSongNumStart(ushort n)
 {
-    const(Song) *songTable = cast(const(Song)*) (musicData + songTableOffset);  //gSongTable;
+    const(Song) *songTable = cast(const(Song)*) &musicData[songTableOffset];  //gSongTable;
     const(Song) *song = &songTable[n];
 
     MPlayStart(&gMPlayInfo_BGM, offsetPointer!SongHeader(song.header));
@@ -110,7 +104,7 @@ void m4aSongNumStart(ushort n)
 
 void m4aSongNumStartOrChange(ushort n)
 {
-    const(Song) *songTable = cast(const(Song)*) (musicData + songTableOffset);  //gSongTable;
+    const(Song) *songTable = cast(const(Song)*) &musicData[songTableOffset];  //gSongTable;
     const(Song) *song = &songTable[n];
 
     if (gMPlayInfo_BGM.songHeader != offsetPointer!SongHeader(song.header))
@@ -129,7 +123,7 @@ void m4aSongNumStartOrChange(ushort n)
 
 void m4aSongNumStartOrContinue(ushort n)
 {
-    const(Song) *songTable = cast(const(Song)*)(musicData + songTableOffset);  //gSongTable;
+    const(Song) *songTable = cast(const(Song)*)&musicData[songTableOffset];  //gSongTable;
     const(Song) *song = &songTable[n];
 
     if (gMPlayInfo_BGM.songHeader != offsetPointer!SongHeader(song.header))
@@ -142,7 +136,7 @@ void m4aSongNumStartOrContinue(ushort n)
 
 void m4aSongNumStop(ushort n)
 {
-    const(Song) *songTable = cast(const(Song)*)(musicData + songTableOffset);  //gSongTable;
+    const(Song) *songTable = cast(const(Song)*)&musicData[songTableOffset];  //gSongTable;
     const(Song) *song = &songTable[n];
 
     if (gMPlayInfo_BGM.songHeader == offsetPointer!SongHeader(song.header))
@@ -151,7 +145,7 @@ void m4aSongNumStop(ushort n)
 
 void m4aSongNumContinue(ushort n)
 {
-    const Song *songTable = cast(const(Song)*)(musicData + songTableOffset);  //gSongTable;
+    const Song *songTable = cast(const(Song)*)&musicData[songTableOffset];  //gSongTable;
     const Song *song = &songTable[n];
 
     if (gMPlayInfo_BGM.songHeader == offsetPointer!SongHeader(song.header))
@@ -243,8 +237,8 @@ void MPlayExtender(CgbChannel *cgbChans)
 
 
     for(ubyte i = 0; i < 4; i++){
-        cgb_set_envelope(i, 8);
-        cgb_trigger_note(i);
+        gb.set_envelope(i, 8);
+        gb.trigger_note(i);
     }
 
     gMPlayJumpTable[8] = &ply_memacc;
@@ -282,7 +276,7 @@ void ClearChain(void *x)
     MP2KClearChain(cast(SoundChannel*)x);
 }
 
-void SoundInit(SoundMixerState *soundInfo)
+void SoundInit(SoundMixerState *soundInfo) @system
 {
     soundInfo.reg.NR52 = SOUND_MASTER_ENABLE
                    | SOUND_4_ON
@@ -301,8 +295,8 @@ void SoundInit(SoundMixerState *soundInfo)
     soundInfo.masterVol = 15;
     soundInfo.mp2kEventNxxFunc = &MP2K_event_nxx;
     soundInfo.cgbMixerFunc = &DummyFunc;
-    soundInfo.cgbNoteOffFunc = cast(CgbOscOffFunc)&DummyFunc;
-    soundInfo.cgbCalcFreqFunc = cast(MidiKeyToCgbFreqFunc)&DummyFunc;
+    soundInfo.cgbNoteOffFunc = &DummyFunc2;
+    soundInfo.cgbCalcFreqFunc = &DummyFunc3;
     soundInfo.ExtVolPit = cast(ExtVolPitFunc)&DummyFunc;
 
     MPlayJumpTableCopy(gMPlayJumpTable);
@@ -314,10 +308,8 @@ void MP2K_event_nothing(MusicPlayerInfo*, MusicPlayerTrack*) {
     assert(0);
 }
 
-void SampleFreqSet(uint freq)
+void SampleFreqSet(SoundMixerState *soundInfo, uint freq) @safe
 {
-    SoundMixerState *soundInfo = SOUND_INFO_PTR;
-
     soundInfo.samplesPerFrame = cast(uint)((freq / 60.0f) + 0.5f);
 
     soundInfo.pcmDmaPeriod = 7;
@@ -330,13 +322,14 @@ void SampleFreqSet(uint freq)
 
     soundInfo.origFreq = (getOrigSampleRate(soundInfo.freq) * 59.727678571);
 
-    soundInfo.outBuffer = (cast(float*)malloc(float.sizeof * soundInfo.samplesPerDma * 2))[0 .. soundInfo.samplesPerDma * 2];
-    soundInfo.cgbBuffer = (cast(float*)malloc(float.sizeof * soundInfo.samplesPerDma * 2))[0 .. soundInfo.samplesPerDma * 2];
+    soundInfo.outBuffer = new float[](soundInfo.samplesPerDma * 2);
+    soundInfo.outBuffer[] = 0;
+    soundInfo.cgbBuffer = new float[](soundInfo.samplesPerDma * 2);
+    soundInfo.cgbBuffer[] = 0;
 }
 
-void m4aSoundMode(uint mode)
+void m4aSoundMode(SoundMixerState* soundInfo, uint mode) @safe
 {
-    SoundMixerState *soundInfo = SOUND_INFO_PTR;
     uint temp;
 
     temp = mode & (SOUND_MODE_REVERB_SET | SOUND_MODE_REVERB_VAL);
@@ -348,7 +341,7 @@ void m4aSoundMode(uint mode)
 
     if (temp)
     {
-        SoundChannel *chan;
+        SoundChannel[] chan;
 
         // The following line is a fix, not sure how accurate it's supposed to be?
         soundInfo.numChans = MAX_DIRECTSOUND_CHANNELS;
@@ -356,13 +349,13 @@ void m4aSoundMode(uint mode)
         //soundInfo.numChans = temp >> SOUND_MODE_MAXCHN_SHIFT;
 
         temp = MAX_DIRECTSOUND_CHANNELS;
-        chan = &soundInfo.chans[0];
+        chan = soundInfo.chans[];
 
         while (temp != 0)
         {
-            chan.statusFlags = 0;
+            chan[0].statusFlags = 0;
             temp--;
-            chan++;
+            chan = chan[1 .. $];
         }
     }
 
@@ -499,7 +492,7 @@ void MPlayStart(MusicPlayerInfo *mplayInfo, SongHeader* songHeader)
         }
 
         if (songHeader.reverb & SOUND_MODE_REVERB_SET)
-            m4aSoundMode(songHeader.reverb);
+            m4aSoundMode(SOUND_INFO_PTR, songHeader.reverb);
     }
 }
 
@@ -708,8 +701,8 @@ void cgbNoteOffFunc(ubyte chanNum)
         soundInfo.reg.NR44 = 0x80;
     }
 
-    cgb_set_envelope(cast(ubyte)(chanNum - 1), 8);
-    cgb_trigger_note(cast(ubyte)(chanNum - 1));
+    gb.set_envelope(cast(ubyte)(chanNum - 1), 8);
+    gb.trigger_note(cast(ubyte)(chanNum - 1));
 
 }
 
@@ -837,7 +830,7 @@ void cgbMixerFunc()
                 {
                 case 1:
                     *nrx0ptr = channels.sweep;
-                    cgb_set_sweep(channels.sweep);
+                    gb.set_sweep(channels.sweep);
 
                     goto case;
                 case 2:
@@ -848,7 +841,7 @@ void cgbMixerFunc()
                     {
                         *nrx0ptr = 0x40;
                         channels.currentPointer = channels.wavePointer;
-                        cgb_set_wavram(cast(ubyte*)channels.wavePointer);
+                        gb.set_wavram((cast(ubyte*)channels.wavePointer)[0 .. 16]);
                     }
                     *nrx0ptr = 0;
                     *nrx1ptr = channels.length;
@@ -868,7 +861,7 @@ void cgbMixerFunc()
                         channels.n4 = 0x00;
                     break;
                 }
-                cgb_set_length(cast(ubyte)(ch - 1), channels.length);
+                gb.set_length(cast(ubyte)(ch - 1), channels.length);
                 channels.envelopeCounter = channels.attack;
                 if (cast(byte)(channels.attack & mask))
                 {
@@ -1064,9 +1057,9 @@ void cgbMixerFunc()
                 if (ch == 1 && !(*nrx0ptr & 0x08))
                     *nrx4ptr = channels.n4 | 0x80;
             }
-            cgb_set_envelope(cast(ubyte)(ch - 1), *nrx2ptr);
-            cgb_toggle_length(cast(ubyte)(ch - 1), (*nrx4ptr & 0x40));
-            cgb_trigger_note(cast(ubyte)(ch - 1));
+            gb.set_envelope(cast(ubyte)(ch - 1), *nrx2ptr);
+            gb.toggle_length(cast(ubyte)(ch - 1), (*nrx4ptr & 0x40));
+            gb.trigger_note(cast(ubyte)(ch - 1));
         }
 
     channel_complete:
@@ -1482,4 +1475,13 @@ void ply_xcmd_0D(MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
 
 void DummyFunc()
 {
+}
+
+void DummyFunc2(ubyte)
+{
+}
+
+uint DummyFunc3(ubyte, ubyte, ubyte)
+{
+    return 0;
 }

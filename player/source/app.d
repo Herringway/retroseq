@@ -121,7 +121,7 @@ int main(string[] args) {
 	infof("Max Channels: %d", (m4aMode >> 8) & 0xF);
 	infof("Volume: %d", (m4aMode >> 12) & 0xF);
 	infof("Original Rate: %.2fhz", getOrigSampleRate(cast(ubyte)(((m4aMode >> 16) & 0xF) - 1)) * 59.727678571);
-    m4aSoundInit(sampleRate, &music[0], songTableAddress, m4aMode);
+    m4aSoundInit(sampleRate, music, songTableAddress, m4aMode);
     m4aSongNumStart(cast(ushort)song);
 
 	// Prepare to play music

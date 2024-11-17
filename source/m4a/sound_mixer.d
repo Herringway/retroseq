@@ -34,7 +34,7 @@ ubyte RunMixerFrame(SoundMixerState* mixer, float[2][] audioBuffer) @system {
     //MixerRamFunc mixerRamFunc = ((MixerRamFunc)MixerCodeBuffer);
     SampleMixer(mixer, 0, cast(ushort)samplesPerFrame, outBuffer, cast(ubyte)dmaCounter);
 
-    cgb_audio_generate(SOUND_INFO_PTR, cast(ushort)samplesPerFrame, &cgbBuffer[0]);
+    gb.audio_generate(SOUND_INFO_PTR, cast(ushort)samplesPerFrame, cgbBuffer);
 
     samplesPerFrame = mixer.samplesPerFrame * 2;
     float[] m4aBuffer = mixer.outBuffer;

@@ -31,6 +31,7 @@ enum SOUND_MODE_DA_BIT_SHIFT = 20;
 
 struct WaveData
 {
+    align(1):
     ushort type;
     ubyte padding;
     ubyte loopFlags;
@@ -50,6 +51,7 @@ enum TONEDATA_P_S_PAM = TONEDATA_P_S_PAN;
 
 struct ToneData
 {
+    align(1):
     ubyte type;
     union {
         ubyte key;
@@ -93,6 +95,7 @@ enum CGB_NRx2_ENV_DIR_INC = 0x08;
 
 struct CgbChannel
 {
+    align(1):
     ubyte statusFlags;
     ubyte type;
     ubyte rightVolume;
@@ -172,7 +175,7 @@ struct SoundChannel
         };
     };
     union {
-        float fw;
+        float fw = 0;
         struct {
             ubyte panMask;
             ubyte cgbStatus;
@@ -294,8 +297,8 @@ struct SoundMixerState
     int samplesPerFrame;
     int samplesPerDma;  // samplesPerFrame * pcmDmaPeriod
     int sampleRate;
-    float origFreq;  // for adjusting original freq to the new sample rate
-    float divFreq;
+    float origFreq = 0;  // for adjusting original freq to the new sample rate
+    float divFreq = 0;
     CgbChannel *cgbChans;
     MPlayMainFunc firstPlayerFunc;
     MusicPlayerInfo *firstPlayer;
@@ -317,6 +320,7 @@ struct SoundMixerState
 
 struct SongHeader
 {
+    align(1):
     ubyte trackCount;
     ubyte blockCount;
     ubyte priority;

@@ -5,7 +5,7 @@ import m4a.internal;
 import m4a.m4a;
 import m4a.m4a_tables;
 
-uint umul3232H32(uint a, uint b) {
+uint umul3232H32(uint a, uint b) @safe {
     ulong result = a;
     result *= b;
     return result >> 32;
@@ -144,7 +144,7 @@ void MP2K_event_rept(MusicPlayerInfo *unused, MusicPlayerTrack *track) {
             MP2K_event_goto(unused, track);
         } else {
             track.repeatCount = 0;
-            track.cmdPtr += ubyte.sizeof + (ubyte *).sizeof;
+            track.cmdPtr += ubyte.sizeof + uint.sizeof;
         }
     }
 }
@@ -543,7 +543,11 @@ void MP2K_event_nxx(uint clock, MusicPlayerInfo *player, MusicPlayerTrack *track
     chan.key = key;
     chan.rhythmPan = forcedPan;
     chan.type = instrument.type;
-    chan.wav = offsetPointer!WaveData(instrument.wav);
+    if (cgbType == 0) {
+        chan.wav = offsetPointer!WaveData(instrument.wav);
+    } else {
+        //chan.wav = cast(WaveData*)instrument.cgbSample;
+    }
     chan.attack = instrument.attack;
     chan.decay = instrument.decay;
     chan.sustain = instrument.sustain;
