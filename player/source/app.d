@@ -22,18 +22,12 @@ import bindbc.sdl : SDL_AudioCallback, SDL_AudioDeviceID;
 extern(C) int kbhit();
 extern(C) int getch();
 
-uint scan(uint *songTable, uint *mode){
+uint scan(out uint songTable, out uint mode) @safe {
     uint pos = 0;
     uint temp;
     while(pos < (music.length - 35)){
         if((music[pos + 0] & 0xBF) == 0x89
-        && music[pos + 1] == 0x18
-        && music[pos + 2] == 0x0A
-        && music[pos + 3] == 0x68
-        && music[pos + 4] == 0x01
-        && music[pos + 5] == 0x68
-        && music[pos + 6] == 0x10
-        && music[pos + 7] == 0x1C
+        && music[pos + 1 .. pos + 8] == [ 0x18, 0x0A, 0x68, 0x01, 0x68, 0x10, 0x1C]
         && (music[pos + 23] & 0xFE) == 0x08){
             break;
         }
@@ -46,10 +40,10 @@ uint scan(uint *songTable, uint *mode){
     }else{
         temp = (music[pos - 61] << 24) | (music[pos - 62] << 16) | (music[pos - 63] << 8) | music[pos - 64];
     }
-    *mode = temp;
+    mode = temp;
     pos = (music[pos + 23] << 24) | (music[pos + 22] << 16) | (music[pos + 21] << 8) | music[pos + 20];
     pos &= 0x7FFFFFF;
-    *songTable = pos;
+    songTable = pos;
     return pos;
 }
 
@@ -115,7 +109,7 @@ int main(string[] args) {
 	music = cast(ubyte[])read(filename);
 
 	if(songTableAddress >= music.length || songTableAddress == 0) {
-	    scan(&songTableAddress, &m4aMode);
+	    scan(songTableAddress, m4aMode);
 	}
 	infof("songTableAddress: 0x%x (%d)", songTableAddress, songTableAddress);
 	infof("Max Channels: %d", (m4aMode >> 8) & 0xF);
