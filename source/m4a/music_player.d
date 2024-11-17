@@ -39,23 +39,9 @@ void MP2KClearChain(SoundChannel *chan) {
     chan.track = null;
 }
 
-void VERIFY_PTR(void*) {}
-
-private ubyte SafeDereferenceU8(ubyte *addr) {
-    ubyte ret = *addr;
-    VERIFY_PTR(addr);
-    return ret;
-}
-
-private uint SafeDereferenceU32(uint *addr) {
-    uint ret = *addr;
-    VERIFY_PTR(addr);
-    return ret;
-}
-
 ubyte ConsumeTrackByte(MusicPlayerTrack *track) {
     ubyte *ptr = track.cmdPtr++;
-    return SafeDereferenceU8(ptr);
+    return *ptr;
 }
 
 void MPlayJumpTableCopy(MPlayFunc[] mplayJumpTable) @safe {
@@ -615,6 +601,6 @@ uint MidiKeyToFreq_(WaveData *wav, ubyte key, ubyte pitch) {
     uint freqDifference = umul3232H32(baseFreq2 - baseFreq1, pitch << 24);
     // This is added by me. The real GBA and GBA BIOS don't verify this address, and as a result the
     // BIOS's memory can be dumped.
-    uint freq = SafeDereferenceU32(&wav.freq);
+    uint freq = wav.freq;
     return umul3232H32(freq, baseFreq1 + freqDifference);
 }
