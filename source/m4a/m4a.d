@@ -88,12 +88,6 @@ void m4aSoundInit(uint freq, ubyte[] _music, uint _songTableAddress, uint _mode)
     gb.initialize(freq);
 }
 
-void m4aSoundMain()
-{
-    assert(0, "NYI");
-    //RunMixerFrame();
-}
-
 void m4aSongNumStart(ushort n)
 {
     const(Song) *songTable = cast(const(Song)*) &musicData[songTableOffset];  //gSongTable;

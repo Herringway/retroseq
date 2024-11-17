@@ -130,8 +130,8 @@ struct CgbChannel
     uint *wavePointer;       // instructs CgbMain to load targeted wave
     uint *currentPointer;    // stores the currently loaded wave
     MusicPlayerTrack* track;
-    void *prevChannelPointer;
-    void *nextChannelPointer;
+    void* prevChannelPointer;
+    void* nextChannelPointer;
     ubyte[8] dummy4;
 };
 
@@ -187,8 +187,8 @@ struct SoundChannel
     WaveData *wav;
     byte *currentPointer;
     MusicPlayerTrack *track;
-    void *prevChannelPointer;
-    void *nextChannelPointer;
+    void* prevChannelPointer;
+    void* nextChannelPointer;
     uint padding3;
     ushort xpi;
     ushort xpc;
