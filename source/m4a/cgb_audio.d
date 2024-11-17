@@ -128,8 +128,7 @@ void cgb_trigger_note(ubyte channel){
 }
 
 
-void cgb_audio_generate(ushort samplesPerFrame, float *outBuffer){
-    SoundMixerState *soundInfo = SOUND_INFO_PTR;
+void cgb_audio_generate(SoundMixerState *soundInfo, ushort samplesPerFrame, float *outBuffer){
     switch(soundInfo.reg.NR11 & 0xC0){
         case 0x00:
             PU1Table = &PU0[0];
