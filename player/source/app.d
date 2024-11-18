@@ -22,29 +22,29 @@ import bindbc.sdl : SDL_AudioCallback, SDL_AudioDeviceID;
 extern(C) int kbhit();
 extern(C) int getch();
 
-uint scan(out uint songTable, out uint mode) @safe {
+void scan(int tablesToSkip, out uint songTable, out uint mode) @safe {
     uint pos = 0;
     uint temp;
     while(pos < (music.length - 35)){
         if((music[pos + 0] & 0xBF) == 0x89
         && music[pos + 1 .. pos + 8] == [ 0x18, 0x0A, 0x68, 0x01, 0x68, 0x10, 0x1C]
-        && (music[pos + 23] & 0xFE) == 0x08){
-            break;
+        && (music[pos + 23] & 0xFE) == 0x08) {
+            if (tablesToSkip-- == 0) {
+                break;
+            }
         }
         pos += 4;
     }
-    //printf("pos: 0x%x (%d)\n", pos, pos);
-    if(music[pos - 61] == 0x03
-    && music[pos - 57] == 0x04){
-        temp = (music[pos - 45] << 24) | (music[pos - 46] << 16) | (music[pos - 47] << 8) | music[pos - 48];
+    if(music[pos - 61] == 0x03 && music[pos - 57] == 0x04) {
+        temp = (cast(uint[])music[pos - 48 .. pos - 44])[0];
     }else{
-        temp = (music[pos - 61] << 24) | (music[pos - 62] << 16) | (music[pos - 63] << 8) | music[pos - 64];
+        temp = (cast(uint[])music[pos - 64 .. pos - 60])[0];
     }
     mode = temp;
+    tracef("Found signature at %08X", pos);
     pos = (music[pos + 23] << 24) | (music[pos + 22] << 16) | (music[pos + 21] << 8) | music[pos + 20];
     pos &= 0x7FFFFFF;
     songTable = pos;
-    return pos;
 }
 
 bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* userdata = null) {
@@ -91,8 +91,10 @@ ubyte[] music;
 uint m4aMode;
 int main(string[] args) {
 	int sampleRate = 48000;
+	int tablesToSkip = 0;
 	bool verbose;
 	auto help = getopt(args,
+		"t|table", "Song Table ID (0 by default)", &tablesToSkip,
 		"f|samplerate", "Sets sample rate (Hz)", &sampleRate,
 		"v|verbose", "Print more verbose information", &verbose,
 	);
@@ -106,10 +108,17 @@ int main(string[] args) {
 
 	auto filename = args[1];
 	auto song = args[2].to!int;
+	if (args.length > 3) {
+		songTableAddress = args[3].to!uint(16);
+	}
 	music = cast(ubyte[])read(filename);
 
 	if(songTableAddress >= music.length || songTableAddress == 0) {
-	    scan(songTableAddress, m4aMode);
+	    scan(tablesToSkip, songTableAddress, m4aMode);
+	}
+	if (songTableAddress == 0) {
+		stderr.writeln("No song table found");
+		return 2;
 	}
 	infof("songTableAddress: 0x%x (%d)", songTableAddress, songTableAddress);
 	infof("Max Channels: %d", (m4aMode >> 8) & 0xF);
