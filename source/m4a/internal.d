@@ -1,5 +1,19 @@
 module m4a.internal;
 
+struct RelativePointer(Element, Offset) {
+    align(1):
+    Offset offset;
+    inout(Element)* toAbsolute(void* base) inout {
+        return cast(inout(Element)*)(base + offset - 0x8000000);
+    }
+    inout(Element)* toAbsolute(void[] base) inout {
+        return cast(inout(Element)*)(&base[offset - 0x8000000]);
+    }
+    Offset opAssign(Offset newValue) {
+        return offset = newValue;
+    }
+}
+
 enum C_V = 0x40; // center value for PAN, BEND, and TUNE
 
 enum SOUND_MODE_REVERB_VAL = 0x0000007F;
@@ -60,9 +74,9 @@ struct ToneData
     ubyte length; // sound length (compatible sound)
     ubyte panSweep; // pan or sweep (compatible sound ch. 1)
     union {
-        uint wav;  // struct WaveData *wav;
-        uint group;  // struct ToneData *group;
-        uint cgbSample;  // uint *cgb3Sample;
+        RelativePointer!(WaveData, uint) wav;
+        RelativePointer!(ToneData, uint) group;
+        RelativePointer!(uint, uint) cgbSample;
         uint squareNoiseConfig;
     };
     union {
@@ -72,7 +86,7 @@ struct ToneData
             ubyte sustain;
             ubyte release;
         };
-        uint keySplitTable;  // ubyte *keySplitTable;
+        RelativePointer!(ubyte, uint) keySplitTable;
     };
 };
 
@@ -325,8 +339,8 @@ struct SongHeader
     ubyte blockCount;
     ubyte priority;
     ubyte reverb;
-    uint instrument;  // struct ToneData *instrument;
-    uint[1] part; // ubyte *part[1];
+    RelativePointer!(ToneData, uint) instrument;
+    RelativePointer!(ubyte, uint)[1] part;
 };
 
 enum MPT_FLG_VOLSET = 0x01;
@@ -375,8 +389,8 @@ struct MusicPlayerTrack
     ubyte[10] padding;
     ushort unk_3A;
     uint count;
-    ubyte *cmdPtr;
-    ubyte*[3] patternStack;
+    const(ubyte)* cmdPtr;
+    const(ubyte)*[3] patternStack;
 };
 
 enum MUSICPLAYER_STATUS_TRACK = 0x0000ffff;
@@ -391,7 +405,7 @@ enum FADE_VOL_SHIFT = 2;
 
 struct MusicPlayerInfo
 {
-    SongHeader *songHeader;
+    const(SongHeader) *songHeader;
     uint status;
     ubyte trackCount;
     ubyte priority;
@@ -408,7 +422,7 @@ struct MusicPlayerInfo
     ushort fadeCounter;
     ushort fadeVolume;
     MusicPlayerTrack *tracks;
-    ToneData *voicegroup;
+    const(ToneData) *voicegroup;
     MPlayMainFunc nextPlayerFunc;
     MusicPlayerInfo *nextPlayer;
 };
@@ -416,7 +430,7 @@ struct MusicPlayerInfo
 
 struct Song
 {
-    uint header;  // struct SongHeader *header;
+    RelativePointer!(SongHeader, uint) header;
     ushort ms;
     ushort me;
 };

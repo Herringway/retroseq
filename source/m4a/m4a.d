@@ -23,15 +23,6 @@ __gshared MusicPlayerTrack[9] gMPlayTrack_SE2;
 __gshared MusicPlayerTrack[1] gMPlayTrack_SE3;
 __gshared ubyte[0x10] gMPlayMemAccArea;
 
-T* offsetPointer(T)(uint ptr) @system
-    in((ptr == 0) || (ptr >= 0x8000000))
-{
-    if (ptr == 0) {
-        return null;
-    }
-    return cast(T*)&musicData[ptr - 0x8000000];
-}
-
 ushort getOrigSampleRate(ubyte rate) @safe pure {
     return gPcmSamplesPerVBlankTable[rate];
 }
@@ -90,27 +81,26 @@ void m4aSoundInit(uint freq, ubyte[] _music, uint _songTableAddress, uint _mode)
 
 void m4aSongNumStart(ushort n)
 {
-    const(Song) *songTable = cast(const(Song)*) &musicData[songTableOffset];  //gSongTable;
-    const(Song) *song = &songTable[n];
+    const(Song) *songTable = cast(const(Song)*) &musicData[songTableOffset];
 
-    MPlayStart(&gMPlayInfo_BGM, offsetPointer!SongHeader(song.header));
+    MPlayStart(&gMPlayInfo_BGM, songTable[n].header.toAbsolute(musicData));
 }
 
 void m4aSongNumStartOrChange(ushort n)
 {
-    const(Song) *songTable = cast(const(Song)*) &musicData[songTableOffset];  //gSongTable;
+    const(Song) *songTable = cast(const(Song)*) &musicData[songTableOffset];
     const(Song) *song = &songTable[n];
 
-    if (gMPlayInfo_BGM.songHeader != offsetPointer!SongHeader(song.header))
+    if (gMPlayInfo_BGM.songHeader != song.header.toAbsolute(musicData))
     {
-        MPlayStart(&gMPlayInfo_BGM, offsetPointer!SongHeader(song.header));
+        MPlayStart(&gMPlayInfo_BGM, song.header.toAbsolute(musicData));
     }
     else
     {
         if ((gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_TRACK) == 0
          || (gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_PAUSE))
         {
-            MPlayStart(&gMPlayInfo_BGM, offsetPointer!SongHeader(song.header));
+            MPlayStart(&gMPlayInfo_BGM, song.header.toAbsolute(musicData));
         }
     }
 }
@@ -120,10 +110,10 @@ void m4aSongNumStartOrContinue(ushort n)
     const(Song) *songTable = cast(const(Song)*)&musicData[songTableOffset];  //gSongTable;
     const(Song) *song = &songTable[n];
 
-    if (gMPlayInfo_BGM.songHeader != offsetPointer!SongHeader(song.header))
-        MPlayStart(&gMPlayInfo_BGM, offsetPointer!SongHeader(song.header));
+    if (gMPlayInfo_BGM.songHeader != song.header.toAbsolute(musicData))
+        MPlayStart(&gMPlayInfo_BGM, song.header.toAbsolute(musicData));
     else if ((gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_TRACK) == 0)
-        MPlayStart(&gMPlayInfo_BGM, offsetPointer!SongHeader(song.header));
+        MPlayStart(&gMPlayInfo_BGM, song.header.toAbsolute(musicData));
     else if (gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_PAUSE)
         MPlayContinue(&gMPlayInfo_BGM);
 }
@@ -133,16 +123,16 @@ void m4aSongNumStop(ushort n)
     const(Song) *songTable = cast(const(Song)*)&musicData[songTableOffset];  //gSongTable;
     const(Song) *song = &songTable[n];
 
-    if (gMPlayInfo_BGM.songHeader == offsetPointer!SongHeader(song.header))
+    if (gMPlayInfo_BGM.songHeader == song.header.toAbsolute(musicData))
         m4aMPlayStop(&gMPlayInfo_BGM);
 }
 
 void m4aSongNumContinue(ushort n)
 {
-    const Song *songTable = cast(const(Song)*)&musicData[songTableOffset];  //gSongTable;
-    const Song *song = &songTable[n];
+    const(Song)* songTable = cast(const(Song)*)&musicData[songTableOffset];  //gSongTable;
+    const(Song)* song = &songTable[n];
 
-    if (gMPlayInfo_BGM.songHeader == offsetPointer!SongHeader(song.header))
+    if (gMPlayInfo_BGM.songHeader == song.header.toAbsolute(musicData))
         MPlayContinue(&gMPlayInfo_BGM);
 }
 
@@ -437,7 +427,7 @@ void MPlayOpen(MusicPlayerInfo *mplayInfo, MusicPlayerTrack *tracks, ubyte track
     soundInfo.firstPlayerFunc = &MP2KPlayerMain;
 }
 
-void MPlayStart(MusicPlayerInfo *mplayInfo, SongHeader* songHeader)
+void MPlayStart(MusicPlayerInfo *mplayInfo, const(SongHeader)* songHeader)
     in(mplayInfo)
     in(songHeader)
 {
@@ -455,7 +445,7 @@ void MPlayStart(MusicPlayerInfo *mplayInfo, SongHeader* songHeader)
     {
         mplayInfo.status = 0;
         mplayInfo.songHeader = songHeader;
-        mplayInfo.voicegroup = offsetPointer!ToneData(songHeader.instrument);
+        mplayInfo.voicegroup = songHeader.instrument.toAbsolute(musicData);
         mplayInfo.priority = songHeader.priority;
         mplayInfo.clock = 0;
         mplayInfo.tempoRawBPM = 150;
@@ -472,7 +462,7 @@ void MPlayStart(MusicPlayerInfo *mplayInfo, SongHeader* songHeader)
             TrackStop(mplayInfo, track);
             track.flags = MPT_FLG_EXIST | MPT_FLG_START;
             track.chan = null;
-            track.cmdPtr = offsetPointer!ubyte(songHeader.part.ptr[i]);// + (size_t) musicData;
+            track.cmdPtr = songHeader.part.ptr[i].toAbsolute(musicData);
             i++;
             track++;
         }

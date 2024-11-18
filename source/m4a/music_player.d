@@ -40,7 +40,7 @@ void MP2KClearChain(SoundChannel *chan) pure {
 }
 
 ubyte ConsumeTrackByte(MusicPlayerTrack *track) @system pure {
-    ubyte *ptr = track.cmdPtr++;
+    const(ubyte)* ptr = track.cmdPtr++;
     return *ptr;
 }
 
@@ -62,7 +62,7 @@ void MP2K_event_fine(MusicPlayerInfo*, MusicPlayerTrack *track) @system pure {
 
 // Sets the track's cmdPtr to the specified address.
 void MP2K_event_goto(MusicPlayerInfo*, MusicPlayerTrack *track) @system {
-    track.cmdPtr = offsetPointer!ubyte(*cast(uint *)track.cmdPtr);
+    track.cmdPtr = (*cast(RelativePointer!(ubyte, uint)*)track.cmdPtr).toAbsolute(musicData);
 }
 
 // Sets the track's cmdPtr to the specified address after backing up its current position.
@@ -126,7 +126,7 @@ void MP2K_event_keysh(MusicPlayerInfo*, MusicPlayerTrack *track) @system pure {
 
 void MP2K_event_voice(MusicPlayerInfo *player, MusicPlayerTrack *track) @system pure {
     ubyte voice = *(track.cmdPtr++);
-    ToneData *instrument = &player.voicegroup[voice];
+    const(ToneData)* instrument = &player.voicegroup[voice];
     track.instrument = *instrument;
 }
 
@@ -390,13 +390,13 @@ void MP2K_event_nxx(uint clock, MusicPlayerInfo *player, MusicPlayerTrack *track
     if (type & (TONEDATA_TYPE_RHY | TONEDATA_TYPE_SPL)) {
         ubyte instrumentIndex;
         if (instrument.type & TONEDATA_TYPE_SPL) {
-            ubyte *keySplitTableOffset = offsetPointer!ubyte(instrument.keySplitTable);
+            ubyte *keySplitTableOffset = instrument.keySplitTable.toAbsolute(musicData);
             instrumentIndex = keySplitTableOffset[track.key];
         } else {
             instrumentIndex = track.key;
         }
 
-        instrument = offsetPointer!ToneData(instrument.group + (instrumentIndex * 12));
+        instrument = &instrument.group.toAbsolute(musicData)[instrumentIndex];
         if (instrument.type & (TONEDATA_TYPE_RHY | TONEDATA_TYPE_SPL)) {
             return;
         }
@@ -499,7 +499,7 @@ void MP2K_event_nxx(uint clock, MusicPlayerInfo *player, MusicPlayerTrack *track
     chan.rhythmPan = forcedPan;
     chan.type = instrument.type;
     if (cgbType == 0) {
-        chan.wav = offsetPointer!WaveData(instrument.wav);
+        chan.wav = instrument.wav.toAbsolute(musicData);
     } else {
         //chan.wav = cast(WaveData*)instrument.cgbSample;
     }
