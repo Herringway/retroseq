@@ -1,8 +1,13 @@
 {
+	"authors": [
+		"Herringway"
+	],
+	"copyright": "Copyright © 2024, Herringway",
 	"description": "Retro console game sequence player",
 	"license": "BSL-1",
 	"name": "retroseq",
 	"subPackages": [
-		"m4a_player"
+		"m4a_player",
+		"sseq_player"
 	]
 }

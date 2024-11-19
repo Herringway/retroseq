@@ -9,5 +9,6 @@ build/
 *.dll
 *.lib
 dub.selections.json
+*.obj
 .dub
 .vs
