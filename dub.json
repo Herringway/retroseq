@@ -3,7 +3,7 @@
 	"license": "BSL-1.0",
 	"name": "nspcplay",
 	"subPackages": [
-		"player",
+		"nspc_player",
 		"extract",
 		"mknspc"
 	],
