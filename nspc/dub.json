@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"Herringway"
+	],
+	"copyright": "Copyright © 2024, Herringway",
+	"description": "SNES NSPC format",
+	"license": "BSL-1",
+	"name": "nspc"
+}

@@ -7,8 +7,11 @@
 	"license": "BSL-1",
 	"name": "retroseq",
 	"subPackages": [
+		"m4a",
 		"m4a_player",
+		"sseq",
 		"sseq_player",
+		"nspc",
 		"nspc_player",
 		"extract",
 		"mknspc"

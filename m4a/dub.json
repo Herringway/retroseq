@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"Herringway"
+	],
+	"copyright": "Copyright © 2024, Herringway",
+	"description": "GBA M4A format",
+	"license": "BSL-1",
+	"name": "m4a"
+}
