@@ -1,0 +1,13 @@
+{
+	"description": "pxtone player",
+	"license": "BSL-1.0",
+	"name": "pxtone_player",
+	"targetType": "executable",
+	"dependencies": {
+		"retroseq:pxtone": "*",
+		"bindbc-sdl": "~>0.19.2"
+	},
+	"subConfigurations": {
+		"retroseq:pxtone": "vorbis"
+	}
+}

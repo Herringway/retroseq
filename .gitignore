@@ -23,3 +23,6 @@ songs
 *.exp
 *.m4a
 *.mml
+*.bin
+*.ptcop
+*.pttune

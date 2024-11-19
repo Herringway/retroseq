@@ -1,0 +1,18 @@
+{
+	"description": "pxtone",
+	"license": "BSL-1.0",
+	"name": "pxtone",
+	"targetType": "library",
+	"configurations": [
+		{
+			"name": "no-vorbis"
+		},
+		{
+			"name": "vorbis",
+			"dependencies": {
+				"derelict-vorbis": "~>2.0.0-beta.2"
+			},
+			"versions": ["pxINCLUDE_OGGVORBIS"]
+		}
+	]
+}
