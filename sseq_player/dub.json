@@ -9,5 +9,5 @@
 		"sseq": "*",
 		"bindbc-sdl": "~>1.4.0"
 	},
-	"name": "player"
+	"name": "sseq_player"
 }

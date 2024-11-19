@@ -7,6 +7,6 @@
 	"license": "BSL-1.0",
 	"name": "sseq",
 	"subPackages": [
-		"player"
+		"sseq_player"
 	]
 }
