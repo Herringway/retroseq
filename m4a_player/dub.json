@@ -6,8 +6,8 @@
 	"description": "Command-line m4a player",
 	"license": "BSL-1.0",
 	"dependencies": {
-		"m4a": "*",
+		"retroseq": "*",
 		"bindbc-sdl": "~>1.4.0"
 	},
-	"name": "player"
+	"name": "m4a_player"
 }

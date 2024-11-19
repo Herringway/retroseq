@@ -1,7 +1,7 @@
 {
-	"description": "GBA m4a",
-	"license": "proprietary",
-	"name": "m4a",
+	"description": "Retro console game sequence player",
+	"license": "BSL-1",
+	"name": "retroseq",
 	"subPackages": [
 		"m4a_player"
 	]
