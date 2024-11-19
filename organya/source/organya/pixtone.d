@@ -12,7 +12,7 @@ align(1):
 	int offset;
 }
 
-package align(1) struct PixtoneParameter {
+align(1) struct PixtoneParameter {
 align(1):
 	int use;
 	int size;

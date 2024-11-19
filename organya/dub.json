@@ -3,9 +3,6 @@
 	"license": "BSD 3-clause",
 	"name": "organya",
 	"stringImportPaths": ["data"],
-	"subPackages": [
-		"player"
-	],
 	"dependencies": {
 		"simplesoftmix": "~>0.0"
 	}
