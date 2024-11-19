@@ -46,7 +46,6 @@ struct _UNIT {
 	double enve_mag_start;
 	double enve_mag_margin;
 	int enve_count;
-	int enve_num;
 	_POINT[] enves;
 
 	_OSCILLATOR main;
@@ -145,7 +144,7 @@ public:
 			pxNOISEDESIGN_UNIT* p_du = p_noise.get_unit(u);
 
 			pU.bEnable = p_du.bEnable;
-			pU.enve_num = p_du.enve_num;
+			pU.enves.length = p_du.enves.length;
 			if (p_du.pan == 0) {
 				pU.pan[0] = 1;
 				pU.pan[1] = 1;
@@ -157,10 +156,8 @@ public:
 				pU.pan[0] = cast(double)(100.0f - p_du.pan) / 100;
 			}
 
-			pU.enves = new _POINT[](pU.enve_num);
-
 			// envelope
-			for (int e = 0; e < p_du.enve_num; e++) {
+			for (int e = 0; e < p_du.enves.length; e++) {
 				pU.enves[e].smp = sps * p_du.enves[e].x / 1000;
 				pU.enves[e].mag = cast(double) p_du.enves[e].y / 100;
 			}
@@ -168,7 +165,7 @@ public:
 			pU.enve_mag_start = 0;
 			pU.enve_mag_margin = 0;
 			pU.enve_count = 0;
-			while (pU.enve_index < pU.enve_num) {
+			while (pU.enve_index < pU.enves.length) {
 				pU.enve_mag_margin = pU.enves[pU.enve_index].mag - pU.enve_mag_start;
 				if (pU.enves[pU.enve_index].smp) {
 					break;
@@ -255,7 +252,7 @@ public:
 						work = work * pU.pan[c];
 
 						// envelope
-						if (pU.enve_index < pU.enve_num) {
+						if (pU.enve_index < pU.enves.length) {
 							work *= pU.enve_mag_start + (pU.enve_mag_margin * pU.enve_count / pU.enves[pU.enve_index].smp);
 						} else {
 							work *= pU.enve_mag_start;
@@ -313,14 +310,14 @@ public:
 					_incriment(&pU.volu, pU.volu.incriment, _p_tables[pxWAVETYPE.Random]);
 
 					// envelope
-					if (pU.enve_index < pU.enve_num) {
+					if (pU.enve_index < pU.enves.length) {
 						pU.enve_count++;
 						if (pU.enve_count >= pU.enves[pU.enve_index].smp) {
 							pU.enve_count = 0;
 							pU.enve_mag_start = pU.enves[pU.enve_index].mag;
 							pU.enve_mag_margin = 0;
 							pU.enve_index++;
-							while (pU.enve_index < pU.enve_num) {
+							while (pU.enve_index < pU.enves.length) {
 								pU.enve_mag_margin = pU.enves[pU.enve_index].mag - pU.enve_mag_start;
 								if (pU.enves[pU.enve_index].smp) {
 									break;
