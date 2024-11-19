@@ -1,0 +1,9 @@
+{
+	"description": "PIXEL's organya audio format",
+	"license": "BSD 3-clause",
+	"name": "organya",
+	"stringImportPaths": ["data"],
+	"dependencies": {
+		"simplesoftmix": "~>0.0"
+	}
+}
