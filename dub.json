@@ -3,6 +3,6 @@
 	"license": "proprietary",
 	"name": "m4a",
 	"subPackages": [
-		"player"
+		"m4a_player"
 	]
 }
