@@ -8,6 +8,24 @@
 	"name": "retroseq",
 	"subPackages": [
 		"m4a_player",
-		"sseq_player"
+		"sseq_player",
+		"nspc_player",
+		"extract",
+		"mknspc"
+	],
+	"stringImportPaths": [ "exampledata" ],
+	"configurations": [
+		{
+			"name": "default"
+		},
+		{
+			"name": "static",
+			"dflags-windows-ldc": ["-static"]
+		},
+		{
+			"name": "shared",
+			"targetType": "dynamicLibrary",
+			"dflags-windows": ["-static"]
+		}
 	]
 }

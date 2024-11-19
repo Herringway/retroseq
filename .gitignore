@@ -12,3 +12,14 @@ dub.selections.json
 *.obj
 .dub
 .vs
+docs.json
+docs/
+*.lst
+*.nspc
+*.ebm
+songs
+*.wav
+*.flac
+*.exp
+*.m4a
+*.mml
