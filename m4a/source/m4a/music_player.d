@@ -174,7 +174,7 @@ void MP2K_event_port(M4APlayer*, MusicPlayerInfo*, MusicPlayerTrack *track) @sys
 }
 
 void MP2KPlayerMain(M4APlayer* player, MusicPlayerInfo* subPlayer) @system {
-    SoundMixerState *mixer = player.SOUND_INFO_PTR;
+    SoundMixerState *mixer = &player.soundInfo;
 
     if (subPlayer.nextPlayerFunc != null) {
         subPlayer.nextPlayerFunc(player, subPlayer.nextPlayer);
@@ -329,13 +329,13 @@ void MP2KPlayerMain(M4APlayer* player, MusicPlayerInfo* subPlayer) @system {
     while(++i < subPlayer.trackCount);
 }
 
-void TrackStop(M4APlayer* player, MusicPlayerInfo* subPlayer, MusicPlayerTrack *track) {
+void TrackStop(M4APlayer* player, MusicPlayerInfo* subPlayer, MusicPlayerTrack *track) @system {
     if (track.flags & 0x80) {
         for (SoundChannel *chan = track.chan; chan != null; chan = cast(SoundChannel*)chan.nextChannelPointer) {
             if (chan.statusFlags != 0) {
                 ubyte cgbType = chan.type & 0x7;
                 if (cgbType != 0) {
-                    SoundMixerState *mixer = player.SOUND_INFO_PTR;
+                    SoundMixerState *mixer = &player.soundInfo;
                     mixer.cgbNoteOffFunc(player, cgbType);
                 }
                 chan.statusFlags = 0;
@@ -346,7 +346,7 @@ void TrackStop(M4APlayer* player, MusicPlayerInfo* subPlayer, MusicPlayerTrack *
     }
 }
 
-void ChnVolSetAsm(SoundChannel *chan, MusicPlayerTrack *track) {
+void ChnVolSetAsm(SoundChannel *chan, MusicPlayerTrack *track) @safe {
     byte forcedPan = chan.rhythmPan;
     uint rightVolume = (ubyte)(forcedPan + 128) * chan.velocity * track.volRightCalculated / 128 / 128;
     if (rightVolume > 0xFF) {
@@ -361,8 +361,8 @@ void ChnVolSetAsm(SoundChannel *chan, MusicPlayerTrack *track) {
     chan.leftVolume = cast(ubyte)leftVolume;
 }
 
-void MP2K_event_nxx(M4APlayer* player, uint clock, MusicPlayerInfo *subPlayer, MusicPlayerTrack *track) {
-    SoundMixerState *mixer = player.SOUND_INFO_PTR;
+void MP2K_event_nxx(M4APlayer* player, uint clock, MusicPlayerInfo *subPlayer, MusicPlayerTrack *track) @system {
+    SoundMixerState *mixer = &player.soundInfo;
 
     // A note can be anywhere from 1 to 4 bytes long. First is always the note length...
     track.gateTime = gClockTable[clock];
@@ -537,7 +537,7 @@ void MP2K_event_nxx(M4APlayer* player, uint clock, MusicPlayerInfo *subPlayer, M
     track.flags &= ~0xF;
 }
 
-void MP2K_event_endtie(M4APlayer*, MusicPlayerInfo*, MusicPlayerTrack *track) {
+void MP2K_event_endtie(M4APlayer*, MusicPlayerInfo*, MusicPlayerTrack *track) @system {
     ubyte key = *track.cmdPtr;
     if (key < 0x80) {
         track.key = key;
@@ -556,23 +556,18 @@ void MP2K_event_endtie(M4APlayer*, MusicPlayerInfo*, MusicPlayerTrack *track) {
     }
 }
 
-void MP2K_event_lfos(M4APlayer*, MusicPlayerInfo*, MusicPlayerTrack *track) {
+void MP2K_event_lfos(M4APlayer*, MusicPlayerInfo*, MusicPlayerTrack *track) @system {
     track.lfoSpeed = *(track.cmdPtr++);
     if (track.lfoSpeed == 0) {
         ClearModM(track);
     }
 }
 
-void MP2K_event_mod(M4APlayer*, MusicPlayerInfo*, MusicPlayerTrack *track) {
+void MP2K_event_mod(M4APlayer*, MusicPlayerInfo*, MusicPlayerTrack *track) @system {
     track.modDepth = *(track.cmdPtr++);
     if (track.modDepth == 0) {
         ClearModM(track);
     }
-}
-
-void m4aSoundVSync()
-{
-
 }
 
 // In:
@@ -582,7 +577,7 @@ void m4aSoundVSync()
 // Out:
 // - The freq in Hz at which the sample should be played back.
 
-uint MidiKeyToFreq_(WaveData *wav, ubyte key, ubyte pitch) {
+uint MidiKeyToFreq_(WaveData *wav, ubyte key, ubyte pitch) @safe {
     if (key > 178) {
         key = 178;
         pitch = 255;

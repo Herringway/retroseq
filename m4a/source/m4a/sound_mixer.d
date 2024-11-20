@@ -11,37 +11,37 @@ ubyte RunMixerFrame(M4APlayer* player, float[2][] audioBuffer) @system {
 
     static float playerCounter = 0;
     playerCounter += audioBuffer.length;
-    while (playerCounter >= player.SOUND_INFO_PTR.samplesPerFrame) {
-        playerCounter -= player.SOUND_INFO_PTR.samplesPerFrame;
-        uint maxScanlines = player.SOUND_INFO_PTR.maxScanlines;
+    while (playerCounter >= player.soundInfo.samplesPerFrame) {
+        playerCounter -= player.soundInfo.samplesPerFrame;
+        uint maxScanlines = player.soundInfo.maxScanlines;
 
-        if (player.SOUND_INFO_PTR.firstPlayerFunc != null) {
-            player.SOUND_INFO_PTR.firstPlayerFunc(player, player.SOUND_INFO_PTR.firstPlayer);
+        if (player.soundInfo.firstPlayerFunc != null) {
+            player.soundInfo.firstPlayerFunc(player, player.soundInfo.firstPlayer);
         }
 
-        player.SOUND_INFO_PTR.cgbMixerFunc(player);
+        player.soundInfo.cgbMixerFunc(player);
     }
-    samplesPerFrame = player.SOUND_INFO_PTR.samplesPerFrame;
-    float[2][] outBuffer = player.SOUND_INFO_PTR.outBuffer;
-    float[2][] cgbBuffer = player.SOUND_INFO_PTR.cgbBuffer;
+    samplesPerFrame = player.soundInfo.samplesPerFrame;
+    float[2][] outBuffer = player.soundInfo.outBuffer;
+    float[2][] cgbBuffer = player.soundInfo.cgbBuffer;
 
-    int dmaCounter = player.SOUND_INFO_PTR.dmaCounter;
+    int dmaCounter = player.soundInfo.dmaCounter;
 
     if (dmaCounter > 1) {
-        outBuffer = outBuffer[samplesPerFrame * (player.SOUND_INFO_PTR.pcmDmaPeriod - (dmaCounter - 1)) .. $];
+        outBuffer = outBuffer[samplesPerFrame * (player.soundInfo.pcmDmaPeriod - (dmaCounter - 1)) .. $];
     }
 
     //MixerRamFunc mixerRamFunc = ((MixerRamFunc)MixerCodeBuffer);
-    SampleMixer(player.SOUND_INFO_PTR, 0, cast(ushort)samplesPerFrame, outBuffer, cast(ubyte)dmaCounter);
+    SampleMixer(&player.soundInfo, 0, cast(ushort)samplesPerFrame, outBuffer, cast(ubyte)dmaCounter);
 
-    player.gb.audio_generate(player.SOUND_INFO_PTR, cast(ushort)samplesPerFrame, cgbBuffer);
+    player.gb.audio_generate(&player.soundInfo, cast(ushort)samplesPerFrame, cgbBuffer);
 
-    samplesPerFrame = player.SOUND_INFO_PTR.samplesPerFrame;
-    float[2][] m4aBuffer = player.SOUND_INFO_PTR.outBuffer;
-    cgbBuffer = player.SOUND_INFO_PTR.cgbBuffer;
+    samplesPerFrame = player.soundInfo.samplesPerFrame;
+    float[2][] m4aBuffer = player.soundInfo.outBuffer;
+    cgbBuffer = player.soundInfo.cgbBuffer;
 
     if (dmaCounter > 1) {
-        m4aBuffer = m4aBuffer[samplesPerFrame * (player.SOUND_INFO_PTR.pcmDmaPeriod - (dmaCounter - 1)) .. $];
+        m4aBuffer = m4aBuffer[samplesPerFrame * (player.soundInfo.pcmDmaPeriod - (dmaCounter - 1)) .. $];
     }
 
     for(uint i = 0; i < audioBuffer.length; i++) {
@@ -49,8 +49,8 @@ ubyte RunMixerFrame(M4APlayer* player, float[2][] audioBuffer) @system {
         audioBuffer[i][1] = m4aBuffer[i][1] + cgbBuffer[i][1];
     }
 
-    if(cast(byte)(--player.SOUND_INFO_PTR.dmaCounter) <= 0)
-        player.SOUND_INFO_PTR.dmaCounter = player.SOUND_INFO_PTR.pcmDmaPeriod;
+    if(cast(byte)(--player.soundInfo.dmaCounter) <= 0)
+        player.soundInfo.dmaCounter = player.soundInfo.pcmDmaPeriod;
 
     return 1;
 }

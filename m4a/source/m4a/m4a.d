@@ -11,10 +11,9 @@ struct M4APlayer {
     ubyte[] musicData;
     uint songTableOffset;
 
-    SoundMixerState *SOUND_INFO_PTR;
-    SoundMixerState gSoundInfo;
+    SoundMixerState soundInfo;
     MPlayFunc[36] gMPlayJumpTable;
-    CgbChannel[4] gCgbChans;
+    CgbChannel[4] cgbChans;
     MusicPlayerInfo gMPlayInfo_BGM;
     MusicPlayerInfo gMPlayInfo_SE1;
     MusicPlayerInfo gMPlayInfo_SE2;
@@ -26,28 +25,26 @@ struct M4APlayer {
     ubyte[0x10] gMPlayMemAccArea;
 
     AudioCGB gb;
-    void initialize(uint freq, ubyte[] _music, uint _songTableAddress, uint _mode) @system
+    void initialize(uint freq, ubyte[] _music, uint _songTableAddress, uint _mode) @safe
     {
         musicData = _music;
         songTableOffset = _songTableAddress;
         int i;
 
-        SoundInit(&gSoundInfo);
-        gSoundInfo.freq = cast(ubyte)(((_mode >> 16) & 0xF) - 1);
-        SampleFreqSet(SOUND_INFO_PTR, freq);
-        MPlayExtender(&gCgbChans[0]);
-        m4aSoundMode(SOUND_INFO_PTR, _mode);
+        SoundInit();
+        soundInfo.freq = cast(ubyte)(((_mode >> 16) & 0xF) - 1);
+        SampleFreqSet(&soundInfo, freq);
+        MPlayExtender();
+        m4aSoundMode(&soundInfo, _mode);
 
         MusicPlayerInfo *mplayInfo = &gMPlayInfo_BGM;
-        MPlayOpen(mplayInfo, &gMPlayTrack_BGM[0], MAX_MUSICPLAYER_TRACKS);
+        MPlayOpen(mplayInfo, gMPlayTrack_BGM[], MAX_MUSICPLAYER_TRACKS);
         mplayInfo.checkSongPriority = 0;
         mplayInfo.memAccArea = &gMPlayMemAccArea[0];
         gb.initialize(freq);
     }
-    void MPlayExtender(CgbChannel *cgbChans)
+    void MPlayExtender() @safe
     {
-        SoundMixerState *soundInfo = SOUND_INFO_PTR;
-
         soundInfo.reg.NR50 = 0; // set master volume to zero
         soundInfo.reg.NR51 = 0; // set master volume to zero
         soundInfo.reg.NR52 = SOUND_MASTER_ENABLE
@@ -80,7 +77,7 @@ struct M4APlayer {
         gMPlayJumpTable[32] = &Funcify!FadeOutBody;
         gMPlayJumpTable[33] = &TrkVolPitSet;
 
-        soundInfo.cgbChans = cgbChans;
+        soundInfo.cgbChans = &cgbChans[0];
         soundInfo.cgbMixerFunc = &Funcify!cgbMixerFunc;
         soundInfo.cgbNoteOffFunc = &Funcify!cgbNoteOffFunc;
         soundInfo.cgbCalcFreqFunc = &cgbCalcFreqFunc;
@@ -101,7 +98,7 @@ struct M4APlayer {
     {
         const(Song) *songTable = cast(const(Song)*) &musicData[songTableOffset];
 
-        MPlayStart(&gMPlayInfo_BGM, songTable[n].header.toAbsolute(musicData));
+        MPlayStart(gMPlayInfo_BGM, songTable[n].header.toAbsolute(musicData));
     }
 
     void MPlayContinue(MusicPlayerInfo *mplayInfo) @safe pure
@@ -125,14 +122,14 @@ struct M4APlayer {
 
         if (gMPlayInfo_BGM.songHeader != song.header.toAbsolute(musicData))
         {
-            MPlayStart(&gMPlayInfo_BGM, song.header.toAbsolute(musicData));
+            MPlayStart(gMPlayInfo_BGM, song.header.toAbsolute(musicData));
         }
         else
         {
             if ((gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_TRACK) == 0
              || (gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_PAUSE))
             {
-                MPlayStart(&gMPlayInfo_BGM, song.header.toAbsolute(musicData));
+                MPlayStart(gMPlayInfo_BGM, song.header.toAbsolute(musicData));
             }
         }
     }
@@ -143,9 +140,9 @@ struct M4APlayer {
         const(Song) *song = &songTable[n];
 
         if (gMPlayInfo_BGM.songHeader != song.header.toAbsolute(musicData))
-            MPlayStart(&gMPlayInfo_BGM, song.header.toAbsolute(musicData));
+            MPlayStart(gMPlayInfo_BGM, song.header.toAbsolute(musicData));
         else if ((gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_TRACK) == 0)
-            MPlayStart(&gMPlayInfo_BGM, song.header.toAbsolute(musicData));
+            MPlayStart(gMPlayInfo_BGM, song.header.toAbsolute(musicData));
         else if (gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_PAUSE)
             MPlayContinue(&gMPlayInfo_BGM);
     }
@@ -239,7 +236,7 @@ struct M4APlayer {
         MP2KClearChain(cast(SoundChannel*)x);
     }
 
-    void SoundInit(SoundMixerState *soundInfo) @system
+    void SoundInit() @safe pure
     {
         soundInfo.reg.NR52 = SOUND_MASTER_ENABLE
                        | SOUND_4_ON
@@ -251,24 +248,20 @@ struct M4APlayer {
                        | SOUND_ALL_MIX_FULL;
         soundInfo.reg.SOUNDBIAS_H = (soundInfo.reg.SOUNDBIAS_H & 0x3F) | 0x40;
 
-        SOUND_INFO_PTR = soundInfo;
-        //CpuFill32(0, soundInfo, SoundMixerState.sizeof);
-
         soundInfo.numChans = 8;
         soundInfo.masterVol = 15;
         soundInfo.mp2kEventNxxFunc = &MP2K_event_nxx;
         soundInfo.cgbMixerFunc = &DummyFunc;
         soundInfo.cgbNoteOffFunc = &DummyFunc2;
         soundInfo.cgbCalcFreqFunc = &DummyFunc3;
-        soundInfo.ExtVolPit = cast(ExtVolPitFunc)&DummyFunc;
+        soundInfo.ExtVolPit = &DummyFunc4;
 
         MPlayJumpTableCopy(gMPlayJumpTable);
 
         soundInfo.mp2kEventFuncTable = gMPlayJumpTable;
     }
-    void SoundClear()
+    void SoundClear() @system
     {
-        SoundMixerState *soundInfo = SOUND_INFO_PTR;
         int i;
         void *chan;
 
@@ -298,25 +291,23 @@ struct M4APlayer {
         }
     }
 
-    void MPlayOpen(MusicPlayerInfo *mplayInfo, MusicPlayerTrack *tracks, ubyte trackCount)
+    void MPlayOpen(ref MusicPlayerInfo* mplayInfo, MusicPlayerTrack[] tracks, ubyte trackCount) @safe pure
     {
-        SoundMixerState *soundInfo = SOUND_INFO_PTR;
-
         if (trackCount == 0)
             return;
 
         if (trackCount > MAX_MUSICPLAYER_TRACKS)
             trackCount = MAX_MUSICPLAYER_TRACKS;
 
-        mplayInfo.tracks = tracks;
+        mplayInfo.tracks = &tracks[0];
         mplayInfo.trackCount = trackCount;
         mplayInfo.status = MUSICPLAYER_STATUS_PAUSE;
 
         while (trackCount != 0)
         {
-            tracks.flags = 0;
+            tracks[0].flags = 0;
             trackCount--;
-            tracks++;
+            tracks = tracks[1 .. $];
         }
 
         // append music player and MPlayMain to linked list
@@ -331,8 +322,7 @@ struct M4APlayer {
         soundInfo.firstPlayerFunc = &MP2KPlayerMain;
     }
 
-    void MPlayStart(MusicPlayerInfo *mplayInfo, const(SongHeader)* songHeader)
-        in(mplayInfo)
+    void MPlayStart(ref MusicPlayerInfo mplayInfo, const(SongHeader)* songHeader) @system
         in(songHeader)
     {
         int i;
@@ -363,7 +353,7 @@ struct M4APlayer {
 
             while (i < songHeader.trackCount && i < mplayInfo.trackCount)
             {
-                TrackStop(&this, mplayInfo, track);
+                TrackStop(&this, &mplayInfo, track);
                 track.flags = MPT_FLG_EXIST | MPT_FLG_START;
                 track.chan = null;
                 track.cmdPtr = songHeader.part.ptr[i].toAbsolute(musicData);
@@ -373,14 +363,14 @@ struct M4APlayer {
 
             while (i < mplayInfo.trackCount)
             {
-                TrackStop(&this, mplayInfo, track);
+                TrackStop(&this, &mplayInfo, track);
                 track.flags = 0;
                 i++;
                 track++;
             }
 
             if (songHeader.reverb & SOUND_MODE_REVERB_SET)
-                m4aSoundMode(SOUND_INFO_PTR, songHeader.reverb);
+                m4aSoundMode(&soundInfo, songHeader.reverb);
         }
     }
 
@@ -474,10 +464,8 @@ struct M4APlayer {
             track++;
         }
     }
-    void cgbNoteOffFunc(ubyte chanNum)
+    void cgbNoteOffFunc(ubyte chanNum) @safe
     {
-        SoundMixerState *soundInfo = SOUND_INFO_PTR;
-
         switch (chanNum)
         {
         case 1:
@@ -528,8 +516,6 @@ struct M4APlayer {
 
     void CgbModVol(CgbChannel *chan)
     {
-        SoundMixerState *soundInfo = SOUND_INFO_PTR;
-
         if ((soundInfo.mode & 1) || !CgbPan(chan))
         {
             chan.pan = 0xFF;
@@ -556,7 +542,6 @@ struct M4APlayer {
         CgbChannel *channels;
         int envelopeStepTimeAndDir;
         int prevC15;
-        SoundMixerState *soundInfo = SOUND_INFO_PTR;
         ubyte *nrx0ptr;
         ubyte *nrx1ptr;
         ubyte *nrx2ptr;
@@ -1456,15 +1441,19 @@ void ply_xcmd_0D(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track
     track.cmdPtr += 4;
 }
 
-void DummyFunc(M4APlayer*)
+void DummyFunc(M4APlayer*) @safe
 {
 }
 
-void DummyFunc2(M4APlayer*, ubyte)
+void DummyFunc2(M4APlayer*, ubyte) @safe
 {
 }
 
-uint DummyFunc3(ubyte, ubyte, ubyte)
+uint DummyFunc3(ubyte, ubyte, ubyte) @safe
 {
     return 0;
+}
+
+void DummyFunc4() @safe
+{
 }
