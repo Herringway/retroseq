@@ -101,7 +101,7 @@ struct M4APlayer {
         MPlayStart(gMPlayInfo_BGM, songTable[n].header.toAbsolute(musicData));
     }
 
-    void MPlayContinue(MusicPlayerInfo *mplayInfo) @safe pure
+    void MPlayContinue(ref MusicPlayerInfo mplayInfo) @safe pure
     {
         mplayInfo.status &= ~MUSICPLAYER_STATUS_PAUSE;
     }
@@ -144,7 +144,7 @@ struct M4APlayer {
         else if ((gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_TRACK) == 0)
             MPlayStart(gMPlayInfo_BGM, song.header.toAbsolute(musicData));
         else if (gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_PAUSE)
-            MPlayContinue(&gMPlayInfo_BGM);
+            MPlayContinue(gMPlayInfo_BGM);
     }
 
     void m4aSongNumStop(ushort n)
@@ -153,7 +153,7 @@ struct M4APlayer {
         const(Song) *song = &songTable[n];
 
         if (gMPlayInfo_BGM.songHeader == song.header.toAbsolute(musicData))
-            m4aMPlayStop(&gMPlayInfo_BGM);
+            m4aMPlayStop(gMPlayInfo_BGM);
     }
 
     void m4aSongNumContinue(ushort n)
@@ -162,26 +162,26 @@ struct M4APlayer {
         const(Song)* song = &songTable[n];
 
         if (gMPlayInfo_BGM.songHeader == song.header.toAbsolute(musicData))
-            MPlayContinue(&gMPlayInfo_BGM);
+            MPlayContinue(gMPlayInfo_BGM);
     }
 
     void m4aMPlayAllStop()
     {
         int i;
 
-        m4aMPlayStop(&gMPlayInfo_BGM);
+        m4aMPlayStop(gMPlayInfo_BGM);
     }
 
     void m4aMPlayContinue(MusicPlayerInfo *mplayInfo)
     {
-        MPlayContinue(mplayInfo);
+        MPlayContinue(*mplayInfo);
     }
 
     void m4aMPlayAllContinue()
     {
         int i;
 
-        MPlayContinue(&gMPlayInfo_BGM);
+        MPlayContinue(gMPlayInfo_BGM);
     }
 
     void m4aMPlayFadeOut(MusicPlayerInfo *mplayInfo, ushort speed)
@@ -283,7 +283,7 @@ struct M4APlayer {
 
             while (i <= 4)
             {
-                soundInfo.cgbNoteOffFunc(&this, cast(ubyte)i);
+                soundInfo.cgbNoteOffFunc(this, cast(ubyte)i);
                 (cast(CgbChannel *)chan).statusFlags = 0;
                 i++;
                 chan = cast(void *)(cast(int)chan + CgbChannel.sizeof);
@@ -353,7 +353,7 @@ struct M4APlayer {
 
             while (i < songHeader.trackCount && i < mplayInfo.trackCount)
             {
-                TrackStop(&this, &mplayInfo, track);
+                TrackStop(this, mplayInfo, *track);
                 track.flags = MPT_FLG_EXIST | MPT_FLG_START;
                 track.chan = null;
                 track.cmdPtr = songHeader.part.ptr[i].toAbsolute(musicData);
@@ -363,7 +363,7 @@ struct M4APlayer {
 
             while (i < mplayInfo.trackCount)
             {
-                TrackStop(&this, &mplayInfo, track);
+                TrackStop(this, mplayInfo, *track);
                 track.flags = 0;
                 i++;
                 track++;
@@ -374,7 +374,7 @@ struct M4APlayer {
         }
     }
 
-    void m4aMPlayStop(MusicPlayerInfo *mplayInfo)
+    void m4aMPlayStop(ref MusicPlayerInfo mplayInfo)
     {
         int i;
         MusicPlayerTrack *track;
@@ -386,13 +386,16 @@ struct M4APlayer {
 
         while (i > 0)
         {
-            TrackStop(&this, mplayInfo, track);
+            TrackStop(this, mplayInfo, *track);
             i--;
             track++;
         }
     }
 
-    void FadeOutBody(MusicPlayerInfo *mplayInfo, MusicPlayerTrack*)
+    void FadeOutBody(ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack) {
+        return FadeOutBody(mplayInfo);
+    }
+    void FadeOutBody(ref MusicPlayerInfo mplayInfo)
     {
         int i;
         MusicPlayerTrack *track;
@@ -424,7 +427,7 @@ struct M4APlayer {
                 {
                     uint val;
 
-                    TrackStop(&this, mplayInfo, track);
+                    TrackStop(this, mplayInfo, *track);
 
                     val = TEMPORARY_FADE;
                     fadeVolume = mplayInfo.fadeVolume;
@@ -873,7 +876,7 @@ uint MidiKeyToFreq(WaveData *wav, ubyte key, ubyte fineAdjust) @safe pure
     return umul3232H32(wav.freq, val1 + umul3232H32(val2 - val1, fineAdjustShifted));
 }
 
-void MP2K_event_nothing(M4APlayer*, MusicPlayerInfo*, MusicPlayerTrack*) @safe pure {
+void MP2K_event_nothing(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) @safe pure {
     assert(0);
 }
 
@@ -948,7 +951,7 @@ void m4aSoundMode(SoundMixerState* soundInfo, uint mode) @safe
 }
 
 
-void TrkVolPitSet(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void TrkVolPitSet(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     if (track.flags & MPT_FLG_VOLSET)
     {
@@ -1129,7 +1132,7 @@ void m4aMPlayPanpotControl(MusicPlayerInfo *mplayInfo, ushort trackBits, byte pa
     }
 }
 
-void ClearModM(MusicPlayerTrack *track)
+void ClearModM(ref MusicPlayerTrack track)
 {
     track.lfoSpeedCounter = 0;
     track.modCalculated = 0;
@@ -1159,7 +1162,7 @@ void m4aMPlayModDepthSet(MusicPlayerInfo *mplayInfo, ushort trackBits, ubyte mod
                 track.modDepth = modDepth;
 
                 if (!track.modDepth)
-                    ClearModM(track);
+                    ClearModM(*track);
             }
         }
 
@@ -1188,7 +1191,7 @@ void m4aMPlayLFOSpeedSet(MusicPlayerInfo *mplayInfo, ushort trackBits, ubyte lfo
                 track.lfoSpeed = lfoSpeed;
 
                 if (!track.lfoSpeed)
-                    ClearModM(track);
+                    ClearModM(*track);
             }
         }
 
@@ -1198,7 +1201,7 @@ void m4aMPlayLFOSpeedSet(MusicPlayerInfo *mplayInfo, ushort trackBits, ubyte lfo
     }
 }
 
-void ply_memacc(M4APlayer* player, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_memacc(ref M4APlayer player, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     uint op;
     ubyte *addr;
@@ -1320,7 +1323,7 @@ cond_false:
     track.cmdPtr += 4;
 }
 
-void ply_xcmd(M4APlayer* player, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_xcmd(ref M4APlayer player, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     uint n = *track.cmdPtr;
     track.cmdPtr++;
@@ -1328,12 +1331,12 @@ void ply_xcmd(M4APlayer* player, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *t
     gXcmdTable[n](player, mplayInfo, track);
 }
 
-void ply_xxx(M4APlayer* player, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_xxx(ref M4APlayer player, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     player.gMPlayJumpTable[0](player, mplayInfo, track);
 }
 
-void READ_XCMD_BYTE(MusicPlayerTrack* track, ref uint var, size_t n)
+void READ_XCMD_BYTE(ref MusicPlayerTrack track, ref uint var, size_t n)
 {
     uint b = track.cmdPtr[(n)];
     b <<= n * 8;
@@ -1341,7 +1344,7 @@ void READ_XCMD_BYTE(MusicPlayerTrack* track, ref uint var, size_t n)
     var |= b;
 }
 
-void ply_xwave(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_xwave(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     uint wav;
 
@@ -1354,61 +1357,61 @@ void ply_xwave(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
     track.cmdPtr += 4;
 }
 
-void ply_xtype(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_xtype(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     track.instrument.type = *track.cmdPtr;
     track.cmdPtr++;
 }
 
-void ply_xatta(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_xatta(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     track.instrument.attack = *track.cmdPtr;
     track.cmdPtr++;
 }
 
-void ply_xdeca(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_xdeca(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     track.instrument.decay = *track.cmdPtr;
     track.cmdPtr++;
 }
 
-void ply_xsust(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_xsust(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     track.instrument.sustain = *track.cmdPtr;
     track.cmdPtr++;
 }
 
-void ply_xrele(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_xrele(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     track.instrument.release = *track.cmdPtr;
     track.cmdPtr++;
 }
 
-void ply_xiecv(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_xiecv(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     track.echoVolume = *track.cmdPtr;
     track.cmdPtr++;
 }
 
-void ply_xiecl(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_xiecl(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     track.echoLength = *track.cmdPtr;
     track.cmdPtr++;
 }
 
-void ply_xleng(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_xleng(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     track.instrument.length = *track.cmdPtr;
     track.cmdPtr++;
 }
 
-void ply_xswee(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_xswee(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     track.instrument.panSweep = *track.cmdPtr;
     track.cmdPtr++;
 }
 
-void ply_xcmd_0C(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_xcmd_0C(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     uint unk;
 
@@ -1428,7 +1431,7 @@ void ply_xcmd_0C(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track
     }
 }
 
-void ply_xcmd_0D(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track)
+void ply_xcmd_0D(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track)
 {
     uint unk;
 
@@ -1441,11 +1444,11 @@ void ply_xcmd_0D(M4APlayer*, MusicPlayerInfo *mplayInfo, MusicPlayerTrack *track
     track.cmdPtr += 4;
 }
 
-void DummyFunc(M4APlayer*) @safe
+void DummyFunc(ref M4APlayer) @safe
 {
 }
 
-void DummyFunc2(M4APlayer*, ubyte) @safe
+void DummyFunc2(ref M4APlayer, ubyte) @safe
 {
 }
 

@@ -16,10 +16,10 @@ ubyte RunMixerFrame(M4APlayer* player, float[2][] audioBuffer) @system {
         uint maxScanlines = player.soundInfo.maxScanlines;
 
         if (player.soundInfo.firstPlayerFunc != null) {
-            player.soundInfo.firstPlayerFunc(player, player.soundInfo.firstPlayer);
+            player.soundInfo.firstPlayerFunc(*player, *player.soundInfo.firstPlayer);
         }
 
-        player.soundInfo.cgbMixerFunc(player);
+        player.soundInfo.cgbMixerFunc(*player);
     }
     samplesPerFrame = player.soundInfo.samplesPerFrame;
     float[2][] outBuffer = player.soundInfo.outBuffer;
