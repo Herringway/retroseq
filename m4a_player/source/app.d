@@ -81,7 +81,7 @@ bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* use
 
 extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
 	try {
-		RunMixerFrame(SOUND_INFO_PTR, cast(float[2][])buf[0 .. bufSize]);
+		RunMixerFrame(cast(M4APlayer*)user, cast(float[2][])buf[0 .. bufSize]);
 	} catch (Throwable e) {
 		assumeWontThrow(writeln(e));
 	}
@@ -124,11 +124,12 @@ int main(string[] args) {
 	infof("Max Channels: %d", (m4aMode >> 8) & 0xF);
 	infof("Volume: %d", (m4aMode >> 12) & 0xF);
 	infof("Original Rate: %.2fhz", getOrigSampleRate(cast(ubyte)(((m4aMode >> 16) & 0xF) - 1)) * 59.727678571);
-    m4aSoundInit(sampleRate, music, songTableAddress, m4aMode);
-    m4aSongNumStart(cast(ushort)song);
+	M4APlayer player;
+    player.initialize(sampleRate, music, songTableAddress, m4aMode);
+    player.songNumStart(cast(ushort)song);
 
 	// Prepare to play music
-	if (!initAudio(&_sampling_func, 2, sampleRate, null)) {
+	if (!initAudio(&_sampling_func, 2, sampleRate, &player)) {
 		return 1;
 	}
 	//Interpolation interpolation;

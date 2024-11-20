@@ -1,5 +1,8 @@
 module m4a.internal;
 
+import m4a.m4a;
+import std.traits;
+
 struct RelativePointer(Element, Offset) {
     align(1):
     Offset offset;
@@ -210,13 +213,13 @@ struct SoundChannel
 
 enum MAX_DIRECTSOUND_CHANNELS = 16;
 
-alias MPlayFunc = void function(MusicPlayerInfo*, MusicPlayerTrack*);
-alias PlyNoteFunc = void function(uint, MusicPlayerInfo *, MusicPlayerTrack *);
-alias CgbSoundFunc = void function();
-alias CgbOscOffFunc = void function(ubyte);
+alias MPlayFunc = void function(M4APlayer*, MusicPlayerInfo*, MusicPlayerTrack*);
+alias PlyNoteFunc = void function(M4APlayer*, uint, MusicPlayerInfo *, MusicPlayerTrack *);
+alias CgbSoundFunc = void function(M4APlayer*);
+alias CgbOscOffFunc = void function(M4APlayer*, ubyte);
 alias MidiKeyToCgbFreqFunc = uint function(ubyte, ubyte, ubyte);
 alias ExtVolPitFunc = void function();
-alias MPlayMainFunc = void function(MusicPlayerInfo *);
+alias MPlayMainFunc = void function(M4APlayer*, MusicPlayerInfo *);
 
 // SOUNDCNT_H
 enum SOUND_CGB_MIX_QUARTER = 0x0000;
@@ -435,6 +438,10 @@ struct Song
     ushort me;
 };
 
-alias XcmdFunc = void function(MusicPlayerInfo *, MusicPlayerTrack *);
+alias XcmdFunc = void function(M4APlayer*, MusicPlayerInfo *, MusicPlayerTrack *);
 
 enum MAX_LINES = 0;
+
+void Funcify(alias Method)(M4APlayer* player, Parameters!Method params) {
+    __traits(getMember, player, __traits(identifier, Method))(params);
+}

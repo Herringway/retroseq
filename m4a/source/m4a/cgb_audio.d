@@ -231,5 +231,3 @@ struct AudioCGB {
         }
     }
 }
-
-__gshared AudioCGB gb;

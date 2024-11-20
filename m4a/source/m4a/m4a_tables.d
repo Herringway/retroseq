@@ -41,7 +41,7 @@ immutable MPlayFunc[] gMPlayJumpTableTemplate =
     &MP2K_event_endtie,
     &MP2K_event_nothing,
     &TrackStop,
-    &FadeOutBody,
+    &Funcify!(M4APlayer.FadeOutBody),
     &TrkVolPitSet,
     &MP2K_event_nothing,
     &SoundMainBTM,
