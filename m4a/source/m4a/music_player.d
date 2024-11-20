@@ -11,14 +11,14 @@ uint umul3232H32(uint a, uint b) @safe pure {
     return result >> 32;
 }
 
-void SoundMainBTM(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack)
+void SoundMainBTM(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) @safe pure
 {
     //CpuFill32(0, ptr, 0x40);
 }
 
 // Removes chan from the doubly-linked list of channels associated with chan.track.
 // Gonna rename this to like "FreeChannel" or something, similar to VGMS
-void MP2KClearChain(SoundChannel *chan) pure {
+void MP2KClearChain(SoundChannel *chan) @system pure {
     MusicPlayerTrack *track = chan.track;
     if (chan.track == null) {
         return;
@@ -39,9 +39,9 @@ void MP2KClearChain(SoundChannel *chan) pure {
     chan.track = null;
 }
 
-ubyte ConsumeTrackByte(ref MusicPlayerTrack track) @system pure {
-    const(ubyte)* ptr = track.cmdPtr++;
-    return *ptr;
+ubyte ConsumeTrackByte(ref MusicPlayerTrack track) @safe pure {
+    scope(exit) track.cmdPtr = track.cmdPtr[1 .. $];
+    return track.cmdPtr[0];
 }
 
 void MPlayJumpTableCopy(MPlayFunc[] mplayJumpTable) @safe pure {
@@ -50,7 +50,6 @@ void MPlayJumpTableCopy(MPlayFunc[] mplayJumpTable) @safe pure {
 
 // Ends the current track. (Fine as in the Italian musical word, not English)
 void MP2K_event_fine(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
-    MusicPlayerTrack *r5 = &track;
     for (SoundChannel *chan = track.chan; chan != null; chan = cast(SoundChannel*)chan.nextChannelPointer) {
         if (chan.statusFlags & 0xC7) {
             chan.statusFlags |= 0x40;
@@ -61,15 +60,15 @@ void MP2K_event_fine(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack tr
 }
 
 // Sets the track's cmdPtr to the specified address.
-void MP2K_event_goto(ref M4APlayer player, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system {
-    track.cmdPtr = (*cast(RelativePointer!(ubyte, uint)*)track.cmdPtr).toAbsolute(player.musicData);
+void MP2K_event_goto(ref M4APlayer player, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
+    track.cmdPtr = (cast(const(RelativePointer!(ubyte, uint))[])track.cmdPtr[0 .. 4])[0].toAbsoluteArray(player.musicData);
 }
 
 // Sets the track's cmdPtr to the specified address after backing up its current position.
-void MP2K_event_patt(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @system {
+void MP2K_event_patt(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @system pure {
     ubyte level = track.patternLevel;
     if (level < 3) {
-        track.patternStack[level] = track.cmdPtr + 4;  // sizeof(ubyte *);
+        track.patternStack[level] = track.cmdPtr[4 .. $];  // sizeof(ubyte *);
         track.patternLevel++;
         MP2K_event_goto(player, subPlayer, track);
     } else {
@@ -81,7 +80,7 @@ void MP2K_event_patt(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref Mu
 
 // Marks the end of the current pattern, if there is one, by resetting the pattern to the
 // most recently saved value.
-void MP2K_event_pend(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_pend(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
     if (track.patternLevel != 0) {
         ubyte index = --track.patternLevel;
         track.cmdPtr = track.patternStack[index];
@@ -89,10 +88,10 @@ void MP2K_event_pend(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack tr
 }
 
 // Loops back until a REPT event has been reached the specified number of times
-void MP2K_event_rept(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @system {
-    if (*track.cmdPtr == 0) {
+void MP2K_event_rept(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @safe pure {
+    if (track.cmdPtr[0] == 0) {
         // "Repeat 0 times" == loop forever
-        track.cmdPtr++;
+        track.cmdPtr = track.cmdPtr[1 .. $];
         MP2K_event_goto(player, subPlayer, track);
     } else {
         ubyte repeatCount = ++track.repeatCount;
@@ -100,61 +99,61 @@ void MP2K_event_rept(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref Mu
             MP2K_event_goto(player, subPlayer, track);
         } else {
             track.repeatCount = 0;
-            track.cmdPtr += ubyte.sizeof + uint.sizeof;
+            track.cmdPtr = track.cmdPtr[ubyte.sizeof + uint.sizeof .. $];
         }
     }
 }
 
 // Sets the note priority for new notes in this track.
-void MP2K_event_prio(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_prio(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
     track.priority = ConsumeTrackByte(track);
 }
 
 // Sets the BPM of all tracks to the specified tempo (in beats per half-minute, because 255 as a max tempo
 // kinda sucks but 510 is plenty).
-void MP2K_event_tempo(ref M4APlayer, ref MusicPlayerInfo player, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_tempo(ref M4APlayer, ref MusicPlayerInfo player, ref MusicPlayerTrack track) @safe pure {
     ushort bpm = ConsumeTrackByte(track);
     bpm *= 2;
     player.tempoRawBPM = bpm;
     player.tempoInterval = cast(ushort)((bpm * player.tempoScale) / 256);
 }
 
-void MP2K_event_keysh(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_keysh(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
     track.keyShift = ConsumeTrackByte(track);
     track.flags |= 0xC;
 }
 
-void MP2K_event_voice(ref M4APlayer, ref MusicPlayerInfo player, ref MusicPlayerTrack track) @system pure {
-    ubyte voice = *(track.cmdPtr++);
+void MP2K_event_voice(ref M4APlayer, ref MusicPlayerInfo player, ref MusicPlayerTrack track) @safe pure {
+    ubyte voice = ConsumeTrackByte(track);
     const(ToneData)* instrument = &player.voicegroup[voice];
     track.instrument = *instrument;
 }
 
-void MP2K_event_vol(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_vol(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
     track.vol = ConsumeTrackByte(track);
     track.flags |= 0x3;
 }
 
-void MP2K_event_pan(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_pan(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
     track.pan = cast(byte)(ConsumeTrackByte(track) - 0x40);
     track.flags |= 0x3;
 }
 
-void MP2K_event_bend(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_bend(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
     track.bend = cast(byte)(ConsumeTrackByte(track) - 0x40);
     track.flags |= 0xC;
 }
 
-void MP2K_event_bendr(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_bendr(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
     track.bendRange = ConsumeTrackByte(track);
     track.flags |= 0xC;
 }
 
-void MP2K_event_lfodl(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_lfodl(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
     track.lfoDelay = ConsumeTrackByte(track);
 }
 
-void MP2K_event_modt(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_modt(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
     ubyte type = ConsumeTrackByte(track);
     if (type != track.modType) {
         track.modType = type;
@@ -162,18 +161,18 @@ void MP2K_event_modt(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack tr
     }
 }
 
-void MP2K_event_tune(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_tune(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
     track.tune = cast(byte)(ConsumeTrackByte(track) - 0x40);
     track.flags |= 0xC;
 }
 
-void MP2K_event_port(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_port(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
     // I'm really curious whether any games actually use this event...
     // I assume anything done by this command will get immediately overwritten by cgbMixerFunc?
-    track.cmdPtr += 2;
+    track.cmdPtr = track.cmdPtr[2 .. $];
 }
 
-void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @system {
+void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @system pure {
     if (subPlayer.nextPlayerFunc != null) {
         subPlayer.nextPlayerFunc(player, *subPlayer.nextPlayer);
     }
@@ -191,7 +190,7 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @system
         ushort trackBits = 0;
 
         for (uint i = 0; i < subPlayer.trackCount; i++) {
-            MusicPlayerTrack *currentTrack = subPlayer.tracks + i;
+            MusicPlayerTrack *currentTrack = &subPlayer.tracks[i];
             SoundChannel *chan;
             if ((currentTrack.flags & MPT_FLG_EXIST) == 0) {
                 continue;
@@ -218,11 +217,11 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @system
             }
 
             while (currentTrack.wait == 0) {
-                ubyte event = *currentTrack.cmdPtr;
+                ubyte event = currentTrack.cmdPtr[0];
                 if (event < 0x80) {
                     event = currentTrack.runningStatus;
                 } else {
-                    currentTrack.cmdPtr++;
+                    currentTrack.cmdPtr = currentTrack.cmdPtr[1 .. $];
                     if (event >= 0xBD) {
                         currentTrack.runningStatus = event;
                     }
@@ -291,7 +290,7 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @system
     uint i = 0;
 
     do {
-        MusicPlayerTrack *track = subPlayer.tracks + i;
+        MusicPlayerTrack *track = &subPlayer.tracks[i];
 
         if ((track.flags & MPT_FLG_EXIST) == 0 || (track.flags & 0xF) == 0) {
             continue;
@@ -327,7 +326,7 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @system
     while(++i < subPlayer.trackCount);
 }
 
-void TrackStop(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @system {
+void TrackStop(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @system pure {
     if (track.flags & 0x80) {
         for (SoundChannel *chan = track.chan; chan != null; chan = cast(SoundChannel*)chan.nextChannelPointer) {
             if (chan.statusFlags != 0) {
@@ -343,7 +342,7 @@ void TrackStop(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref MusicPla
     }
 }
 
-void ChnVolSetAsm(ref SoundChannel chan, ref MusicPlayerTrack track) @safe {
+void ChnVolSetAsm(ref SoundChannel chan, ref MusicPlayerTrack track) @safe pure {
     byte forcedPan = chan.rhythmPan;
     uint rightVolume = (ubyte)(forcedPan + 128) * chan.velocity * track.volRightCalculated / 128 / 128;
     if (rightVolume > 0xFF) {
@@ -358,18 +357,18 @@ void ChnVolSetAsm(ref SoundChannel chan, ref MusicPlayerTrack track) @safe {
     chan.leftVolume = cast(ubyte)leftVolume;
 }
 
-void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @system {
+void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @system pure {
     // A note can be anywhere from 1 to 4 bytes long. First is always the note length...
     track.gateTime = gClockTable[clock];
     if (track.cmdPtr[0] < 0x80) {
         // Then the note name...
-        track.key = *(track.cmdPtr++);
+        track.key = ConsumeTrackByte(track);
         if (track.cmdPtr[0] < 0x80) {
             // Then the velocity...
-            track.velocity = *(track.cmdPtr++);
+            track.velocity = ConsumeTrackByte(track);
             if (track.cmdPtr[0] < 0x80) {
                 // Then a number to add ticks to get exotic or more precise note lengths without TIE.
-                track.gateTime += *(track.cmdPtr++);
+                track.gateTime += ConsumeTrackByte(track);
             }
         }
     }
@@ -385,13 +384,13 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
     if (type & (TONEDATA_TYPE_RHY | TONEDATA_TYPE_SPL)) {
         ubyte instrumentIndex;
         if (instrument.type & TONEDATA_TYPE_SPL) {
-            ubyte *keySplitTableOffset = instrument.keySplitTable.toAbsolute(player.musicData);
+            ubyte[] keySplitTableOffset = instrument.keySplitTable.toAbsoluteArray(player.musicData);
             instrumentIndex = keySplitTableOffset[track.key];
         } else {
             instrumentIndex = track.key;
         }
 
-        instrument = &instrument.group.toAbsolute(player.musicData)[instrumentIndex];
+        instrument = &instrument.group.toAbsoluteArray(player.musicData)[instrumentIndex];
         if (instrument.type & (TONEDATA_TYPE_RHY | TONEDATA_TYPE_SPL)) {
             return;
         }
@@ -417,7 +416,7 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
             return;
         }
         // There's only one CgbChannel of a given type, so we don't need to loop to find it.
-        chan = cast(SoundChannel*)(player.soundInfo.cgbChans + cgbType - 1);
+        chan = cast(SoundChannel*)(&player.soundInfo.cgbChans[cgbType - 1]);
 
         // If this channel is running and not stopped,
         if ((chan.statusFlags & SOUND_CHANNEL_SF_ON)
@@ -532,11 +531,11 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
     track.flags &= ~0xF;
 }
 
-void MP2K_event_endtie(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system {
-    ubyte key = *track.cmdPtr;
+void MP2K_event_endtie(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
+    ubyte key = track.cmdPtr[0];
     if (key < 0x80) {
         track.key = key;
-        track.cmdPtr++;
+        track.cmdPtr = track.cmdPtr[1 .. $];
     } else {
         key = track.key;
     }
@@ -551,15 +550,15 @@ void MP2K_event_endtie(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack 
     }
 }
 
-void MP2K_event_lfos(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system {
-    track.lfoSpeed = *(track.cmdPtr++);
+void MP2K_event_lfos(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
+    track.lfoSpeed = ConsumeTrackByte(track);
     if (track.lfoSpeed == 0) {
         ClearModM(track);
     }
 }
 
-void MP2K_event_mod(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system {
-    track.modDepth = *(track.cmdPtr++);
+void MP2K_event_mod(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
+    track.modDepth = ConsumeTrackByte(track);
     if (track.modDepth == 0) {
         ClearModM(track);
     }

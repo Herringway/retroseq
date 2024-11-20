@@ -6,13 +6,12 @@ import m4a.internal;
 import m4a.m4a;
 
 
-ubyte RunMixerFrame(M4APlayer* player, float[2][] audioBuffer) @system {
+ubyte RunMixerFrame(M4APlayer* player, float[2][] audioBuffer) @system pure {
     int samplesPerFrame = cast(int)audioBuffer.length;
 
-    static float playerCounter = 0;
-    playerCounter += audioBuffer.length;
-    while (playerCounter >= player.soundInfo.samplesPerFrame) {
-        playerCounter -= player.soundInfo.samplesPerFrame;
+    player.playerCounter += audioBuffer.length;
+    while (player.playerCounter >= player.soundInfo.samplesPerFrame) {
+        player.playerCounter -= player.soundInfo.samplesPerFrame;
         uint maxScanlines = player.soundInfo.maxScanlines;
 
         if (player.soundInfo.firstPlayerFunc != null) {
@@ -56,7 +55,7 @@ ubyte RunMixerFrame(M4APlayer* player, float[2][] audioBuffer) @system {
 }
 
 //__attribute__((target("thumb")))
-void SampleMixer(SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerFrame, float[2][] outBuffer, ubyte dmaCounter) @system {
+void SampleMixer(SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerFrame, float[2][] outBuffer, ubyte dmaCounter) @system pure {
     uint reverb = mixer.reverb;
     if (reverb) {
         // The vanilla reverb effect outputs a mono sound from four sources:
@@ -104,7 +103,7 @@ void SampleMixer(SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerFr
 
 // Returns 1 if channel is still active after moving envelope forward a frame
 //__attribute__((target("thumb")))
-private uint TickEnvelope(SoundChannel *chan, WaveData *wav) {
+private uint TickEnvelope(SoundChannel *chan, WaveData *wav) pure {
     // MP2K envelope shape
     //                                                                 |
     // (linear)^                                                       |
@@ -205,7 +204,7 @@ private uint TickEnvelope(SoundChannel *chan, WaveData *wav) {
 }
 
 //__attribute__((target("thumb")))
-private void GenerateAudio(SoundMixerState *mixer, SoundChannel *chan, WaveData *wav, float[2][] outBuffer, ushort samplesPerFrame, float divFreq) {
+private void GenerateAudio(SoundMixerState *mixer, SoundChannel *chan, WaveData *wav, float[2][] outBuffer, ushort samplesPerFrame, float divFreq) pure {
     ubyte v = cast(ubyte)(chan.envelopeVolume * (mixer.masterVol + 1) / 16U);
     chan.envelopeVolumeRight = chan.rightVolume * v / 256U;
     chan.envelopeVolumeLeft = chan.leftVolume * v / 256U;

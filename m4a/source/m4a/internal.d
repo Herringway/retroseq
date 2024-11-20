@@ -12,6 +12,12 @@ struct RelativePointer(Element, Offset) {
     inout(Element)* toAbsolute(void[] base) inout {
         return cast(inout(Element)*)(&base[offset - 0x8000000]);
     }
+    Element[] toAbsoluteArray(void[] base) {
+        return cast(Element[])(base[offset - 0x8000000 .. ($ / Element.sizeof) * Element.sizeof]);
+    }
+    const(Element)[] toAbsoluteArray(void[] base) const {
+        return cast(const(Element)[])(base[offset - 0x8000000 .. ($ / Element.sizeof) * Element.sizeof]);
+    }
     Offset opAssign(Offset newValue) {
         return offset = newValue;
     }
@@ -213,13 +219,13 @@ struct SoundChannel
 
 enum MAX_DIRECTSOUND_CHANNELS = 16;
 
-alias MPlayFunc = void function(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack);
-alias PlyNoteFunc = void function(ref M4APlayer, uint, ref MusicPlayerInfo, ref MusicPlayerTrack);
-alias CgbSoundFunc = void function(ref M4APlayer);
-alias CgbOscOffFunc = void function(ref M4APlayer, ubyte) @safe;
-alias MidiKeyToCgbFreqFunc = uint function(ubyte, ubyte, ubyte);
-alias ExtVolPitFunc = void function();
-alias MPlayMainFunc = void function(ref M4APlayer, ref MusicPlayerInfo);
+alias MPlayFunc = void function(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) pure;
+alias PlyNoteFunc = void function(ref M4APlayer, uint, ref MusicPlayerInfo, ref MusicPlayerTrack) pure;
+alias CgbSoundFunc = void function(ref M4APlayer) pure;
+alias CgbOscOffFunc = void function(ref M4APlayer, ubyte) @safe pure;
+alias MidiKeyToCgbFreqFunc = uint function(ubyte, ubyte, ubyte) pure;
+alias ExtVolPitFunc = void function() pure;
+alias MPlayMainFunc = void function(ref M4APlayer, ref MusicPlayerInfo) pure;
 
 // SOUNDCNT_H
 enum SOUND_CGB_MIX_QUARTER = 0x0000;
@@ -316,7 +322,7 @@ struct SoundMixerState
     int sampleRate;
     float origFreq = 0;  // for adjusting original freq to the new sample rate
     float divFreq = 0;
-    CgbChannel *cgbChans;
+    CgbChannel[] cgbChans;
     MPlayMainFunc firstPlayerFunc;
     MusicPlayerInfo *firstPlayer;
     CgbSoundFunc cgbMixerFunc;
@@ -392,8 +398,8 @@ struct MusicPlayerTrack
     ubyte[10] padding;
     ushort unk_3A;
     uint count;
-    const(ubyte)* cmdPtr;
-    const(ubyte)*[3] patternStack;
+    const(ubyte)[] cmdPtr;
+    const(ubyte)[][3] patternStack;
 };
 
 enum MUSICPLAYER_STATUS_TRACK = 0x0000ffff;
@@ -416,7 +422,7 @@ struct MusicPlayerInfo
     ubyte checkSongPriority;
     uint clock;
     ubyte[8] padding;
-    ubyte *memAccArea;
+    ubyte[] memAccArea;
     ushort tempoRawBPM;
     ushort tempoScale;
     ushort tempoInterval;
@@ -424,8 +430,8 @@ struct MusicPlayerInfo
     ushort fadeInterval;
     ushort fadeCounter;
     ushort fadeVolume;
-    MusicPlayerTrack *tracks;
-    const(ToneData) *voicegroup;
+    MusicPlayerTrack[] tracks;
+    const(ToneData)[] voicegroup;
     MPlayMainFunc nextPlayerFunc;
     MusicPlayerInfo *nextPlayer;
 };
@@ -438,7 +444,7 @@ struct Song
     ushort me;
 };
 
-alias XcmdFunc = void function(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack);
+alias XcmdFunc = void function(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) pure;
 
 enum MAX_LINES = 0;
 
