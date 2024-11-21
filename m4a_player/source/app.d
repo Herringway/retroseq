@@ -23,30 +23,30 @@ extern(C) int kbhit();
 extern(C) int getch();
 
 void scan(int tablesToSkip, out uint songTable, out uint mode) @safe {
-    uint pos = 0;
-    uint temp;
-    while(pos < (music.length - 35)){
-        if((music[pos + 0] & 0xBF) == 0x89
-        && music[pos + 1 .. pos + 8] == [ 0x18, 0x0A, 0x68, 0x01, 0x68, 0x10, 0x1C]
-        && (music[pos + 23] & 0xFE) == 0x08) {
-            if (tablesToSkip-- == 0) {
-                break;
-            }
-        }
-        pos += 4;
-    }
-    if(music[pos - 61] == 0x03 && music[pos - 57] == 0x04) {
-        temp = (cast(uint[])music[pos - 48 .. pos - 44])[0];
+	uint pos = 0;
+	uint temp;
+	while(pos < (music.length - 35)){
+		if((music[pos + 0] & 0xBF) == 0x89
+		&& music[pos + 1 .. pos + 8] == [ 0x18, 0x0A, 0x68, 0x01, 0x68, 0x10, 0x1C]
+		&& (music[pos + 23] & 0xFE) == 0x08) {
+			if (tablesToSkip-- == 0) {
+				break;
+			}
+		}
+		pos += 4;
+	}
+	if(music[pos - 61] == 0x03 && music[pos - 57] == 0x04) {
+		temp = (cast(uint[])music[pos - 48 .. pos - 44])[0];
 		debug tracef("found mode val at %08X: %08X", pos - 48 + 0x8000000, temp);
-    }else{
-        temp = (cast(uint[])music[pos - 64 .. pos - 60])[0];
+	}else{
+		temp = (cast(uint[])music[pos - 64 .. pos - 60])[0];
 		debug tracef("found mode val at %08X: %08X", pos - 64 + 0x8000000, temp);
-    }
-    mode = temp;
-    tracef("Found signature at %08X", pos);
-    pos = (music[pos + 23] << 24) | (music[pos + 22] << 16) | (music[pos + 21] << 8) | music[pos + 20];
-    pos &= 0x7FFFFFF;
-    songTable = pos;
+	}
+	mode = temp;
+	tracef("Found signature at %08X", pos);
+	pos = (music[pos + 23] << 24) | (music[pos + 22] << 16) | (music[pos + 21] << 8) | music[pos + 20];
+	pos &= 0x7FFFFFF;
+	songTable = pos;
 }
 
 bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* userdata = null) {
@@ -116,7 +116,7 @@ int main(string[] args) {
 	music = cast(ubyte[])read(filename);
 
 	if(songTableAddress >= music.length || songTableAddress == 0) {
-	    scan(tablesToSkip, songTableAddress, m4aMode);
+		scan(tablesToSkip, songTableAddress, m4aMode);
 	}
 	if (songTableAddress == 0) {
 		stderr.writeln("No song table found");
@@ -127,8 +127,8 @@ int main(string[] args) {
 	infof("Volume: %d", (m4aMode >> 12) & 0xF);
 	infof("Original Rate: %.2fhz", getOrigSampleRate(cast(ubyte)(((m4aMode >> 16) & 0xF) - 1)) * 59.727678571);
 	M4APlayer player;
-    player.initialize(sampleRate, music, songTableAddress, m4aMode);
-    player.songNumStart(cast(ushort)song);
+	player.initialize(sampleRate, music, songTableAddress, m4aMode);
+	player.songNumStart(cast(ushort)song);
 
 	// Prepare to play music
 	if (!initAudio(&_sampling_func, 2, sampleRate, &player)) {

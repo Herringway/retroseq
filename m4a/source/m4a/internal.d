@@ -4,25 +4,25 @@ import m4a.m4a;
 import std.traits;
 
 struct RelativePointer(Element, Offset) {
-    align(1):
-    Offset offset;
-    inout(Element)* toAbsolute(void* base) inout {
-        return cast(inout(Element)*)(base + offset - 0x8000000);
-    }
-    inout(Element)* toAbsolute(void[] base) inout {
-        return cast(inout(Element)*)(&base[offset - 0x8000000]);
-    }
-    Element[] toAbsoluteArray(void[] base) {
-        const realOffset = offset - 0x8000000;
-        return cast(Element[])(base[realOffset .. realOffset + ((($ - realOffset) / Element.sizeof) * Element.sizeof)]);
-    }
-    const(Element)[] toAbsoluteArray(void[] base) const {
-        const realOffset = offset - 0x8000000;
-        return cast(const(Element)[])(base[realOffset .. realOffset + ((($ - realOffset) / Element.sizeof) * Element.sizeof)]);
-    }
-    Offset opAssign(Offset newValue) {
-        return offset = newValue;
-    }
+	align(1):
+	Offset offset;
+	inout(Element)* toAbsolute(void* base) inout {
+		return cast(inout(Element)*)(base + offset - 0x8000000);
+	}
+	inout(Element)* toAbsolute(void[] base) inout {
+		return cast(inout(Element)*)(&base[offset - 0x8000000]);
+	}
+	Element[] toAbsoluteArray(void[] base) {
+		const realOffset = offset - 0x8000000;
+		return cast(Element[])(base[realOffset .. realOffset + ((($ - realOffset) / Element.sizeof) * Element.sizeof)]);
+	}
+	const(Element)[] toAbsoluteArray(void[] base) const {
+		const realOffset = offset - 0x8000000;
+		return cast(const(Element)[])(base[realOffset .. realOffset + ((($ - realOffset) / Element.sizeof) * Element.sizeof)]);
+	}
+	Offset opAssign(Offset newValue) {
+		return offset = newValue;
+	}
 }
 
 enum C_V = 0x40; // center value for PAN, BEND, and TUNE
@@ -56,14 +56,14 @@ enum SOUND_MODE_DA_BIT_SHIFT = 20;
 
 struct WaveData
 {
-    align(1):
-    ushort type;
-    ubyte padding;
-    ubyte loopFlags;
-    uint freq;
-    uint loopStart;
-    uint size; // number of samples
-    byte[1] data; // samples
+	align(1):
+	ushort type;
+	ubyte padding;
+	ubyte loopFlags;
+	uint freq;
+	uint loopStart;
+	uint size; // number of samples
+	byte[1] data; // samples
 };
 
 enum TONEDATA_TYPE_CGB = 0x07;
@@ -76,29 +76,29 @@ enum TONEDATA_P_S_PAM = TONEDATA_P_S_PAN;
 
 struct ToneData
 {
-    align(1):
-    ubyte type;
-    union {
-        ubyte key;
-        ubyte drumKey;
-    };
-    ubyte length; // sound length (compatible sound)
-    ubyte panSweep; // pan or sweep (compatible sound ch. 1)
-    union {
-        RelativePointer!(WaveData, uint) wav;
-        RelativePointer!(ToneData, uint) group;
-        RelativePointer!(uint, uint) cgbSample;
-        uint squareNoiseConfig;
-    };
-    union {
-        struct {
-            ubyte attack;
-            ubyte decay;
-            ubyte sustain;
-            ubyte release;
-        };
-        RelativePointer!(ubyte, uint) keySplitTable;
-    };
+	align(1):
+	ubyte type;
+	union {
+		ubyte key;
+		ubyte drumKey;
+	};
+	ubyte length; // sound length (compatible sound)
+	ubyte panSweep; // pan or sweep (compatible sound ch. 1)
+	union {
+		RelativePointer!(WaveData, uint) wav;
+		RelativePointer!(ToneData, uint) group;
+		RelativePointer!(uint, uint) cgbSample;
+		uint squareNoiseConfig;
+	};
+	union {
+		struct {
+			ubyte attack;
+			ubyte decay;
+			ubyte sustain;
+			ubyte release;
+		};
+		RelativePointer!(ubyte, uint) keySplitTable;
+	};
 };
 
 enum SOUND_CHANNEL_SF_START = 0x80;
@@ -120,60 +120,60 @@ enum CGB_NRx2_ENV_DIR_INC = 0x08;
 
 struct SoundChannel
 {
-    ubyte statusFlags;
-    ubyte type;
-    ubyte rightVolume;
-    ubyte leftVolume;
-    ubyte attack;
-    ubyte decay;
-    ubyte sustain;
-    ubyte release;
-    ubyte key;             // midi key as it was translated into final pitch
-    ubyte envelopeVolume;
-    union {
-        ubyte envelopeVolumeRight;
-        ubyte envelopeGoal;
-    }
-    union {
-        ubyte envelopeVolumeLeft;
-        ubyte envelopeCounter;
-    }
-    ubyte echoVolume;
-    ubyte echoLength;
-    ubyte[2] padding;
-    ubyte gateTime;
-    ubyte midiKey;         // midi key as it was used in the track data
-    ubyte velocity;
-    ubyte priority;
-    ubyte rhythmPan;
-    ubyte[3] padding2;
-    union {
-        uint count;
-        struct {
-            ubyte padding6;
-            ubyte sustainGoal;
-            ubyte n4;
-            ubyte pan;
-        };
-    };
-    union {
-        float fw = 0;
-        struct {
-            ubyte panMask;
-            ubyte cgbStatus;
-            ubyte length;
-            ubyte sweep;
-        };
-    };
-    uint freq;
-    WaveData *wav;
-    byte *currentPointer;
-    MusicPlayerTrack *track;
-    SoundChannel* prevChannelPointer;
-    SoundChannel* nextChannelPointer;
-    uint padding3;
-    ushort xpi;
-    ushort xpc;
+	ubyte statusFlags;
+	ubyte type;
+	ubyte rightVolume;
+	ubyte leftVolume;
+	ubyte attack;
+	ubyte decay;
+	ubyte sustain;
+	ubyte release;
+	ubyte key; // midi key as it was translated into final pitch
+	ubyte envelopeVolume;
+	union {
+		ubyte envelopeVolumeRight;
+		ubyte envelopeGoal;
+	}
+	union {
+		ubyte envelopeVolumeLeft;
+		ubyte envelopeCounter;
+	}
+	ubyte echoVolume;
+	ubyte echoLength;
+	ubyte[2] padding;
+	ubyte gateTime;
+	ubyte midiKey; // midi key as it was used in the track data
+	ubyte velocity;
+	ubyte priority;
+	ubyte rhythmPan;
+	ubyte[3] padding2;
+	union {
+		uint count;
+		struct {
+			ubyte padding6;
+			ubyte sustainGoal;
+			ubyte n4;
+			ubyte pan;
+		};
+	};
+	union {
+		float fw = 0;
+		struct {
+			ubyte panMask;
+			ubyte cgbStatus;
+			ubyte length;
+			ubyte sweep;
+		};
+	};
+	uint freq;
+	WaveData *wav;
+	byte *currentPointer;
+	MusicPlayerTrack *track;
+	SoundChannel* prevChannelPointer;
+	SoundChannel* nextChannelPointer;
+	uint padding3;
+	ushort xpi;
+	ushort xpc;
 };
 
 enum MAX_DIRECTSOUND_CHANNELS = 16;
@@ -215,100 +215,100 @@ enum SOUND_MASTER_ENABLE = 0x0080;
 
 struct SoundIO
 {
-    ubyte NR10;
-    ubyte NR10x;
-    ubyte NR11;
-    ubyte NR12;
-    union{
-        ushort SOUND1CNT_X;
-        struct{
-            ubyte NR13;
-            ubyte NR14;
-        };
-    };
-    ubyte NR21;
-    ubyte NR22;
-    union{
-        ushort SOUND2CNT_H;
-        struct{
-            ubyte NR23;
-            ubyte NR24;
-        };
-    };
-    ubyte NR30;
-    ubyte NR30x;
-    ubyte NR31;
-    ubyte NR32;
-    union{
-        ushort SOUND3CNT_X;
-        struct{
-            ubyte NR33;
-            ubyte NR34;
-        };
-    };
-    ubyte NR41;
-    ubyte NR42;
-    ubyte NR43;
-    ubyte NR44;
-    ubyte NR50;
-    ubyte NR51;
-    ushort SOUNDCNT_H;
-    ubyte NR52;
-    ushort SOUNDBIAS_H;
+	ubyte NR10;
+	ubyte NR10x;
+	ubyte NR11;
+	ubyte NR12;
+	union{
+		ushort SOUND1CNT_X;
+		struct{
+			ubyte NR13;
+			ubyte NR14;
+		};
+	};
+	ubyte NR21;
+	ubyte NR22;
+	union{
+		ushort SOUND2CNT_H;
+		struct{
+			ubyte NR23;
+			ubyte NR24;
+		};
+	};
+	ubyte NR30;
+	ubyte NR30x;
+	ubyte NR31;
+	ubyte NR32;
+	union{
+		ushort SOUND3CNT_X;
+		struct{
+			ubyte NR33;
+			ubyte NR34;
+		};
+	};
+	ubyte NR41;
+	ubyte NR42;
+	ubyte NR43;
+	ubyte NR44;
+	ubyte NR50;
+	ubyte NR51;
+	ushort SOUNDCNT_H;
+	ubyte NR52;
+	ushort SOUNDBIAS_H;
 };
 
 struct SoundMixerState
 {
-    // This field is normally equal to ID_NUMBER but it is set to other
-    // values during sensitive operations for locking purposes.
-    // This field should be volatile but isn't. This could potentially cause
-    // race conditions.
-    ubyte dmaCounter;
+	// This field is normally equal to ID_NUMBER but it is set to other
+	// values during sensitive operations for locking purposes.
+	// This field should be volatile but isn't. This could potentially cause
+	// race conditions.
+	ubyte dmaCounter;
 
-    // Direct Sound
-    ubyte reverb;
-    ubyte numChans;
-    ubyte masterVol;
-    ubyte freq;
+	// Direct Sound
+	ubyte reverb;
+	ubyte numChans;
+	ubyte masterVol;
+	ubyte freq;
 
-    ubyte mode;
-    ubyte cgbCounter15;          // periodically counts from 14 down to 0 (15 states)
-    ubyte pcmDmaPeriod; // number of V-blanks per PCM DMA
-    ubyte maxScanlines;
-    ubyte[3] padding;
-    int samplesPerFrame;
-    int samplesPerDma;  // samplesPerFrame * pcmDmaPeriod
-    int sampleRate;
-    float origFreq = 0;  // for adjusting original freq to the new sample rate
-    float divFreq = 0;
-    SoundChannel[] cgbChans;
-    MPlayMainFunc firstPlayerFunc;
-    MusicPlayerInfo *firstPlayer;
-    CgbSoundFunc cgbMixerFunc;
-    CgbOscOffFunc cgbNoteOffFunc;
-    MidiKeyToCgbFreqFunc cgbCalcFreqFunc;
-    MPlayFunc[] mp2kEventFuncTable;
-    PlyNoteFunc mp2kEventNxxFunc;
-    ExtVolPitFunc ExtVolPit;
-    void *reserved2;
-    void *reserved3;
-    void *reversed4;
-    void *reserved5;
-    SoundIO reg;
-    SoundChannel[MAX_DIRECTSOUND_CHANNELS] chans;
-    float[2][] outBuffer;
-    float[2][] cgbBuffer;
+	ubyte mode;
+	ubyte cgbCounter15; // periodically counts from 14 down to 0 (15 states)
+	ubyte pcmDmaPeriod; // number of V-blanks per PCM DMA
+	ubyte maxScanlines;
+	ubyte[3] padding;
+	int samplesPerFrame;
+	int samplesPerDma; // samplesPerFrame * pcmDmaPeriod
+	int sampleRate;
+	float origFreq = 0; // for adjusting original freq to the new sample rate
+	float divFreq = 0;
+	SoundChannel[] cgbChans;
+	MPlayMainFunc firstPlayerFunc;
+	MusicPlayerInfo *firstPlayer;
+	CgbSoundFunc cgbMixerFunc;
+	CgbOscOffFunc cgbNoteOffFunc;
+	MidiKeyToCgbFreqFunc cgbCalcFreqFunc;
+	MPlayFunc[] mp2kEventFuncTable;
+	PlyNoteFunc mp2kEventNxxFunc;
+	ExtVolPitFunc ExtVolPit;
+	void *reserved2;
+	void *reserved3;
+	void *reversed4;
+	void *reserved5;
+	SoundIO reg;
+	SoundChannel[MAX_DIRECTSOUND_CHANNELS] chans;
+	float[2][] outBuffer;
+	float[2][] cgbBuffer;
 };
 
 struct SongHeader
 {
-    align(1):
-    ubyte trackCount;
-    ubyte blockCount;
-    ubyte priority;
-    ubyte reverb;
-    RelativePointer!(ToneData, uint) instrument;
-    RelativePointer!(ubyte, uint)[1] part;
+	align(1):
+	ubyte trackCount;
+	ubyte blockCount;
+	ubyte priority;
+	ubyte reverb;
+	RelativePointer!(ToneData, uint) instrument;
+	RelativePointer!(ubyte, uint)[1] part;
 };
 
 enum MPT_FLG_VOLSET = 0x01;
@@ -320,45 +320,45 @@ enum MPT_FLG_EXIST = 0x80;
 
 struct MusicPlayerTrack
 {
-    ubyte flags;
-    ubyte wait;
-    ubyte patternLevel;
-    ubyte repeatCount;
-    ubyte gateTime;
-    ubyte key;
-    ubyte velocity;
-    ubyte runningStatus;
-    ubyte keyShiftCalculated;
-    ubyte pitchCalculated;
-    byte keyShift;
-    byte keyShiftPublic;
-    byte tune;
-    ubyte pitchPublic;
-    byte bend;
-    ubyte bendRange;
-    ubyte volRightCalculated;
-    ubyte volLeftCalculated;
-    ubyte vol;
-    ubyte volPublic;
-    byte pan;
-    byte panPublic;
-    byte modCalculated;
-    ubyte modDepth;
-    ubyte modType;
-    ubyte lfoSpeed;
-    ubyte lfoSpeedCounter;
-    ubyte lfoDelay;
-    ubyte lfoDelayCounter;
-    ubyte priority;
-    ubyte echoVolume;
-    ubyte echoLength;
-    SoundChannel *chan;
-    ToneData instrument;
-    ubyte[10] padding;
-    ushort unk_3A;
-    uint count;
-    const(ubyte)[] cmdPtr;
-    const(ubyte)[][3] patternStack;
+	ubyte flags;
+	ubyte wait;
+	ubyte patternLevel;
+	ubyte repeatCount;
+	ubyte gateTime;
+	ubyte key;
+	ubyte velocity;
+	ubyte runningStatus;
+	ubyte keyShiftCalculated;
+	ubyte pitchCalculated;
+	byte keyShift;
+	byte keyShiftPublic;
+	byte tune;
+	ubyte pitchPublic;
+	byte bend;
+	ubyte bendRange;
+	ubyte volRightCalculated;
+	ubyte volLeftCalculated;
+	ubyte vol;
+	ubyte volPublic;
+	byte pan;
+	byte panPublic;
+	byte modCalculated;
+	ubyte modDepth;
+	ubyte modType;
+	ubyte lfoSpeed;
+	ubyte lfoSpeedCounter;
+	ubyte lfoDelay;
+	ubyte lfoDelayCounter;
+	ubyte priority;
+	ubyte echoVolume;
+	ubyte echoLength;
+	SoundChannel *chan;
+	ToneData instrument;
+	ubyte[10] padding;
+	ushort unk_3A;
+	uint count;
+	const(ubyte)[] cmdPtr;
+	const(ubyte)[][3] patternStack;
 };
 
 enum MUSICPLAYER_STATUS_TRACK = 0x0000ffff;
@@ -373,34 +373,34 @@ enum FADE_VOL_SHIFT = 2;
 
 struct MusicPlayerInfo
 {
-    const(SongHeader) *songHeader;
-    uint status;
-    ubyte trackCount;
-    ubyte priority;
-    ubyte cmd;
-    ubyte checkSongPriority;
-    uint clock;
-    ubyte[8] padding;
-    ubyte[] memAccArea;
-    ushort tempoRawBPM;
-    ushort tempoScale;
-    ushort tempoInterval;
-    ushort tempoCounter;
-    ushort fadeInterval;
-    ushort fadeCounter;
-    ushort fadeVolume;
-    MusicPlayerTrack[] tracks;
-    const(ToneData)[] voicegroup;
-    MPlayMainFunc nextPlayerFunc;
-    MusicPlayerInfo *nextPlayer;
+	const(SongHeader) *songHeader;
+	uint status;
+	ubyte trackCount;
+	ubyte priority;
+	ubyte cmd;
+	ubyte checkSongPriority;
+	uint clock;
+	ubyte[8] padding;
+	ubyte[] memAccArea;
+	ushort tempoRawBPM;
+	ushort tempoScale;
+	ushort tempoInterval;
+	ushort tempoCounter;
+	ushort fadeInterval;
+	ushort fadeCounter;
+	ushort fadeVolume;
+	MusicPlayerTrack[] tracks;
+	const(ToneData)[] voicegroup;
+	MPlayMainFunc nextPlayerFunc;
+	MusicPlayerInfo *nextPlayer;
 };
 
 
 struct Song
 {
-    RelativePointer!(SongHeader, uint) header;
-    ushort ms;
-    ushort me;
+	RelativePointer!(SongHeader, uint) header;
+	ushort ms;
+	ushort me;
 };
 
 alias XcmdFunc = void function(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) pure;
@@ -408,5 +408,5 @@ alias XcmdFunc = void function(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlay
 enum MAX_LINES = 0;
 
 void Funcify(alias Method)(ref M4APlayer player, Parameters!Method params) {
-    __traits(getMember, player, __traits(identifier, Method))(params);
+	__traits(getMember, player, __traits(identifier, Method))(params);
 }
