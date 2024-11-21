@@ -13,7 +13,7 @@ struct M4APlayer {
 
     SoundMixerState soundInfo;
     MPlayFunc[36] gMPlayJumpTable;
-    CgbChannel[4] cgbChans;
+    SoundChannel[4] cgbChans;
     MusicPlayerInfo gMPlayInfo_BGM;
     MusicPlayerInfo gMPlayInfo_SE1;
     MusicPlayerInfo gMPlayInfo_SE2;
@@ -84,7 +84,7 @@ struct M4APlayer {
         soundInfo.cgbCalcFreqFunc = &cgbCalcFreqFunc;
         soundInfo.maxScanlines = MAX_LINES;
 
-        //CpuFill32(0, cgbChans, CgbChannel.sizeof * 4);
+        //CpuFill32(0, cgbChans, SoundChannel.sizeof * 4);
 
         cgbChans[0].type = 1;
         cgbChans[0].panMask = 0x11;
@@ -232,7 +232,7 @@ struct M4APlayer {
 
 
 
-    void ClearChain(SoundChannel* x) @system pure
+    void ClearChain(ref SoundChannel x) @system pure
     {
         MP2KClearChain(x);
     }
@@ -263,17 +263,14 @@ struct M4APlayer {
     }
     void SoundClear() @system
     {
-        int i;
-        void *chan;
-
-        i = MAX_DIRECTSOUND_CHANNELS;
-        chan = &soundInfo.chans[0];
+        int i = MAX_DIRECTSOUND_CHANNELS;
+        SoundChannel* chan = &soundInfo.chans[0];
 
         while (i > 0)
         {
-            (cast(SoundChannel *)chan).statusFlags = 0;
+            chan.statusFlags = 0;
             i--;
-            chan = cast(void *)(cast(int)chan + SoundChannel.sizeof);
+            chan++;
         }
 
         chan = &soundInfo.cgbChans[0];
@@ -285,9 +282,9 @@ struct M4APlayer {
             while (i <= 4)
             {
                 soundInfo.cgbNoteOffFunc(this, cast(ubyte)i);
-                (cast(CgbChannel *)chan).statusFlags = 0;
+                chan.statusFlags = 0;
                 i++;
-                chan = cast(void *)(cast(int)chan + CgbChannel.sizeof);
+                chan++;
             }
         }
     }
@@ -493,7 +490,7 @@ struct M4APlayer {
 
     }
 
-    private int CgbPan(CgbChannel *chan) pure
+    private int CgbPan(SoundChannel *chan) pure
     {
         uint rightVolume = chan.rightVolume;
         uint leftVolume = chan.leftVolume;
@@ -518,7 +515,7 @@ struct M4APlayer {
         return 0;
     }
 
-    void CgbModVol(CgbChannel *chan) pure
+    void CgbModVol(SoundChannel *chan) pure
     {
         if ((soundInfo.mode & 1) || !CgbPan(chan))
         {
@@ -543,7 +540,7 @@ struct M4APlayer {
     void cgbMixerFunc() pure
     {
         int ch;
-        CgbChannel *channels;
+        SoundChannel *channels;
         int envelopeStepTimeAndDir;
         int prevC15;
         ubyte *nrx0ptr;
@@ -608,7 +605,7 @@ struct M4APlayer {
                 if (!(channels.statusFlags & SOUND_CHANNEL_SF_STOP))
                 {
                     channels.statusFlags = SOUND_CHANNEL_SF_ENV_ATTACK;
-                    channels.modify = CGB_CHANNEL_MO_PIT | CGB_CHANNEL_MO_VOL;
+                    channels.cgbStatus = CGB_CHANNEL_MO_PIT | CGB_CHANNEL_MO_VOL;
                     CgbModVol(channels);
                     switch (ch)
                     {
@@ -618,14 +615,14 @@ struct M4APlayer {
 
                         goto case;
                     case 2:
-                        *nrx1ptr = cast(ubyte)((cast(size_t)channels.wavePointer << 6) + channels.length);
+                        *nrx1ptr = cast(ubyte)((cast(size_t)channels.wav << 6) + channels.length);
                         goto init_env_step_time_dir;
                     case 3:
-                        if (channels.wavePointer != channels.currentPointer)
+                        if (cast(byte*)channels.wav != channels.currentPointer)
                         {
                             *nrx0ptr = 0x40;
-                            channels.currentPointer = channels.wavePointer;
-                            gb.set_wavram((cast(ubyte*)channels.wavePointer)[0 .. 16]);
+                            channels.currentPointer = cast(byte*)channels.wav;
+                            gb.set_wavram((cast(ubyte*)channels.wav)[0 .. 16]);
                         }
                         *nrx0ptr = 0;
                         *nrx1ptr = channels.length;
@@ -636,7 +633,7 @@ struct M4APlayer {
                         break;
                     default:
                         *nrx1ptr = channels.length;
-                        *nrx3ptr = cast(ubyte)(cast(size_t)channels.wavePointer << 3);
+                        *nrx3ptr = cast(ubyte)(cast(size_t)channels.wav << 3);
                     init_env_step_time_dir:
                         envelopeStepTimeAndDir = channels.attack + CGB_NRx2_ENV_DIR_INC;
                         if (channels.length)
@@ -681,7 +678,7 @@ struct M4APlayer {
                 channels.envelopeCounter = channels.release;
                 if (cast(byte)(channels.release & mask))
                 {
-                    channels.modify |= CGB_CHANNEL_MO_VOL;
+                    channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
                     if (ch != 3)
                         envelopeStepTimeAndDir = channels.release | CGB_NRx2_ENV_DIR_DEC;
                     goto envelope_step_complete;
@@ -697,7 +694,7 @@ struct M4APlayer {
                 if (channels.envelopeCounter == 0)
                 {
                     if (ch == 3)
-                        channels.modify |= CGB_CHANNEL_MO_VOL;
+                        channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
 
                     CgbModVol(channels);
                     if ((channels.statusFlags & SOUND_CHANNEL_SF_ENV) == SOUND_CHANNEL_SF_ENV_RELEASE)
@@ -710,7 +707,7 @@ struct M4APlayer {
                             if (channels.envelopeVolume)
                             {
                                 channels.statusFlags |= SOUND_CHANNEL_SF_IEC;
-                                channels.modify |= CGB_CHANNEL_MO_VOL;
+                                channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
                                 if (ch != 3)
                                     envelopeStepTimeAndDir = 0 | CGB_NRx2_ENV_DIR_INC;
                                 goto envelope_complete;
@@ -748,7 +745,7 @@ struct M4APlayer {
                             else
                             {
                                 channels.statusFlags--;
-                                channels.modify |= CGB_CHANNEL_MO_VOL;
+                                channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
                                 if (ch != 3)
                                     envelopeStepTimeAndDir = 0 | CGB_NRx2_ENV_DIR_INC;
                                 goto envelope_sustain;
@@ -769,7 +766,7 @@ struct M4APlayer {
                             channels.envelopeCounter = channels.decay;
                             if ((ubyte)(channels.envelopeCounter & mask))
                             {
-                                channels.modify |= CGB_CHANNEL_MO_VOL;
+                                channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
                                 channels.envelopeVolume = channels.envelopeGoal;
                                 if (ch != 3)
                                     envelopeStepTimeAndDir = channels.decay | CGB_NRx2_ENV_DIR_DEC;
@@ -799,7 +796,7 @@ struct M4APlayer {
 
         envelope_complete:
             /* 3. apply pitch to HW registers */
-            if (channels.modify & CGB_CHANNEL_MO_PIT)
+            if (channels.cgbStatus & CGB_CHANNEL_MO_PIT)
             {
                 if (ch < 4 && (channels.type & TONEDATA_TYPE_FIX))
                 {
@@ -820,7 +817,7 @@ struct M4APlayer {
             }
 
             /* 4. apply envelope & volume to HW registers */
-            if (channels.modify & CGB_CHANNEL_MO_VOL)
+            if (channels.cgbStatus & CGB_CHANNEL_MO_VOL)
             {
                 soundInfo.reg.NR51 = (soundInfo.reg.NR51 & ~channels.panMask) | channels.pan;
                 if (ch == 3)
@@ -847,7 +844,7 @@ struct M4APlayer {
             }
 
         channel_complete:
-            channels.modify = 0;
+            channels.cgbStatus = 0;
         }
     }
 }
@@ -914,7 +911,7 @@ void m4aSoundMode(SoundMixerState* soundInfo, uint mode) @safe pure
 
     if (temp)
     {
-        SoundChannel[] chan;
+        SoundChannel[] chan = soundInfo.chans[];
 
         // The following line is a fix, not sure how accurate it's supposed to be?
         soundInfo.numChans = MAX_DIRECTSOUND_CHANNELS;
@@ -922,7 +919,6 @@ void m4aSoundMode(SoundMixerState* soundInfo, uint mode) @safe pure
         //soundInfo.numChans = temp >> SOUND_MODE_MAXCHN_SHIFT;
 
         temp = MAX_DIRECTSOUND_CHANNELS;
-        chan = soundInfo.chans[];
 
         while (temp != 0)
         {

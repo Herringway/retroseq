@@ -116,48 +116,6 @@ enum CGB_CHANNEL_MO_VOL = 0x01;
 enum CGB_NRx2_ENV_DIR_DEC = 0x00;
 enum CGB_NRx2_ENV_DIR_INC = 0x08;
 
-struct CgbChannel
-{
-    align(1):
-    ubyte statusFlags;
-    ubyte type;
-    ubyte rightVolume;
-    ubyte leftVolume;
-    ubyte attack;
-    ubyte decay;
-    ubyte sustain;
-    ubyte release;
-    ubyte key;
-    ubyte envelopeVolume;
-    ubyte envelopeGoal;
-    ubyte envelopeCounter;
-    ubyte echoVolume;
-    ubyte echoLength;
-    ubyte dummy1;
-    ubyte dummy2;
-    ubyte gateTime;
-    ubyte midiKey;
-    ubyte velocity;
-    ubyte priority;
-    ubyte rhythmPan;
-    ubyte[3] dummy3;
-    ubyte dummy5;
-    ubyte sustainGoal;
-    ubyte n4;                  // NR[1-4]4 register (initial, length bit)
-    ubyte pan;
-    ubyte panMask;
-    ubyte modify;
-    ubyte length;
-    ubyte sweep;
-    uint freq;
-    uint *wavePointer;       // instructs CgbMain to load targeted wave
-    uint *currentPointer;    // stores the currently loaded wave
-    MusicPlayerTrack* track;
-    void* prevChannelPointer;
-    void* nextChannelPointer;
-    ubyte[8] dummy4;
-};
-
 struct SoundChannel
 {
     align(1):
@@ -177,7 +135,7 @@ struct SoundChannel
     }
     union {
         ubyte envelopeVolumeLeft;
-        ubyte envelopeCtr;
+        ubyte envelopeCounter;
     }
     ubyte echoVolume;
     ubyte echoLength;
@@ -193,7 +151,7 @@ struct SoundChannel
         struct {
             ubyte padding6;
             ubyte sustainGoal;
-            ubyte nrx4;
+            ubyte n4;
             ubyte pan;
         };
     };
@@ -210,8 +168,8 @@ struct SoundChannel
     WaveData *wav;
     byte *currentPointer;
     MusicPlayerTrack *track;
-    void* prevChannelPointer;
-    void* nextChannelPointer;
+    SoundChannel* prevChannelPointer;
+    SoundChannel* nextChannelPointer;
     uint padding3;
     ushort xpi;
     ushort xpc;
@@ -322,7 +280,7 @@ struct SoundMixerState
     int sampleRate;
     float origFreq = 0;  // for adjusting original freq to the new sample rate
     float divFreq = 0;
-    CgbChannel[] cgbChans;
+    SoundChannel[] cgbChans;
     MPlayMainFunc firstPlayerFunc;
     MusicPlayerInfo *firstPlayer;
     CgbSoundFunc cgbMixerFunc;

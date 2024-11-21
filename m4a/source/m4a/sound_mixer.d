@@ -103,7 +103,7 @@ void SampleMixer(SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerFr
 
 // Returns 1 if channel is still active after moving envelope forward a frame
 //__attribute__((target("thumb")))
-private uint TickEnvelope(SoundChannel *chan, WaveData *wav) pure {
+private uint TickEnvelope(SoundChannel *chan, WaveData *wav) @system pure {
     // MP2K envelope shape
     //                                                                 |
     // (linear)^                                                       |
@@ -192,7 +192,7 @@ private uint TickEnvelope(SoundChannel *chan, WaveData *wav) pure {
     } else {
         // Init channel
         chan.statusFlags = 3;
-        chan.currentPointer = &wav.data[0] + chan.count;
+        chan.currentPointer = &wav.data[chan.count];
         chan.count = wav.size - chan.count;
         chan.fw = 0;
         chan.envelopeVolume = 0;

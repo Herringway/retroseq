@@ -18,13 +18,13 @@ void SoundMainBTM(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) @saf
 
 // Removes chan from the doubly-linked list of channels associated with chan.track.
 // Gonna rename this to like "FreeChannel" or something, similar to VGMS
-void MP2KClearChain(SoundChannel *chan) @system pure {
+void MP2KClearChain(ref SoundChannel chan) @system pure {
     MusicPlayerTrack *track = chan.track;
     if (chan.track == null) {
         return;
     }
-    SoundChannel *nextChannelPointer = cast(SoundChannel*)chan.nextChannelPointer;
-    SoundChannel *prevChannelPointer = cast(SoundChannel*)chan.prevChannelPointer;
+    SoundChannel *nextChannelPointer = chan.nextChannelPointer;
+    SoundChannel *prevChannelPointer = chan.prevChannelPointer;
 
     if (prevChannelPointer != null) {
         prevChannelPointer.nextChannelPointer = nextChannelPointer;
@@ -50,11 +50,11 @@ void MPlayJumpTableCopy(MPlayFunc[] mplayJumpTable) @safe pure {
 
 // Ends the current track. (Fine as in the Italian musical word, not English)
 void MP2K_event_fine(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
-    for (SoundChannel *chan = track.chan; chan != null; chan = cast(SoundChannel*)chan.nextChannelPointer) {
+    for (SoundChannel *chan = track.chan; chan != null; chan = chan.nextChannelPointer) {
         if (chan.statusFlags & 0xC7) {
             chan.statusFlags |= 0x40;
         }
-        MP2KClearChain(chan);
+        MP2KClearChain(*chan);
     }
     track.flags = 0;
 }
@@ -200,11 +200,11 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @system
             chan = currentTrack.chan;
             while (chan != null) {
                 if ((chan.statusFlags & SOUND_CHANNEL_SF_ON) == 0) {
-                    player.ClearChain(chan);
+                    player.ClearChain(*chan);
                 } else if (chan.gateTime != 0 && --chan.gateTime == 0) {
                     chan.statusFlags |= SOUND_CHANNEL_SF_STOP;
                 }
-                chan = cast(SoundChannel*)chan.nextChannelPointer;
+                chan = chan.nextChannelPointer;
             }
 
             if (currentTrack.flags & MPT_FLG_START) {
@@ -296,9 +296,9 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @system
             continue;
         }
         TrkVolPitSet(player, subPlayer, *track);
-        for (SoundChannel *chan = track.chan; chan != null; chan = cast(SoundChannel*)chan.nextChannelPointer) {
+        for (SoundChannel *chan = track.chan; chan != null; chan = chan.nextChannelPointer) {
             if ((chan.statusFlags & 0xC7) == 0) {
-                player.ClearChain(chan);
+                player.ClearChain(*chan);
                 continue;
             }
             ubyte cgbType = chan.type & 0x7;
@@ -328,7 +328,7 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @system
 
 void TrackStop(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @system pure {
     if (track.flags & 0x80) {
-        for (SoundChannel *chan = track.chan; chan != null; chan = cast(SoundChannel*)chan.nextChannelPointer) {
+        for (SoundChannel *chan = track.chan; chan != null; chan = chan.nextChannelPointer) {
             if (chan.statusFlags != 0) {
                 ubyte cgbType = chan.type & 0x7;
                 if (cgbType != 0) {
@@ -416,7 +416,7 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
             return;
         }
         // There's only one CgbChannel of a given type, so we don't need to loop to find it.
-        chan = cast(SoundChannel*)(&player.soundInfo.cgbChans[cgbType - 1]);
+        chan = &player.soundInfo.cgbChans[cgbType - 1];
 
         // If this channel is running and not stopped,
         if ((chan.statusFlags & SOUND_CHANNEL_SF_ON)
@@ -430,11 +430,10 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
         ushort p = priority;
         MusicPlayerTrack *t = &track;
         uint foundStoppingChannel = 0;
-        chan = null;
         ubyte maxChans = player.soundInfo.numChans;
-        SoundChannel *currChan = &player.soundInfo.chans[0];
 
-        for (ubyte i = 0; i < maxChans; i++, currChan++) {
+        for (ubyte i = 0; i < maxChans; i++) {
+            SoundChannel *currChan = &player.soundInfo.chans[i];
             if ((currChan.statusFlags & SOUND_CHANNEL_SF_ON) == 0) {
                 // Hey, we found a completely inactive channel! Let's use that.
                 chan = currChan;
@@ -469,7 +468,7 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
     if (chan == null) {
         return;
     }
-    player.ClearChain(chan);
+    player.ClearChain(*chan);
 
     chan.prevChannelPointer = null;
     chan.nextChannelPointer = track.chan;
@@ -513,7 +512,6 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
     }
 
     if (cgbType != 0) {
-        //CgbChannel *cgbChan = (CgbChannel *)chan;
         chan.length = instrument.length;
         if (instrument.panSweep & 0x80 || (instrument.panSweep & 0x70) == 0) {
             chan.sweep = 8;
@@ -546,7 +544,7 @@ void MP2K_event_endtie(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack 
             chan.statusFlags |= 0x40;
             return;
         }
-        chan = cast(SoundChannel*)chan.nextChannelPointer;
+        chan = chan.nextChannelPointer;
     }
 }
 
