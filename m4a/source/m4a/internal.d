@@ -13,10 +13,12 @@ struct RelativePointer(Element, Offset) {
         return cast(inout(Element)*)(&base[offset - 0x8000000]);
     }
     Element[] toAbsoluteArray(void[] base) {
-        return cast(Element[])(base[offset - 0x8000000 .. ($ / Element.sizeof) * Element.sizeof]);
+        const realOffset = offset - 0x8000000;
+        return cast(Element[])(base[realOffset .. realOffset + ((($ - realOffset) / Element.sizeof) * Element.sizeof)]);
     }
     const(Element)[] toAbsoluteArray(void[] base) const {
-        return cast(const(Element)[])(base[offset - 0x8000000 .. ($ / Element.sizeof) * Element.sizeof]);
+        const realOffset = offset - 0x8000000;
+        return cast(const(Element)[])(base[realOffset .. realOffset + ((($ - realOffset) / Element.sizeof) * Element.sizeof)]);
     }
     Offset opAssign(Offset newValue) {
         return offset = newValue;
@@ -118,7 +120,6 @@ enum CGB_NRx2_ENV_DIR_INC = 0x08;
 
 struct SoundChannel
 {
-    align(1):
     ubyte statusFlags;
     ubyte type;
     ubyte rightVolume;

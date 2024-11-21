@@ -326,7 +326,7 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @system
     while(++i < subPlayer.trackCount);
 }
 
-void TrackStop(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @system pure {
+void TrackStop(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @safe pure {
     if (track.flags & 0x80) {
         for (SoundChannel *chan = track.chan; chan != null; chan = chan.nextChannelPointer) {
             if (chan.statusFlags != 0) {
