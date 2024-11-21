@@ -37,8 +37,10 @@ void scan(int tablesToSkip, out uint songTable, out uint mode) @safe {
     }
     if(music[pos - 61] == 0x03 && music[pos - 57] == 0x04) {
         temp = (cast(uint[])music[pos - 48 .. pos - 44])[0];
+		debug tracef("found mode val at %08X: %08X", pos - 48 + 0x8000000, temp);
     }else{
         temp = (cast(uint[])music[pos - 64 .. pos - 60])[0];
+		debug tracef("found mode val at %08X: %08X", pos - 64 + 0x8000000, temp);
     }
     mode = temp;
     tracef("Found signature at %08X", pos);
