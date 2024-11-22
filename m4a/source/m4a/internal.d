@@ -54,8 +54,7 @@ enum SOUND_MODE_DA_BIT_6 = 0x00B00000;
 enum SOUND_MODE_DA_BIT = 0x00B00000;
 enum SOUND_MODE_DA_BIT_SHIFT = 20;
 
-struct WaveData
-{
+struct WaveData {
 	align(1):
 	ushort type;
 	ubyte padding;
@@ -64,7 +63,7 @@ struct WaveData
 	uint loopStart;
 	uint size; // number of samples
 	byte[1] data; // samples
-};
+}
 
 enum TONEDATA_TYPE_CGB = 0x07;
 enum TONEDATA_TYPE_FIX = 0x08;
@@ -74,14 +73,13 @@ enum TONEDATA_TYPE_RHY = 0x80; // rhythm
 enum TONEDATA_P_S_PAN = 0xc0;
 enum TONEDATA_P_S_PAM = TONEDATA_P_S_PAN;
 
-struct ToneData
-{
+struct ToneData {
 	align(1):
 	ubyte type;
 	union {
 		ubyte key;
 		ubyte drumKey;
-	};
+	}
 	ubyte length; // sound length (compatible sound)
 	ubyte panSweep; // pan or sweep (compatible sound ch. 1)
 	union {
@@ -89,17 +87,17 @@ struct ToneData
 		RelativePointer!(ToneData, uint) group;
 		RelativePointer!(uint, uint) cgbSample;
 		uint squareNoiseConfig;
-	};
+	}
 	union {
 		struct {
 			ubyte attack;
 			ubyte decay;
 			ubyte sustain;
 			ubyte release;
-		};
+		}
 		RelativePointer!(ubyte, uint) keySplitTable;
-	};
-};
+	}
+}
 
 enum SOUND_CHANNEL_SF_START = 0x80;
 enum SOUND_CHANNEL_SF_STOP = 0x40;
@@ -118,8 +116,7 @@ enum CGB_CHANNEL_MO_VOL = 0x01;
 enum CGB_NRx2_ENV_DIR_DEC = 0x00;
 enum CGB_NRx2_ENV_DIR_INC = 0x08;
 
-struct SoundChannel
-{
+struct SoundChannel {
 	ubyte statusFlags;
 	ubyte type;
 	ubyte rightVolume;
@@ -154,8 +151,8 @@ struct SoundChannel
 			ubyte sustainGoal;
 			ubyte n4;
 			ubyte pan;
-		};
-	};
+		}
+	}
 	union {
 		float fw = 0;
 		struct {
@@ -163,8 +160,8 @@ struct SoundChannel
 			ubyte cgbStatus;
 			ubyte length;
 			ubyte sweep;
-		};
-	};
+		}
+	}
 	uint freq;
 	WaveData *wav;
 	byte *currentPointer;
@@ -174,7 +171,7 @@ struct SoundChannel
 	uint padding3;
 	ushort xpi;
 	ushort xpc;
-};
+}
 
 enum MAX_DIRECTSOUND_CHANNELS = 16;
 
@@ -213,8 +210,7 @@ enum SOUND_3_ON = 0x0004;
 enum SOUND_4_ON = 0x0008;
 enum SOUND_MASTER_ENABLE = 0x0080;
 
-struct SoundIO
-{
+struct SoundIO {
 	ubyte NR10;
 	ubyte NR10x;
 	ubyte NR11;
@@ -224,8 +220,8 @@ struct SoundIO
 		struct{
 			ubyte NR13;
 			ubyte NR14;
-		};
-	};
+		}
+	}
 	ubyte NR21;
 	ubyte NR22;
 	union{
@@ -233,8 +229,8 @@ struct SoundIO
 		struct{
 			ubyte NR23;
 			ubyte NR24;
-		};
-	};
+		}
+	}
 	ubyte NR30;
 	ubyte NR30x;
 	ubyte NR31;
@@ -244,8 +240,8 @@ struct SoundIO
 		struct{
 			ubyte NR33;
 			ubyte NR34;
-		};
-	};
+		}
+	}
 	ubyte NR41;
 	ubyte NR42;
 	ubyte NR43;
@@ -255,10 +251,9 @@ struct SoundIO
 	ushort SOUNDCNT_H;
 	ubyte NR52;
 	ushort SOUNDBIAS_H;
-};
+}
 
-struct SoundMixerState
-{
+struct SoundMixerState {
 	// This field is normally equal to ID_NUMBER but it is set to other
 	// values during sensitive operations for locking purposes.
 	// This field should be volatile but isn't. This could potentially cause
@@ -298,10 +293,9 @@ struct SoundMixerState
 	SoundChannel[MAX_DIRECTSOUND_CHANNELS] chans;
 	float[2][] outBuffer;
 	float[2][] cgbBuffer;
-};
+}
 
-struct SongHeader
-{
+struct SongHeader {
 	align(1):
 	ubyte trackCount;
 	ubyte blockCount;
@@ -309,7 +303,7 @@ struct SongHeader
 	ubyte reverb;
 	RelativePointer!(ToneData, uint) instrument;
 	RelativePointer!(ubyte, uint)[1] part;
-};
+}
 
 enum MPT_FLG_VOLSET = 0x01;
 enum MPT_FLG_VOLCHG = 0x03;
@@ -318,8 +312,7 @@ enum MPT_FLG_PITCHG = 0x0C;
 enum MPT_FLG_START = 0x40;
 enum MPT_FLG_EXIST = 0x80;
 
-struct MusicPlayerTrack
-{
+struct MusicPlayerTrack {
 	ubyte flags;
 	ubyte wait;
 	ubyte patternLevel;
@@ -359,7 +352,7 @@ struct MusicPlayerTrack
 	uint count;
 	const(ubyte)[] cmdPtr;
 	const(ubyte)[][3] patternStack;
-};
+}
 
 enum MUSICPLAYER_STATUS_TRACK = 0x0000ffff;
 enum MUSICPLAYER_STATUS_PAUSE = 0x80000000;
@@ -371,8 +364,7 @@ enum FADE_IN = 0x0002;
 enum FADE_VOL_MAX = 64;
 enum FADE_VOL_SHIFT = 2;
 
-struct MusicPlayerInfo
-{
+struct MusicPlayerInfo {
 	const(SongHeader) *songHeader;
 	uint status;
 	ubyte trackCount;
@@ -393,15 +385,14 @@ struct MusicPlayerInfo
 	const(ToneData)[] voicegroup;
 	MPlayMainFunc nextPlayerFunc;
 	MusicPlayerInfo *nextPlayer;
-};
+}
 
 
-struct Song
-{
+struct Song {
 	RelativePointer!(SongHeader, uint) header;
 	ushort ms;
 	ushort me;
-};
+}
 
 alias XcmdFunc = void function(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) pure;
 

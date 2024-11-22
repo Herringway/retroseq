@@ -22,7 +22,7 @@ import bindbc.sdl : SDL_AudioCallback, SDL_AudioDeviceID;
 extern(C) int kbhit();
 extern(C) int getch();
 
-void scan(int tablesToSkip, out uint songTable, out uint mode) @safe {
+void scan(const ubyte[] music, int tablesToSkip, out uint songTable, out uint mode) @safe {
 	uint pos = 0;
 	uint temp;
 	while(pos < (music.length - 35)){
@@ -36,10 +36,10 @@ void scan(int tablesToSkip, out uint songTable, out uint mode) @safe {
 		pos += 4;
 	}
 	if(music[pos - 61] == 0x03 && music[pos - 57] == 0x04) {
-		temp = (cast(uint[])music[pos - 48 .. pos - 44])[0];
+		temp = (cast(const(uint)[])music[pos - 48 .. pos - 44])[0];
 		debug tracef("found mode val at %08X: %08X", pos - 48 + 0x8000000, temp);
 	}else{
-		temp = (cast(uint[])music[pos - 64 .. pos - 60])[0];
+		temp = (cast(const(uint)[])music[pos - 64 .. pos - 60])[0];
 		debug tracef("found mode val at %08X: %08X", pos - 64 + 0x8000000, temp);
 	}
 	mode = temp;
@@ -88,11 +88,11 @@ extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
 		assumeWontThrow(writeln(e));
 	}
 }
-uint songTableAddress;
-ubyte[] music;
-uint m4aMode;
 int main(string[] args) {
 	int sampleRate = 48000;
+	uint songTableAddress;
+	uint m4aMode;
+	ubyte[] music;
 	int tablesToSkip = 0;
 	bool verbose;
 	auto help = getopt(args,
@@ -116,7 +116,7 @@ int main(string[] args) {
 	music = cast(ubyte[])read(filename);
 
 	if(songTableAddress >= music.length || songTableAddress == 0) {
-		scan(tablesToSkip, songTableAddress, m4aMode);
+		scan(music, tablesToSkip, songTableAddress, m4aMode);
 	}
 	if (songTableAddress == 0) {
 		stderr.writeln("No song table found");

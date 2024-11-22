@@ -93,8 +93,7 @@ void SampleMixer(SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerFr
 	for (int i = 0; i < numChans; i++, chan = chan[1 .. $]) {
 		WaveData *wav = chan[0].wav;
 
-		if (TickEnvelope(&chan[0], wav))
-		{
+		if (TickEnvelope(&chan[0], wav)) {
 
 			GenerateAudio(mixer, &chan[0], wav, outBuffer, samplesPerFrame, divFreq);
 		}

@@ -11,8 +11,7 @@ uint umul3232H32(uint a, uint b) @safe pure {
 	return result >> 32;
 }
 
-void SoundMainBTM(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) @safe pure
-{
+void SoundMainBTM(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) @safe pure {
 	//CpuFill32(0, ptr, 0x40);
 }
 
