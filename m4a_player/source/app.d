@@ -82,10 +82,15 @@ bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* use
 //}
 
 extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
+	static bool done;
+	if (done) {
+		return;
+	}
 	try {
 		RunMixerFrame(cast(M4APlayer*)user, cast(float[2][])buf[0 .. bufSize]);
 	} catch (Throwable e) {
 		assumeWontThrow(writeln(e));
+		done = true;
 	}
 }
 int main(string[] args) {
