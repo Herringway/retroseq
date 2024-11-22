@@ -288,6 +288,9 @@ struct M4APlayer {
 		int i;
 		ubyte checkSongPriority;
 		MusicPlayerTrack *track;
+		if (!songHeader.instrument.isValid) {
+			return;
+		}
 
 		checkSongPriority = mplayInfo.checkSongPriority;
 
