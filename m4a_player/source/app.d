@@ -169,8 +169,20 @@ int main(string[] args) {
 	writeln("Press enter to exit");
 	while(true) {
 		if (kbhit()) {
-			getch(); //make sure the key press is actually consumed
-			break;
+			if (getch() == 224) {
+				const arrow = getch();
+				if (arrow == 72) {
+					song++;
+				} else if (arrow == 80) {
+					song--;
+				} else {
+					break;
+				}
+				infof("Now playing %s", song);
+				player.m4aSongNumStartOrChange(cast(ushort)song);
+			} else {
+				break;
+			}
 		}
 		//if (!player.isPlaying) {
 		//	break;
