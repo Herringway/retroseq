@@ -57,7 +57,7 @@ struct M4APlayer {
 		soundInfo.reg.NR50 = 0x77;
 
 
-		for(ubyte i = 0; i < 4; i++){
+		for (ubyte i = 0; i < 4; i++) {
 			gb.set_envelope(i, 8);
 			gb.trigger_note(i);
 		}
@@ -125,28 +125,31 @@ struct M4APlayer {
 		const(Song) *songTable = cast(const(Song)*)&musicData[songTableOffset]; //gSongTable;
 		const(Song) *song = &songTable[n];
 
-		if (gMPlayInfo_BGM.songHeader != song.header.toAbsolute(musicData))
+		if (gMPlayInfo_BGM.songHeader != song.header.toAbsolute(musicData)) {
 			MPlayStart(gMPlayInfo_BGM, song.header.toAbsolute(musicData));
-		else if ((gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_TRACK) == 0)
+		} else if ((gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_TRACK) == 0) {
 			MPlayStart(gMPlayInfo_BGM, song.header.toAbsolute(musicData));
-		else if (gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_PAUSE)
+		} else if (gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_PAUSE) {
 			MPlayContinue(gMPlayInfo_BGM);
+		}
 	}
 
 	void m4aSongNumStop(ushort n) {
 		const(Song) *songTable = cast(const(Song)*)&musicData[songTableOffset]; //gSongTable;
 		const(Song) *song = &songTable[n];
 
-		if (gMPlayInfo_BGM.songHeader == song.header.toAbsolute(musicData))
+		if (gMPlayInfo_BGM.songHeader == song.header.toAbsolute(musicData)) {
 			m4aMPlayStop(gMPlayInfo_BGM);
+		}
 	}
 
 	void m4aSongNumContinue(ushort n) {
 		const(Song)* songTable = cast(const(Song)*)&musicData[songTableOffset]; //gSongTable;
 		const(Song)* song = &songTable[n];
 
-		if (gMPlayInfo_BGM.songHeader == song.header.toAbsolute(musicData))
+		if (gMPlayInfo_BGM.songHeader == song.header.toAbsolute(musicData)) {
 			MPlayContinue(gMPlayInfo_BGM);
+		}
 	}
 
 	void m4aMPlayAllStop() {
@@ -251,11 +254,13 @@ struct M4APlayer {
 	}
 
 	void MPlayOpen(ref MusicPlayerInfo* mplayInfo, MusicPlayerTrack[] tracks, ubyte trackCount) @safe pure {
-		if (trackCount == 0)
+		if (trackCount == 0) {
 			return;
+		}
 
-		if (trackCount > MAX_MUSICPLAYER_TRACKS)
+		if (trackCount > MAX_MUSICPLAYER_TRACKS) {
 			trackCount = MAX_MUSICPLAYER_TRACKS;
+		}
 
 		mplayInfo.tracks = tracks;
 		mplayInfo.trackCount = trackCount;
@@ -322,8 +327,9 @@ struct M4APlayer {
 				track++;
 			}
 
-			if (songHeader.reverb & SOUND_MODE_REVERB_SET)
+			if (songHeader.reverb & SOUND_MODE_REVERB_SET) {
 				m4aSoundMode(&soundInfo, songHeader.reverb);
+			}
 		}
 	}
 
@@ -351,10 +357,12 @@ struct M4APlayer {
 		MusicPlayerTrack *track;
 		ushort fadeVolume;
 
-		if (mplayInfo.fadeInterval == 0)
+		if (mplayInfo.fadeInterval == 0) {
 			return;
-		if (--mplayInfo.fadeCounter != 0)
+		}
+		if (--mplayInfo.fadeCounter != 0) {
 			return;
+		}
 
 		mplayInfo.fadeCounter = mplayInfo.fadeInterval;
 
@@ -377,17 +385,19 @@ struct M4APlayer {
 					fadeVolume = mplayInfo.fadeVolume;
 					val &= fadeVolume;
 
-					if (!val)
+					if (!val) {
 						track.flags = 0;
+					}
 
 					i--;
 					track++;
 				}
 
-				if (mplayInfo.fadeVolume & TEMPORARY_FADE)
+				if (mplayInfo.fadeVolume & TEMPORARY_FADE) {
 					mplayInfo.status |= MUSICPLAYER_STATUS_PAUSE;
-				else
+				} else {
 					mplayInfo.status = MUSICPLAYER_STATUS_PAUSE;
+				}
 
 				mplayInfo.fadeInterval = 0;
 				return;
@@ -462,8 +472,9 @@ struct M4APlayer {
 			// The command line option "-fno-gcse" achieves the same result as this.
 
 			chan.envelopeGoal = (uint)(chan.rightVolume + chan.leftVolume) >> 4;
-			if (chan.envelopeGoal > 15)
+			if (chan.envelopeGoal > 15) {
 				chan.envelopeGoal = 15;
+			}
 		}
 
 		chan.sustainGoal = cast(ubyte)((chan.envelopeGoal * chan.sustain + 15) >> 4);
@@ -484,15 +495,17 @@ struct M4APlayer {
 		// Most comparision operations that cast to byte perform 'and' by 0xFF.
 		int mask = 0xff;
 
-		if (soundInfo.cgbCounter15)
+		if (soundInfo.cgbCounter15) {
 			soundInfo.cgbCounter15--;
-		else
+		} else {
 			soundInfo.cgbCounter15 = 14;
+		}
 
 		for (ch = 1, channels = &soundInfo.cgbChans[0]; ch <= 4; ch++, channels++) {
 			int envelopeVolume, sustainGoal;
-			if (!(channels.statusFlags & SOUND_CHANNEL_SF_ON))
+			if (!(channels.statusFlags & SOUND_CHANNEL_SF_ON)) {
 				continue;
+			}
 
 			/* 1. determine hardware channel registers */
 			switch (ch) {
@@ -552,20 +565,22 @@ struct M4APlayer {
 							}
 							*nrx0ptr = 0;
 							*nrx1ptr = channels.length;
-							if (channels.length)
+							if (channels.length) {
 								channels.n4 = 0xC0;
-							else
+							} else {
 								channels.n4 = 0x80;
+							}
 							break;
 						default:
 							*nrx1ptr = channels.length;
 							*nrx3ptr = cast(ubyte)(cast(size_t)channels.wav << 3);
 						init_env_step_time_dir:
 							envelopeStepTimeAndDir = channels.attack + CGB_NRx2_ENV_DIR_INC;
-							if (channels.length)
+							if (channels.length) {
 								channels.n4 = 0x40;
-							else
+							} else {
 								channels.n4 = 0x00;
+							}
 							break;
 					}
 					gb.set_length(cast(ubyte)(ch - 1), channels.length);
@@ -595,8 +610,9 @@ struct M4APlayer {
 				channels.envelopeCounter = channels.release;
 				if (cast(byte)(channels.release & mask)) {
 					channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
-					if (ch != 3)
+					if (ch != 3) {
 						envelopeStepTimeAndDir = channels.release | CGB_NRx2_ENV_DIR_DEC;
+					}
 					goto envelope_step_complete;
 				} else {
 					goto envelope_pseudoecho_start;
@@ -605,8 +621,9 @@ struct M4APlayer {
 			else {
 			envelope_step_repeat:
 				if (channels.envelopeCounter == 0) {
-					if (ch == 3)
+					if (ch == 3) {
 						channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
+					}
 
 					CgbModVol(channels);
 					if ((channels.statusFlags & SOUND_CHANNEL_SF_ENV) == SOUND_CHANNEL_SF_ENV_RELEASE) {
@@ -617,8 +634,9 @@ struct M4APlayer {
 							if (channels.envelopeVolume) {
 								channels.statusFlags |= SOUND_CHANNEL_SF_IEC;
 								channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
-								if (ch != 3)
+								if (ch != 3) {
 									envelopeStepTimeAndDir = 0 | CGB_NRx2_ENV_DIR_INC;
+								}
 								goto envelope_complete;
 							} else {
 								goto oscillator_off;
@@ -643,8 +661,9 @@ struct M4APlayer {
 							} else {
 								channels.statusFlags--;
 								channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
-								if (ch != 3)
+								if (ch != 3) {
 									envelopeStepTimeAndDir = 0 | CGB_NRx2_ENV_DIR_INC;
+								}
 								goto envelope_sustain;
 							}
 						} else {
@@ -659,8 +678,9 @@ struct M4APlayer {
 							if ((ubyte)(channels.envelopeCounter & mask)) {
 								channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
 								channels.envelopeVolume = channels.envelopeGoal;
-								if (ch != 3)
+								if (ch != 3) {
 									envelopeStepTimeAndDir = channels.decay | CGB_NRx2_ENV_DIR_DEC;
+								}
 							} else {
 								goto envelope_sustain_start;
 							}
@@ -686,16 +706,18 @@ struct M4APlayer {
 				if (ch < 4 && (channels.type & TONEDATA_TYPE_FIX)) {
 					int dac_pwm_rate = soundInfo.reg.SOUNDBIAS_H;
 
-					if (dac_pwm_rate < 0x40) // if PWM rate = 32768 Hz
+					if (dac_pwm_rate < 0x40) { // if PWM rate = 32768 Hz
 						channels.freq = (channels.freq + 2) & 0x7fc;
-					else if (dac_pwm_rate < 0x80) // if PWM rate = 65536 Hz
+					} else if (dac_pwm_rate < 0x80) { // if PWM rate = 65536 Hz
 						channels.freq = (channels.freq + 1) & 0x7fe;
+					}
 				}
 
-				if (ch != 4)
+				if (ch != 4) {
 					*nrx3ptr = cast(ubyte)channels.freq;
-				else
+				} else {
 					*nrx3ptr = cast(ubyte)((*nrx3ptr & 0x08) | channels.freq);
+				}
 				channels.n4 = cast(ubyte)((channels.n4 & 0xC0) + (*(cast(ubyte*)(&channels.freq) + 1)));
 				*nrx4ptr = cast(byte)(channels.n4 & mask);
 			}
@@ -714,8 +736,9 @@ struct M4APlayer {
 					envelopeStepTimeAndDir &= 0xf;
 					*nrx2ptr = cast(ubyte)((channels.envelopeVolume << 4) + envelopeStepTimeAndDir);
 					*nrx4ptr = channels.n4 | 0x80;
-					if (ch == 1 && !(*nrx0ptr & 0x08))
+					if (ch == 1 && !(*nrx0ptr & 0x08)) {
 						*nrx4ptr = channels.n4 | 0x80;
+					}
 				}
 				gb.set_envelope(cast(ubyte)(ch - 1), *nrx2ptr);
 				gb.toggle_length(cast(ubyte)(ch - 1), (*nrx4ptr & 0x40));
@@ -804,8 +827,9 @@ void m4aSoundMode(SoundMixerState* soundInfo, uint mode) @safe pure {
 
 	temp = mode & SOUND_MODE_MASVOL;
 
-	if (temp)
+	if (temp) {
 		soundInfo.masterVol = cast(ubyte)(temp >> SOUND_MODE_MASVOL_SHIFT);
+	}
 
 	temp = mode & SOUND_MODE_DA_BIT;
 
@@ -828,18 +852,21 @@ void TrkVolPitSet(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerT
 
 		x = (uint)(track.vol * track.volPublic) >> 5;
 
-		if (track.modType == 1)
+		if (track.modType == 1) {
 			x = (uint)(x * (track.modCalculated + 128)) >> 7;
+		}
 
 		y = 2 * track.pan + track.panPublic;
 
-		if (track.modType == 2)
+		if (track.modType == 2) {
 			y += track.modCalculated;
+		}
 
-		if (y < -128)
+		if (y < -128) {
 			y = -128;
-		else if (y > 127)
+		} else if (y > 127) {
 			y = 127;
+		}
 
 		track.volRightCalculated = cast(ubyte)(((y + 128) * x) >> 8);
 		track.volLeftCalculated = cast(ubyte)(((127 - y) * x) >> 8);
@@ -853,8 +880,9 @@ void TrkVolPitSet(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerT
 			 + (track.keyShiftPublic << 8)
 			 + track.pitchPublic;
 
-		if (track.modType == 0)
+		if (track.modType == 0) {
 			x += 16 * track.modCalculated;
+		}
 
 		track.keyShiftCalculated = cast(ubyte)(x >> 8);
 		track.pitchCalculated = cast(ubyte)(x);
@@ -869,8 +897,9 @@ uint cgbCalcFreqFunc(ubyte chanNum, ubyte key, ubyte fineAdjust) pure {
 			key = 0;
 		} else {
 			key -= 21;
-			if (key > 59)
+			if (key > 59) {
 				key = 59;
+			}
 		}
 
 		return gNoiseTable[key];
@@ -979,10 +1008,11 @@ void ClearModM(ref MusicPlayerTrack track) @safe pure {
 	track.lfoSpeedCounter = 0;
 	track.modCalculated = 0;
 
-	if (track.modType == 0)
+	if (track.modType == 0) {
 		track.flags |= MPT_FLG_PITCHG;
-	else
+	} else {
 		track.flags |= MPT_FLG_VOLCHG;
+	}
 }
 
 void m4aMPlayModDepthSet(MusicPlayerInfo *mplayInfo, ushort trackBits, ubyte modDepth) {
@@ -999,8 +1029,9 @@ void m4aMPlayModDepthSet(MusicPlayerInfo *mplayInfo, ushort trackBits, ubyte mod
 			if (track.flags & MPT_FLG_EXIST) {
 				track.modDepth = modDepth;
 
-				if (!track.modDepth)
+				if (!track.modDepth) {
 					ClearModM(*track);
+				}
 			}
 		}
 
@@ -1024,8 +1055,9 @@ void m4aMPlayLFOSpeedSet(MusicPlayerInfo *mplayInfo, ushort trackBits, ubyte lfo
 			if (track.flags & MPT_FLG_EXIST) {
 				track.lfoSpeed = lfoSpeed;
 
-				if (!track.lfoSpeed)
+				if (!track.lfoSpeed) {
 					ClearModM(*track);
+				}
 			}
 		}
 
@@ -1069,76 +1101,88 @@ void ply_memacc(ref M4APlayer player, ref MusicPlayerInfo mplayInfo, ref MusicPl
 			*addr -= mplayInfo.memAccArea[data];
 			return;
 		case 6:
-			if(*addr == data)
+			if (*addr == data) {
 				goto cond_true;
-			else
+			} else {
 				goto cond_false;
+			}
 			return;
 		case 7:
-			if(*addr != data)
+			if (*addr != data) {
 				goto cond_true;
-			else
+			} else {
 				goto cond_false;
+			}
 			return;
 		case 8:
-			if(*addr > data)
+			if (*addr > data) {
 				goto cond_true;
-			else
+			} else {
 				goto cond_false;
+			}
 			return;
 		case 9:
-			if(*addr >= data)
+			if (*addr >= data) {
 				goto cond_true;
-			else
+			} else {
 				goto cond_false;
+			}
 			return;
 		case 10:
-			if(*addr <= data)
+			if (*addr <= data) {
 				goto cond_true;
-			else
+			} else {
 				goto cond_false;
+			}
 			return;
 		case 11:
-			if(*addr < data)
+			if (*addr < data) {
 				goto cond_true;
-			else
+			} else {
 				goto cond_false;
+			}
 			return;
 		case 12:
-			if(*addr == mplayInfo.memAccArea[data])
+			if (*addr == mplayInfo.memAccArea[data]) {
 				goto cond_true;
-			else
+			} else {
 				goto cond_false;
+			}
 			return;
 		case 13:
-			if(*addr != mplayInfo.memAccArea[data])
+			if (*addr != mplayInfo.memAccArea[data]) {
 				goto cond_true;
-			else
+			} else {
 				goto cond_false;
+			}
 			return;
 		case 14:
-			if(*addr > mplayInfo.memAccArea[data])
+			if (*addr > mplayInfo.memAccArea[data]) {
 				goto cond_true;
-			else
+			} else {
 				goto cond_false;
+			}
 			return;
 		case 15:
-			if(*addr >= mplayInfo.memAccArea[data])
+			if (*addr >= mplayInfo.memAccArea[data]) {
 				goto cond_true;
-			else
+			} else {
 				goto cond_false;
+			}
 			return;
 		case 16:
-			if(*addr <= mplayInfo.memAccArea[data])
+			if (*addr <= mplayInfo.memAccArea[data]) {
 				goto cond_true;
-			else
+			} else {
 				goto cond_false;
+			}
 			return;
 		case 17:
-			if(*addr < mplayInfo.memAccArea[data])
+			if (*addr < mplayInfo.memAccArea[data]) {
 				goto cond_true;
-			else
+			} else {
 				goto cond_false;
+			}
 			return;
 		default:
 			return;

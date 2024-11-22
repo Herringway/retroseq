@@ -43,19 +43,20 @@ ubyte RunMixerFrame(M4APlayer* player, float[2][] audioBuffer) @system pure {
 		m4aBuffer = m4aBuffer[samplesPerFrame * (player.soundInfo.pcmDmaPeriod - (dmaCounter - 1)) .. $];
 	}
 
-	for(uint i = 0; i < audioBuffer.length; i++) {
+	for (uint i = 0; i < audioBuffer.length; i++) {
 		audioBuffer[i][0] = m4aBuffer[i][0] + cgbBuffer[i][0];
 		audioBuffer[i][1] = m4aBuffer[i][1] + cgbBuffer[i][1];
 	}
 
-	if(cast(byte)(--player.soundInfo.dmaCounter) <= 0)
+	if (cast(byte)(--player.soundInfo.dmaCounter) <= 0) {
 		player.soundInfo.dmaCounter = player.soundInfo.pcmDmaPeriod;
+	}
 
 	return 1;
 }
 
 //__attribute__((target("thumb")))
-void SampleMixer(SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerFrame, float[2][] outBuffer, ubyte dmaCounter) @system pure {
+void SampleMixer (SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerFrame, float[2][] outBuffer, ubyte dmaCounter) @system pure {
 	uint reverb = mixer.reverb;
 	if (reverb) {
 		// The vanilla reverb effect outputs a mono sound from four sources:
@@ -76,7 +77,7 @@ void SampleMixer(SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerFr
 			tmp1 = tmp1[1 .. $];
 			tmp2 = tmp2[1 .. $];
 		}
-		while(++i < samplesPerFrame);
+		while (++i < samplesPerFrame);
 	} else {
 		// memset(outBuffer, 0, samplesPerFrame);
 		// memset(outBuffer + maxBufSize, 0, samplesPerFrame);
@@ -94,7 +95,6 @@ void SampleMixer(SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerFr
 		WaveData *wav = chan[0].wav;
 
 		if (TickEnvelope(&chan[0], wav)) {
-
 			GenerateAudio(mixer, &chan[0], wav, outBuffer, samplesPerFrame, divFreq);
 		}
 	}
@@ -241,9 +241,9 @@ private void GenerateAudio(SoundMixerState *mixer, SoundChannel *chan, WaveData 
 	float finePos = chan.fw;
 	float romSamplesPerOutputSample = divFreq;
 
-	if (chan.type == 8){
+	if (chan.type == 8) {
 		romSamplesPerOutputSample *= mixer.origFreq;
-	}else{
+	} else {
 		romSamplesPerOutputSample *= chan.freq;
 	}
 	short b = currentPointer[0];
