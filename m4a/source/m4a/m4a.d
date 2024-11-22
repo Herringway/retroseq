@@ -89,10 +89,12 @@ struct M4APlayer {
 		cgbChans[3].type = 4;
 		cgbChans[3].panMask = 0x88;
 	}
-	void songNumStart(ushort n) {
-		const(Song) *songTable = cast(const(Song)*) &musicData[songTableOffset];
-
-		MPlayStart(gMPlayInfo_BGM, songTable[n].header.toAbsolute(musicData));
+	Song[] songTable() @safe pure {
+		return cast(Song[])(musicData[songTableOffset .. $]);
+	}
+	void songNumStart(ushort n) @system {
+		gMPlayInfo_BGM.playing = n;
+		MPlayStart(gMPlayInfo_BGM, songTable[n].header.toAbsoluteArray(musicData)[0]);
 	}
 
 	void MPlayContinue(ref MusicPlayerInfo mplayInfo) @safe pure {
@@ -107,47 +109,46 @@ struct M4APlayer {
 
 
 
-	void m4aSongNumStartOrChange(ushort n) {
-		const(Song) *songTable = cast(const(Song)*) &musicData[songTableOffset];
+	void m4aSongNumStartOrChange(ushort n) @system {
 		const(Song) *song = &songTable[n];
 
-		if (gMPlayInfo_BGM.songHeader != song.header.toAbsolute(musicData)) {
-			MPlayStart(gMPlayInfo_BGM, song.header.toAbsolute(musicData));
+		if (gMPlayInfo_BGM.playing != n) {
+			gMPlayInfo_BGM.playing = n;
+			MPlayStart(gMPlayInfo_BGM, song.header.toAbsoluteArray(musicData)[0]);
 		} else {
 			if ((gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_TRACK) == 0
 			 || (gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_PAUSE)) {
-				MPlayStart(gMPlayInfo_BGM, song.header.toAbsolute(musicData));
+				MPlayStart(gMPlayInfo_BGM, song.header.toAbsoluteArray(musicData)[0]);
 			}
 		}
 	}
 
 	void m4aSongNumStartOrContinue(ushort n) {
-		const(Song) *songTable = cast(const(Song)*)&musicData[songTableOffset]; //gSongTable;
 		const(Song) *song = &songTable[n];
 
-		if (gMPlayInfo_BGM.songHeader != song.header.toAbsolute(musicData)) {
-			MPlayStart(gMPlayInfo_BGM, song.header.toAbsolute(musicData));
+		if (gMPlayInfo_BGM.playing != n) {
+			gMPlayInfo_BGM.playing = n;
+			MPlayStart(gMPlayInfo_BGM, song.header.toAbsoluteArray(musicData)[0]);
 		} else if ((gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_TRACK) == 0) {
-			MPlayStart(gMPlayInfo_BGM, song.header.toAbsolute(musicData));
+			gMPlayInfo_BGM.playing = n;
+			MPlayStart(gMPlayInfo_BGM, song.header.toAbsoluteArray(musicData)[0]);
 		} else if (gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_PAUSE) {
 			MPlayContinue(gMPlayInfo_BGM);
 		}
 	}
 
 	void m4aSongNumStop(ushort n) {
-		const(Song) *songTable = cast(const(Song)*)&musicData[songTableOffset]; //gSongTable;
 		const(Song) *song = &songTable[n];
 
-		if (gMPlayInfo_BGM.songHeader == song.header.toAbsolute(musicData)) {
+		if (gMPlayInfo_BGM.playing == n) {
 			m4aMPlayStop(gMPlayInfo_BGM);
 		}
 	}
 
 	void m4aSongNumContinue(ushort n) {
-		const(Song)* songTable = cast(const(Song)*)&musicData[songTableOffset]; //gSongTable;
 		const(Song)* song = &songTable[n];
 
-		if (gMPlayInfo_BGM.songHeader == song.header.toAbsolute(musicData)) {
+		if (gMPlayInfo_BGM.playing == n) {
 			MPlayContinue(gMPlayInfo_BGM);
 		}
 	}
@@ -283,9 +284,7 @@ struct M4APlayer {
 		soundInfo.firstPlayerFunc = &MP2KPlayerMain;
 	}
 
-	void MPlayStart(ref MusicPlayerInfo mplayInfo, const(SongHeader)* songHeader) @system
-		in(songHeader)
-	{
+	void MPlayStart(ref MusicPlayerInfo mplayInfo, const ref SongHeader songHeader) @system {
 		int i;
 		ubyte checkSongPriority;
 		MusicPlayerTrack *track;
@@ -293,7 +292,7 @@ struct M4APlayer {
 		checkSongPriority = mplayInfo.checkSongPriority;
 
 		if (!checkSongPriority
-			|| ((!mplayInfo.songHeader || !(mplayInfo.tracks[0].flags & MPT_FLG_START))
+			|| (((mplayInfo.playing == uint.max) || !(mplayInfo.tracks[0].flags & MPT_FLG_START))
 				&& ((mplayInfo.status & MUSICPLAYER_STATUS_TRACK) == 0
 					|| (mplayInfo.status & MUSICPLAYER_STATUS_PAUSE)))
 			|| (mplayInfo.priority <= songHeader.priority)) {

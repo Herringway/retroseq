@@ -367,7 +367,8 @@ enum FADE_VOL_MAX = 64;
 enum FADE_VOL_SHIFT = 2;
 
 struct MusicPlayerInfo {
-	const(SongHeader) *songHeader;
+	uint playing = uint.max;
+	SongHeader songHeader;
 	uint status;
 	ubyte trackCount;
 	ubyte priority;
