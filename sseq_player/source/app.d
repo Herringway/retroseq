@@ -17,6 +17,7 @@ import std.stdio;
 import std.string;
 import std.utf;
 import bindbc.sdl : SDL_AudioCallback, SDL_AudioDeviceID;
+import libgamefs.nintendo.ds.nds;
 
 extern(C) int kbhit();
 extern(C) int getch();
@@ -104,21 +105,40 @@ int main(string[] args) {
 	}
 
 	auto filePath = args[1];
-	auto file = cast(ubyte[])read(args[1]);
+	ubyte[] data;
+	tracef("Reading file %s", filePath);
+	if (auto split = filePath.findSplit("|")) {
+		data = NDS(cast(ubyte[])read(split[0])).fileSystem[split[2]].data;
+	} else {
+		data = cast(ubyte[])read(args[1]);
+		if (data[0xC0 .. 0xD0] == [0x24, 0xFF, 0xAE, 0x51, 0x69, 0x9A, 0xA2, 0x21, 0x3D, 0x84, 0x82, 0x0A, 0x84, 0xE4, 0x09, 0xAD]) {
+			tracef("Detected NDS ROM, searching for SDAT...");
+			auto rom = NDS(data);
+			data = [];
+			foreach (file; rom.fileSystem) {
+				if (file.data.startsWith("SDAT")) {
+					tracef("Found %s", file.filename);
+					data = file.data;
+					break;
+				}
+			}
+			enforce(data, "No SDAT found");
+		}
+	}
 
 	// initialization
 
 	info("Loading SSEQ file");
 
 	if (args.length == 2) {
-		auto pFile = PseudoFile(file);
+		auto pFile = PseudoFile(data);
 		auto sdat = SDAT(pFile);
 		foreach (sseq; sdat.sseqs) {
 			infof("%s: %s", sseq.id, sseq.name);
 		}
 		return 0;
 	}
-	auto player = SSEQPlayer(file, args[2].to!uint);
+	auto player = SSEQPlayer(data, args[2].to!uint);
 	player.player.interpolation = interpolation;
 	// Prepare to play music
 	if (!initAudio(&_sampling_func, 2, sampleRate, &player)) {

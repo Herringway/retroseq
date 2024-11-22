@@ -6,6 +6,7 @@
 	"description": "Command-line SSEQ player",
 	"license": "BSL-1.0",
 	"dependencies": {
+		"libgamefs": "*",
 		"retroseq:sseq": "*",
 		"bindbc-sdl": "~>1.4.0"
 	},
