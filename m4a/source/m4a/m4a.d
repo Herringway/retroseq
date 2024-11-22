@@ -555,13 +555,13 @@ struct M4APlayer {
 
 							goto case;
 						case 2:
-							*nrx1ptr = cast(ubyte)((cast(size_t)channels.wav << 6) + channels.length);
+							*nrx1ptr = cast(ubyte)((channels.squareNoiseConfig << 6) + channels.length);
 							goto init_env_step_time_dir;
 						case 3:
-							if (cast(byte*)channels.wav != channels.currentPointer) {
+							if (&channels.gbWav[0] != channels.currentPointer) {
 								*nrx0ptr = 0x40;
-								channels.currentPointer = cast(byte*)channels.wav;
-								gb.set_wavram((cast(ubyte*)channels.wav)[0 .. 16]);
+								channels.currentPointer = &channels.gbWav[0];
+								gb.set_wavram(cast(ubyte[])channels.gbWav[]);
 							}
 							*nrx0ptr = 0;
 							*nrx1ptr = channels.length;
@@ -573,7 +573,7 @@ struct M4APlayer {
 							break;
 						default:
 							*nrx1ptr = channels.length;
-							*nrx3ptr = cast(ubyte)(cast(size_t)channels.wav << 3);
+							*nrx3ptr = cast(ubyte)(channels.squareNoiseConfig << 3);
 						init_env_step_time_dir:
 							envelopeStepTimeAndDir = channels.attack + CGB_NRx2_ENV_DIR_INC;
 							if (channels.length) {

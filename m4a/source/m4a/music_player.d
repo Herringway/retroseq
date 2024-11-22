@@ -492,8 +492,10 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
 	chan.type = instrument.type;
 	if (cgbType == 0) {
 		chan.wav = instrument.wav.toAbsolute(player.musicData);
+	} else if (cgbType == 3) {
+		chan.gbWav = instrument.cgbSample.toAbsoluteArray(player.musicData)[0];
 	} else {
-		//chan.wav = cast(WaveData*)instrument.cgbSample;
+		chan.squareNoiseConfig = instrument.squareNoiseConfig;
 	}
 	chan.attack = instrument.attack;
 	chan.decay = instrument.decay;

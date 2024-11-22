@@ -85,7 +85,7 @@ struct ToneData {
 	union {
 		RelativePointer!(WaveData, uint) wav;
 		RelativePointer!(ToneData, uint) group;
-		RelativePointer!(uint, uint) cgbSample;
+		RelativePointer!(byte[16], uint) cgbSample;
 		uint squareNoiseConfig;
 	}
 	union {
@@ -164,6 +164,8 @@ struct SoundChannel {
 	}
 	uint freq;
 	WaveData *wav;
+	byte[16] gbWav;
+	uint squareNoiseConfig;
 	byte *currentPointer;
 	MusicPlayerTrack *track;
 	SoundChannel* prevChannelPointer;
