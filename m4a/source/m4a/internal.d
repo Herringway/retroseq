@@ -3,22 +3,27 @@ module m4a.internal;
 import m4a.m4a;
 import std.traits;
 
+T[] sliceMax(T)(ubyte[] input, size_t start) @safe pure {
+	return cast(T[])(input[start .. start + ((($ - start) / T.sizeof) * T.sizeof)]);
+}
+
 struct RelativePointer(Element, Offset) {
 	align(1):
 	Offset offset;
-	inout(Element)* toAbsolute(void* base) inout {
-		return cast(inout(Element)*)(base + offset - 0x8000000);
+	enum Base = 0x8000000;
+	bool isValid() const @safe pure {
+		return offset >= Base;
 	}
 	inout(Element)* toAbsolute(void[] base) inout {
-		return cast(inout(Element)*)(&base[offset - 0x8000000]);
+		return cast(inout(Element)*)(&base[offset - Base]);
 	}
-	Element[] toAbsoluteArray(void[] base) {
-		const realOffset = offset - 0x8000000;
-		return cast(Element[])(base[realOffset .. realOffset + ((($ - realOffset) / Element.sizeof) * Element.sizeof)]);
+	Element[] toAbsoluteArray(ubyte[] base) {
+		const realOffset = offset - Base;
+		return sliceMax!Element(cast(ubyte[])base, realOffset);
 	}
-	const(Element)[] toAbsoluteArray(void[] base) const {
-		const realOffset = offset - 0x8000000;
-		return cast(const(Element)[])(base[realOffset .. realOffset + ((($ - realOffset) / Element.sizeof) * Element.sizeof)]);
+	const(Element)[] toAbsoluteArray(ubyte[] base) const {
+		const realOffset = offset - Base;
+		return sliceMax!(const Element)(cast(ubyte[])base, realOffset);
 	}
 	Offset opAssign(Offset newValue) {
 		return offset = newValue;

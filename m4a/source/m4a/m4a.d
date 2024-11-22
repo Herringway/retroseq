@@ -90,7 +90,7 @@ struct M4APlayer {
 		cgbChans[3].panMask = 0x88;
 	}
 	Song[] songTable() @safe pure {
-		return cast(Song[])(musicData[songTableOffset .. $]);
+		return sliceMax!Song(musicData, songTableOffset);
 	}
 	void songNumStart(ushort n) @system {
 		gMPlayInfo_BGM.playing = n;
