@@ -97,12 +97,14 @@ int main(string[] args) {
 	int sampleRate = 48000;
 	uint songTableAddress;
 	uint m4aMode;
+	string m4aModeOverride;
 	ubyte[] music;
 	int tablesToSkip = 0;
 	bool verbose;
 	auto help = getopt(args,
 		"t|table", "Song Table ID (0 by default)", &tablesToSkip,
 		"f|samplerate", "Sets sample rate (Hz)", &sampleRate,
+		"m|mode", "Override mode value", &m4aModeOverride,
 		"v|verbose", "Print more verbose information", &verbose,
 	);
 	if (help.helpWanted || (args.length < 3)) {
@@ -123,11 +125,15 @@ int main(string[] args) {
 	if(songTableAddress >= music.length || songTableAddress == 0) {
 		scan(music, tablesToSkip, songTableAddress, m4aMode);
 	}
+	if (m4aModeOverride != "") {
+		m4aMode = m4aModeOverride.to!uint(16);
+	}
 	if (songTableAddress == 0) {
 		stderr.writeln("No song table found");
 		return 2;
 	}
 	infof("songTableAddress: 0x%x (%d)", songTableAddress, songTableAddress);
+	infof("Mode: %d", m4aMode);
 	infof("Max Channels: %d", (m4aMode >> 8) & 0xF);
 	infof("Volume: %d", (m4aMode >> 12) & 0xF);
 	infof("Original Rate: %.2fhz", getOrigSampleRate(cast(ubyte)(((m4aMode >> 16) & 0xF) - 1)) * 59.727678571);
