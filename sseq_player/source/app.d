@@ -52,7 +52,7 @@ struct SSEQPlayer {
 	SDAT sdat;
 	Song song;
 	bool stopped;
-	this(ubyte[] file, uint id) {
+	this(const(ubyte)[] file, uint id) {
 		auto pFile = PseudoFile(file);
 
 		sdat = SDAT(pFile);
@@ -105,7 +105,7 @@ int main(string[] args) {
 	}
 
 	auto filePath = args[1];
-	ubyte[] data;
+	const(ubyte)[] data;
 	tracef("Reading file %s", filePath);
 	if (auto split = filePath.findSplit("|")) {
 		data = NDS(cast(ubyte[])read(split[0])).fileSystem[split[2]].data;

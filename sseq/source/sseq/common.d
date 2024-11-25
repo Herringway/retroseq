@@ -6,7 +6,7 @@ module sseq.common;
 
 struct PseudoFile
 {
-	ubyte[] data;
+	const(ubyte)[] data;
 	uint pos = 0;
 
 	T ReadLE(T)()
@@ -31,7 +31,7 @@ struct PseudoFile
 
 	void ReadLE(size_t N)(ref byte[N] arr)
 	{
-		arr[] = cast(byte[])this.data[this.pos .. this.pos + N];
+		arr[] = cast(const(byte)[])this.data[this.pos .. this.pos + N];
 		this.pos += N;
 	}
 
