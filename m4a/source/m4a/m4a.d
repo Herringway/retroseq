@@ -6,6 +6,7 @@ import m4a.m4a_tables;
 import m4a.music_player;
 import m4a.sound_mixer;
 
+import std.algorithm.comparison;
 
 struct M4APlayer {
 	const(ubyte)[] musicData;
@@ -285,9 +286,7 @@ struct M4APlayer {
 	}
 
 	void MPlayStart(ref MusicPlayerInfo mplayInfo, const ref SongHeader songHeader) @system {
-		int i;
 		ubyte checkSongPriority;
-		MusicPlayerTrack *track;
 		if (!songHeader.instrument.isValid) {
 			return;
 		}
@@ -310,23 +309,16 @@ struct M4APlayer {
 			mplayInfo.tempoCounter = 0;
 			mplayInfo.fadeInterval = 0;
 
-			i = 0;
-			track = &mplayInfo.tracks[0];
-
-			while (i < songHeader.trackCount && i < mplayInfo.trackCount) {
-				TrackStop(this, mplayInfo, *track);
+			foreach (i, ref track; mplayInfo.tracks[0 .. songHeader.trackCount]) {
+				TrackStop(this, mplayInfo, track);
 				track.flags = MPT_FLG_EXIST | MPT_FLG_START;
 				track.chan = null;
 				track.cmdPtr = songHeader.part.ptr[i].toAbsoluteArray(musicData);
-				i++;
-				track++;
 			}
 
-			while (i < mplayInfo.trackCount) {
-				TrackStop(this, mplayInfo, *track);
+			foreach (ref track;  mplayInfo.tracks[min(mplayInfo.trackCount, songHeader.trackCount) .. mplayInfo.trackCount]) {
+				TrackStop(this, mplayInfo, track);
 				track.flags = 0;
-				i++;
-				track++;
 			}
 
 			if (songHeader.reverb & SOUND_MODE_REVERB_SET) {
