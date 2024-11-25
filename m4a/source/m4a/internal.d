@@ -3,8 +3,8 @@ module m4a.internal;
 import m4a.m4a;
 import std.traits;
 
-T[] sliceMax(T)(ubyte[] input, size_t start) @safe pure {
-	return cast(T[])(input[start .. start + ((($ - start) / T.sizeof) * T.sizeof)]);
+const(T)[] sliceMax(T)(const(ubyte)[] input, size_t start) @safe pure {
+	return cast(const(T)[])(input[start .. start + ((($ - start) / T.sizeof) * T.sizeof)]);
 }
 
 struct RelativePointer(Element, Offset) {
@@ -14,16 +14,16 @@ struct RelativePointer(Element, Offset) {
 	bool isValid() const @safe pure {
 		return offset >= Base;
 	}
-	inout(Element)* toAbsolute(void[] base) inout {
-		return cast(inout(Element)*)(&base[offset - Base]);
+	const(Element)* toAbsolute(const(void)[] base) inout {
+		return cast(const(Element)*)(&base[offset - Base]);
 	}
-	Element[] toAbsoluteArray(ubyte[] base) {
+	const(Element)[] toAbsoluteArray(const(ubyte)[] base) {
 		const realOffset = offset - Base;
-		return sliceMax!Element(cast(ubyte[])base, realOffset);
+		return sliceMax!Element(cast(const(ubyte)[])base, realOffset);
 	}
-	const(Element)[] toAbsoluteArray(ubyte[] base) const {
+	const(Element)[] toAbsoluteArray(const(ubyte)[] base) const {
 		const realOffset = offset - Base;
-		return sliceMax!(const Element)(cast(ubyte[])base, realOffset);
+		return sliceMax!(const Element)(cast(const(ubyte)[])base, realOffset);
 	}
 	Offset opAssign(Offset newValue) {
 		return offset = newValue;
@@ -168,10 +168,10 @@ struct SoundChannel {
 		}
 	}
 	uint freq;
-	WaveData *wav;
+	const(WaveData)* wav;
 	byte[16] gbWav;
 	uint squareNoiseConfig;
-	byte *currentPointer;
+	const(byte)* currentPointer;
 	MusicPlayerTrack *track;
 	SoundChannel* prevChannelPointer;
 	SoundChannel* nextChannelPointer;

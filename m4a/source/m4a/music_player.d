@@ -375,7 +375,7 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
 	// sp14
 	byte forcedPan = 0;
 	// First r4, then r9
-	ToneData *instrument = &track.instrument;
+	const(ToneData)* instrument = &track.instrument;
 	// sp8
 	ubyte key = track.key;
 	ubyte type = instrument.type;
@@ -383,7 +383,7 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
 	if (type & (TONEDATA_TYPE_RHY | TONEDATA_TYPE_SPL)) {
 		ubyte instrumentIndex;
 		if (instrument.type & TONEDATA_TYPE_SPL) {
-			ubyte[] keySplitTableOffset = instrument.keySplitTable.toAbsoluteArray(player.musicData);
+			const keySplitTableOffset = instrument.keySplitTable.toAbsoluteArray(player.musicData);
 			instrumentIndex = keySplitTableOffset[track.key];
 		} else {
 			instrumentIndex = track.key;
@@ -570,7 +570,7 @@ void MP2K_event_mod(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack tra
 // Out:
 // - The freq in Hz at which the sample should be played back.
 
-uint MidiKeyToFreq_(WaveData *wav, ubyte key, ubyte pitch) @safe {
+uint MidiKeyToFreq_(const(WaveData) *wav, ubyte key, ubyte pitch) @safe {
 	if (key > 178) {
 		key = 178;
 		pitch = 255;

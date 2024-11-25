@@ -92,7 +92,7 @@ void SampleMixer (SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerF
 	SoundChannel[] chan = mixer.chans[];
 
 	for (int i = 0; i < numChans; i++, chan = chan[1 .. $]) {
-		WaveData *wav = chan[0].wav;
+		const wav = chan[0].wav;
 
 		if (TickEnvelope(&chan[0], wav)) {
 			GenerateAudio(mixer, &chan[0], wav, outBuffer, samplesPerFrame, divFreq);
@@ -102,7 +102,7 @@ void SampleMixer (SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerF
 
 // Returns 1 if channel is still active after moving envelope forward a frame
 //__attribute__((target("thumb")))
-private uint TickEnvelope(SoundChannel *chan, WaveData *wav) @system pure {
+private uint TickEnvelope(SoundChannel *chan, const(WaveData)* wav) @system pure {
 	// MP2K envelope shape
 	//                                                                 |
 	// (linear)^                                                       |
@@ -203,19 +203,19 @@ private uint TickEnvelope(SoundChannel *chan, WaveData *wav) @system pure {
 }
 
 //__attribute__((target("thumb")))
-private void GenerateAudio(SoundMixerState *mixer, SoundChannel *chan, WaveData *wav, float[2][] outBuffer, ushort samplesPerFrame, float divFreq) pure {
+private void GenerateAudio(SoundMixerState *mixer, SoundChannel *chan, const(WaveData)* wav, float[2][] outBuffer, ushort samplesPerFrame, float divFreq) pure {
 	ubyte v = cast(ubyte)(chan.envelopeVolume * (mixer.masterVol + 1) / 16U);
 	chan.envelopeVolumeRight = chan.rightVolume * v / 256U;
 	chan.envelopeVolumeLeft = chan.leftVolume * v / 256U;
 
 	int loopLen = 0;
-	byte *loopStart;
+	const(byte)* loopStart;
 	if (chan.statusFlags & 0x10) {
 		loopStart = &wav.data[0] + wav.loopStart;
 		loopLen = wav.size - wav.loopStart;
 	}
 	int samplesLeftInWav = chan.count;
-	byte *currentPointer = chan.currentPointer;
+	const(byte)* currentPointer = chan.currentPointer;
 	int envR = chan.envelopeVolumeRight;
 	int envL = chan.envelopeVolumeLeft;
 	/*if (chan.type & 8) {

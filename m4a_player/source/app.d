@@ -98,7 +98,7 @@ int main(string[] args) {
 	uint songTableAddress;
 	uint m4aMode;
 	string m4aModeOverride;
-	ubyte[] music;
+	const(ubyte)[] music;
 	int tablesToSkip = 0;
 	bool verbose;
 	auto help = getopt(args,
@@ -120,7 +120,7 @@ int main(string[] args) {
 	if (args.length > 3) {
 		songTableAddress = args[3].to!uint(16);
 	}
-	music = cast(ubyte[])read(filename);
+	music = cast(const(ubyte)[])read(filename);
 
 	if(songTableAddress >= music.length || songTableAddress == 0) {
 		scan(music, tablesToSkip, songTableAddress, m4aMode);

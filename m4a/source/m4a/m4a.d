@@ -8,7 +8,7 @@ import m4a.sound_mixer;
 
 
 struct M4APlayer {
-	ubyte[] musicData;
+	const(ubyte)[] musicData;
 	uint songTableOffset;
 
 	SoundMixerState soundInfo;
@@ -26,7 +26,7 @@ struct M4APlayer {
 
 	AudioCGB gb;
 	float playerCounter = 0;
-	void initialize(uint freq, ubyte[] _music, uint _songTableAddress, uint _mode) @safe pure {
+	void initialize(uint freq, const(ubyte)[] _music, uint _songTableAddress, uint _mode) @safe pure {
 		musicData = _music;
 		songTableOffset = _songTableAddress;
 		int i;
@@ -89,7 +89,7 @@ struct M4APlayer {
 		cgbChans[3].type = 4;
 		cgbChans[3].panMask = 0x88;
 	}
-	Song[] songTable() @safe pure {
+	const(Song)[] songTable() @safe pure {
 		return sliceMax!Song(musicData, songTableOffset);
 	}
 	void songNumStart(ushort n) @system {
@@ -757,7 +757,7 @@ ushort getOrigSampleRate(ubyte rate) @safe pure {
 	return gPcmSamplesPerVBlankTable[rate];
 }
 
-uint MidiKeyToFreq(WaveData *wav, ubyte key, ubyte fineAdjust) @safe pure {
+uint MidiKeyToFreq(const(WaveData)* wav, ubyte key, ubyte fineAdjust) @safe pure {
 	uint val1;
 	uint val2;
 	uint fineAdjustShifted = fineAdjust << 24;
