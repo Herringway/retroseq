@@ -1,80 +1,8 @@
 module sseq.common;
 
-/*
- * Pseudo-file data structure
- */
-
-struct PseudoFile
-{
-	const(ubyte)[] data;
-	uint pos = 0;
-
-	T ReadLE(T)()
-	{
-		T finalVal = 0;
-		for (size_t i = 0; i < T.sizeof; ++i)
-			finalVal |= this.data[this.pos++] << (i * 8);
-		return finalVal;
-	}
-
-	void ReadLE(T, size_t N)(ref T[N] arr)
-	{
-		for (size_t i = 0; i < N; ++i)
-			arr[i] = this.ReadLE!T();
-	}
-
-	void ReadLE(size_t N)(ref ubyte[N] arr)
-	{
-		arr[] = this.data[this.pos .. this.pos + N];
-		this.pos += N;
-	}
-
-	void ReadLE(size_t N)(ref byte[N] arr)
-	{
-		arr[] = cast(const(byte)[])this.data[this.pos .. this.pos + N];
-		this.pos += N;
-	}
-
-	void ReadLE(T)(T[] arr)
-	{
-		for (size_t i = 0, len = arr.length; i < len; ++i)
-			arr[i] = this.ReadLE!T();
-	}
-
-	void ReadLE(ubyte[] arr) @safe
-	{
-		arr[] = this.data[this.pos .. this.pos + arr.length];
-		this.pos += arr.length;
-	}
-
-	string ReadNullTerminatedString() @safe
-	{
-		char chr;
-		string str;
-		do
-		{
-			chr = cast(char)(this.ReadLE!ubyte());
-			if (chr)
-				str ~= chr;
-		} while (chr);
-		return str;
-	}
-};
-
-/*
- * Data Reading
- *
- * The following ReadLE functions will either read from a file or from an
- * array (sent in as a pointer), while making sure that the data is read in
- * as little-endian formating.
- */
-
-T ReadLE(T)(const(ubyte)[] arr)
-{
-	T finalVal = 0;
-	for (size_t i = 0; i < T.sizeof; ++i)
-		finalVal |= arr[i] << (i * 8);
-	return finalVal;
+T pop(T)(ref const(ubyte)[] buf) {
+	scope(exit) buf = buf[T.sizeof .. $];
+	return (cast(const(T)[])buf[0 .. 0 + T.sizeof])[0];
 }
 
 /*

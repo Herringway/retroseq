@@ -1,21 +1,18 @@
 module sseq.ndsstdheader;
 
 import sseq.common;
+import std.exception;
 
-struct NDSStdHeader
-{
+struct NDSStdHeader {
+	align(1):
 	byte[4] type;
-	uint magic;
+	ushort bom;
+	ushort version_;
+	uint size;
+	ushort headerSize;
+	ushort blockCount;
 
-	void Read(ref PseudoFile file) @safe {
-		file.ReadLE(this.type);
-		this.magic = file.ReadLE!uint();
-		file.ReadLE!uint(); // file size
-		file.ReadLE!ushort(); // structure size
-		file.ReadLE!ushort(); // # of blocks
-	}
-	void Verify(const string typeToCheck, uint magicToCheck) @safe {
-		if (!VerifyHeader(this.type, typeToCheck) || this.magic != magicToCheck)
-			throw new Exception("NDS Standard Header for " ~ typeToCheck ~ " invalid");
-	}
-};
+}
+void verify(const NDSStdHeader header, const string typeToCheck) @safe {
+	enforce((header.type == typeToCheck) && (header.bom == 0xFEFF), "NDS Standard Header for " ~ typeToCheck ~ " invalid");
+}

@@ -53,10 +53,8 @@ struct SSEQPlayer {
 	Song song;
 	bool stopped;
 	this(const(ubyte)[] file, uint id) {
-		auto pFile = PseudoFile(file);
-
-		sdat = SDAT(pFile);
-		song = sdat.getSSEQ(pFile, id);
+		sdat = SDAT(file);
+		song = sdat.getSSEQ(id);
 		player.sampleRate = 44100;
 		player.Setup(song);
 		player.Timer();
@@ -131,8 +129,7 @@ int main(string[] args) {
 	info("Loading SSEQ file");
 
 	if (args.length == 2) {
-		auto pFile = PseudoFile(data);
-		auto sdat = SDAT(pFile);
+		auto sdat = SDAT(data);
 		foreach (sseq; sdat.sseqs) {
 			infof("%s: %s", sseq.id, sseq.name);
 		}

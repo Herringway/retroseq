@@ -4,71 +4,68 @@ import sseq.common;
 
 struct SWAV
 {
-	ubyte waveType;
-	ubyte loop;
-	ushort sampleRate;
-	ushort time;
-	uint loopOffset;
-	uint nonLoopLength;
-	short[] data;
-
-	void Read(ref PseudoFile file) @safe {
-
-		this.waveType = file.ReadLE!ubyte();
-		this.loop = file.ReadLE!ubyte();
-		this.sampleRate = file.ReadLE!ushort();
-		this.time = file.ReadLE!ushort();
-		this.loopOffset = file.ReadLE!ushort();
-		this.nonLoopLength = file.ReadLE!uint();
-		uint size = (this.loopOffset + this.nonLoopLength) * 4;
-		auto origData = new ubyte[](size);
-		file.ReadLE(origData);
-
-		// Convert data accordingly
-		if (!this.waveType)
-		{
-			// PCM 8-bit . PCM signed 16-bit
-			this.data.length = size;
-			for (size_t i = 0; i < size; ++i)
-				this.data[i] = cast(short)(origData[i] << 8);
-			this.loopOffset *= 4;
-			this.nonLoopLength *= 4;
-		}
-		else if (this.waveType == 1)
-		{
-			// PCM signed 16-bit, no conversion
-			this.data.length = size / 2;
-			for (size_t i = 0; i < size / 2; ++i)
-				this.data[i] = ReadLE!short(origData[2 * i .. $]);
-			this.loopOffset *= 2;
-			this.nonLoopLength *= 2;
-		}
-		else if (this.waveType == 2)
-		{
-			// IMA ADPCM . PCM signed 16-bit
-			this.data.length = (size - 4) * 2;
-			this.DecodeADPCM(origData, size - 4);
-			if (this.loopOffset)
-				--this.loopOffset;
-			this.loopOffset *= 8;
-			this.nonLoopLength *= 8;
-		}
+	static struct Header {
+		align(1):
+		ubyte waveType;
+		ubyte loop;
+		ushort sampleRate;
+		ushort time;
+		ushort loopOffset;
+		uint nonLoopLength;
 	}
-	void DecodeADPCM(const(ubyte)[] origData, uint len) @safe {
-		int predictedValue = origData[0] | (origData[1] << 8);
-		int stepIndex = origData[2] | (origData[3] << 8);
-		auto finalData = this.data;
+	Header header;
+	const(ubyte)[] origData;
+	short[] data;
+}
+short[] decode(const(ubyte)[] origData, ref SWAV.Header header) @safe {
+	uint size = (header.loopOffset + header.nonLoopLength) * 4;
+	short[] data;
+	import std.logger; debug tracef("%s", header.waveType);
+	// Convert data accordingly
+	if (!header.waveType)
+	{
+		// PCM 8-bit . PCM signed 16-bit
+		data.length = size;
+		for (size_t i = 0; i < size; ++i)
+			data[i] = cast(short)(origData[i] << 8);
+		header.loopOffset *= 4;
+		header.nonLoopLength *= 4;
+	}
+	else if (header.waveType == 1)
+	{
+		// PCM signed 16-bit, no conversion
+		data.length = size / 2;
+		data[] = cast(const(short)[])origData[0 .. size];
+		//for (size_t i = 0; i < size / 2; ++i)
+		//	data[i] = ReadLE!short(origData[2 * i .. $]);
+		header.loopOffset *= 2;
+		header.nonLoopLength *= 2;
+	}
+	else if (header.waveType == 2)
+	{
+		// IMA ADPCM . PCM signed 16-bit
+		data.length = (size - 4) * 2;
+		DecodeADPCM(origData, data, size - 4);
+		if (header.loopOffset)
+			--header.loopOffset;
+		header.loopOffset *= 8;
+		header.nonLoopLength *= 8;
+	}
+	return data;
+}
+void DecodeADPCM(const(ubyte)[] origData, short[] finalData, uint len) @safe {
+	int predictedValue = origData[0] | (origData[1] << 8);
+	int stepIndex = origData[2] | (origData[3] << 8);
 
-		for (uint i = 0; i < len; ++i)
-		{
-			int nibble = origData[i + 4] & 0x0F;
-			DecodeADPCMNibble(nibble, stepIndex, predictedValue);
-			finalData[2 * i] = cast(short)predictedValue;
+	for (uint i = 0; i < len; ++i)
+	{
+		int nibble = origData[i + 4] & 0x0F;
+		DecodeADPCMNibble(nibble, stepIndex, predictedValue);
+		finalData[2 * i] = cast(short)predictedValue;
 
-			nibble = (origData[i + 4] >> 4) & 0x0F;
-			DecodeADPCMNibble(nibble, stepIndex, predictedValue);
-			finalData[2 * i + 1] = cast(short)predictedValue;
-		}
+		nibble = (origData[i + 4] >> 4) & 0x0F;
+		DecodeADPCMNibble(nibble, stepIndex, predictedValue);
+		finalData[2 * i + 1] = cast(short)predictedValue;
 	}
 }
 

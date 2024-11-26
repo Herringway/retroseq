@@ -1,45 +1,45 @@
 module sseq.swar;
 
 import sseq.swav;
-import sseq.infoentry;
+import sseq.infosection;
 import sseq.ndsstdheader;
 import sseq.common;
 
-/*
- * The size has been left out of this structure as it is unused by this player.
- */
 struct SWAR
 {
-	string filename;
+	static struct DataHeader {
+		align(1):
+		char[4] type;
+		uint fileSize;
+		ubyte[32] reserved;
+		uint blockCount;
+	}
+	NDSStdHeader header;
+	DataHeader dataHeader;
+	const(char)[] filename;
+	const(ubyte)[] data;
 	SWAV[uint] swavs;
 
 	INFOEntryWAVEARC info;
 
-	this(const ref string fn) @safe {
+	this(const char[] fn) @safe {
 		filename = fn;
 	}
+	void loadSWAVs() @safe {
+		const offsets = cast(const(uint)[])data[0 .. uint.sizeof * dataHeader.blockCount];
+		foreach (idx, offset; offsets) {
+			const adjustedOffset = offsets[idx] - NDSStdHeader.sizeof - DataHeader.sizeof;
+			auto swavData = data[adjustedOffset .. $];
+			swavs.require(cast(uint)idx, (){
+				SWAV result;
+				result.header = swavData.pop!(SWAV.Header)();
+				result.data = decode(swavData, result.header);
+				return result;
+			}());
+		}
 
-	void Read(ref PseudoFile file) @safe {
-		uint startOfSWAR = file.pos;
-		NDSStdHeader header;
-		header.Read(file);
-		header.Verify("SWAR", 0x0100FEFF);
-		byte[4] type;
-		file.ReadLE(type);
-		if (!VerifyHeader(type, "DATA"))
-			throw new Exception("SWAR DATA structure invalid");
-		file.ReadLE!uint(); // size
-		uint[8] reserved;
-		file.ReadLE(reserved);
-		uint count = file.ReadLE!uint();
-		auto offsets = new uint[](count);
-		file.ReadLE(offsets);
-		for (uint i = 0; i < count; ++i)
-			if (offsets[i])
-			{
-				file.pos = startOfSWAR + offsets[i];
-				this.swavs[i] = SWAV();
-				this.swavs[i].Read(file);
-			}
 	}
-};
+	const(SWAV)* opIndex(size_t idx) const @safe {
+		return cast(uint)idx in swavs;
+	}
+}

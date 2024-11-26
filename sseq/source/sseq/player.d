@@ -549,9 +549,9 @@ struct Player
 		Channel *chn = null;
 		int nCh = -1;
 
-		auto instrument = &sbnk.instruments[track.patch];
+		const instrument = sbnk.instruments[track.patch];
 		const(SBNKInstrumentRange) *noteDef = null;
-		int fRecord = instrument.record;
+		int fRecord = instrument.record.type;
 
 		if (fRecord == 16)
 		{
@@ -603,7 +603,7 @@ struct Player
 				if (nCh < 0)
 					return -1;
 				chn = &this.channels[nCh];
-				chn.tempReg.CR = SOUND_FORMAT_PSG | SCHANNEL_ENABLE | SOUND_DUTY(noteDef.swav & 0x7);
+				chn.tempReg.CR = SOUND_FORMAT_PSG | SCHANNEL_ENABLE | SOUND_DUTY(noteDef.header.swav & 0x7);
 			}
 			chn.tempReg.TIMER = cast(short)-SOUND_FREQ(262 * 8); // key #60 (C4)
 			chn.reg.samplePosition = -1;
@@ -617,12 +617,12 @@ struct Player
 				return -1;
 			chn = &this.channels[nCh];
 
-			auto swav = &this.song.swar[noteDef.swar].swavs[noteDef.swav];
-			chn.tempReg.CR = SOUND_FORMAT(swav.waveType & 3) | SOUND_LOOP(!!swav.loop) | SCHANNEL_ENABLE;
+			auto swav = (*this.song.swar[noteDef.header.swar])[noteDef.header.swav];
+			chn.tempReg.CR = SOUND_FORMAT(swav.header.waveType & 3) | SOUND_LOOP(!!swav.header.loop) | SCHANNEL_ENABLE;
 			chn.tempReg.SOURCE = swav;
-			chn.tempReg.TIMER = swav.time;
-			chn.tempReg.REPEAT_POINT = swav.loopOffset;
-			chn.tempReg.LENGTH = swav.nonLoopLength;
+			chn.tempReg.TIMER = swav.header.time;
+			chn.tempReg.REPEAT_POINT = swav.header.loopOffset;
+			chn.tempReg.LENGTH = swav.header.nonLoopLength;
 			chn.reg.samplePosition = -3;
 		}
 
@@ -631,18 +631,18 @@ struct Player
 		chn.flags = false;
 		chn.prio = track.prio;
 		chn.key = cast(ubyte)key;
-		chn.orgKey = noteDef.noteNumber;
+		chn.orgKey = noteDef.header.noteNumber;
 		chn.velocity = cast(short)Cnv_Sust(vel);
-		chn.pan = cast(byte)(cast(int)(noteDef.pan) - 64);
+		chn.pan = cast(byte)(cast(int)(noteDef.header.pan) - 64);
 		chn.modDelayCnt = 0;
 		chn.modCounter = 0;
 		chn.noteLength = len;
 		chn.reg.sampleIncrease = 0;
 
-		chn.attackLvl = cast(ubyte)Cnv_Attack(track.a == 0xFF ? noteDef.attackRate : track.a);
-		chn.decayRate = cast(ushort)Cnv_Fall(track.d == 0xFF ? noteDef.decayRate : track.d);
-		chn.sustainLvl = track.s == 0xFF ? noteDef.sustainLevel : track.s;
-		chn.releaseRate = cast(ushort)Cnv_Fall(track.r == 0xFF ? noteDef.releaseRate : track.r);
+		chn.attackLvl = cast(ubyte)Cnv_Attack(track.a == 0xFF ? noteDef.header.attackRate : track.a);
+		chn.decayRate = cast(ushort)Cnv_Fall(track.d == 0xFF ? noteDef.header.decayRate : track.d);
+		chn.sustainLvl = track.s == 0xFF ? noteDef.header.sustainLevel : track.s;
+		chn.releaseRate = cast(ushort)Cnv_Fall(track.r == 0xFF ? noteDef.header.releaseRate : track.r);
 
 		this.UpdateVol(track, *chn);
 		this.UpdatePan(track, *chn);

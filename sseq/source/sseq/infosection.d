@@ -1,55 +1,61 @@
 module sseq.infosection;
 
 import sseq.common;
-import sseq.infoentry;
 
-struct INFORecord(T)
-{
-	T[uint] entries;
-
-	void Read(ref PseudoFile file, uint startOffset) @safe {
-		uint count = file.ReadLE!uint();
-		auto entryOffsets = new uint[](count);
-		file.ReadLE(entryOffsets);
-		for (uint i = 0; i < count; ++i)
-			if (entryOffsets[i])
-			{
-				file.pos = startOffset + entryOffsets[i];
-				this.entries[i] = T();
-				this.entries[i].Read(file);
+struct INFOSection {
+	align(1):
+	char[4] type;
+	uint blockSize;
+	uint[8] recordOffsets;
+	auto record(T)(const(ubyte)[] infoBlock, size_t idx) const @safe {
+		static struct Result {
+			private const(ubyte)[] data;
+			private const(uint)[] entries;
+			this(const(ubyte)[] data, size_t offset) @safe {
+				this.data = data;
+				auto count = (cast(const(uint)[])(data[offset .. offset + uint.sizeof]))[0];
+				entries = cast(const(uint)[])(data[offset + uint.sizeof .. offset + uint.sizeof + uint.sizeof * count]);
 			}
+			size_t length() const => entries.length;
+			bool isValid(size_t idx) const => (idx < entries.length) && (entries[idx] != 0);
+			T opIndex(size_t idx) const {
+				return (cast(const(T)[])data[entries[idx] .. entries[idx] + T.sizeof])[0];
+			}
+		}
+		return Result(infoBlock, recordOffsets[idx]);
 	}
-};
-
-struct INFOSection
-{
-	INFORecord!INFOEntrySEQ SEQrecord;
-	INFORecord!INFOEntryBANK BANKrecord;
-	INFORecord!INFOEntryWAVEARC WAVEARCrecord;
-
-	void Read(ref PseudoFile file) @safe {
-		uint startOfINFO = file.pos;
-		byte[4] type;
-		file.ReadLE(type);
-		if (!VerifyHeader(type, "INFO"))
-			throw new Exception("SDAT INFO Section invalid");
-		file.ReadLE!uint(); // size
-		uint[8] recordOffsets;
-		file.ReadLE(recordOffsets);
-		if (recordOffsets[RecordName.REC_SEQ])
-		{
-			file.pos = startOfINFO + recordOffsets[RecordName.REC_SEQ];
-			this.SEQrecord.Read(file, startOfINFO);
-		}
-		if (recordOffsets[RecordName.REC_BANK])
-		{
-			file.pos = startOfINFO + recordOffsets[RecordName.REC_BANK];
-			this.BANKrecord.Read(file, startOfINFO);
-		}
-		if (recordOffsets[RecordName.REC_WAVEARC])
-		{
-			file.pos = startOfINFO + recordOffsets[RecordName.REC_WAVEARC];
-			this.WAVEARCrecord.Read(file, startOfINFO);
-		}
+	auto SEQrecord(const(ubyte)[] infoBlock) const {
+		return record!INFOEntrySEQ(infoBlock, RecordName.REC_SEQ);
 	}
-};
+	auto BANKrecord(const(ubyte)[] infoBlock) const {
+		return record!INFOEntryBANK(infoBlock, RecordName.REC_BANK);
+	}
+	auto WAVEARCrecord(const(ubyte)[] infoBlock) const {
+		return record!INFOEntryWAVEARC(infoBlock, RecordName.REC_WAVEARC);
+	}
+}
+
+struct INFOEntrySEQ {
+	align(1):
+	ushort fileID;
+	ushort unknown2;
+	ushort bank;
+	ubyte vol;
+	ubyte cpr;
+	ubyte ppr;
+	ubyte ply;
+	ushort unknownA;
+}
+
+struct INFOEntryBANK {
+	align(1):
+	ushort fileID;
+	ushort unknown2;
+	ushort[4] waveArc;
+}
+
+struct INFOEntryWAVEARC {
+	align(1):
+	ushort fileID;
+	ushort unknown2;
+}
