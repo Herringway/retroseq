@@ -90,7 +90,7 @@ struct Player
 		static immutable ubyte[] pcmChnArray = [ 4, 5, 6, 7, 2, 0, 3, 1, 8, 9, 10, 11, 14, 12, 15, 13 ];
 		static immutable ubyte[] psgChnArray = [ 8, 9, 10, 11, 12, 13 ];
 		static immutable ubyte[] noiseChnArray = [ 14, 15 ];
-		static immutable ubyte[] arraySizes = [ pcmChnArray.sizeof, psgChnArray.sizeof, noiseChnArray.sizeof ];
+		static immutable ubyte[] arraySizes = [ pcmChnArray.length, psgChnArray.length, noiseChnArray.length ];
 		static immutable ubyte[][] arrayArray = [ pcmChnArray, psgChnArray, noiseChnArray ];
 
 		auto chnArray = arrayArray[type];
