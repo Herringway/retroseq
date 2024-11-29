@@ -74,13 +74,6 @@ bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* use
 	return true;
 }
 
-//void sampleFunction(ref SSEQPlayer player, short[2][] buffer) @safe {
-//	if (player.stopped) {
-//		return;
-//	}
-//	player.player.GenerateSamples(buffer);
-//}
-
 extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
 	static bool done;
 	if (done) {
@@ -145,26 +138,7 @@ int main(string[] args) {
 	if (!initAudio(&_sampling_func, 2, sampleRate, &player)) {
 		return 1;
 	}
-	//Interpolation interpolation;
-
-	//// initialization
-
-	//info("Loading SSEQ file");
-
-	//if (args.length == 2) {
-	//	auto pFile = PseudoFile(file);
-	//	auto sdat = SDAT(pFile);
-	//	foreach (sseq; sdat.sseqs) {
-	//		infof("%s: %s", sseq.id, sseq.name);
-	//	}
-	//	return 0;
-	//}
-	//auto player = SSEQPlayer(file, args[2].to!uint);
-	//player.player.interpolation = interpolation;
 	info("SDL audio init success");
-
-	//infof("Now playing %s", player.song.sseq.filename);
-	//infof("Sequence: %s, Bank: %s, wave archives: %s", player.song.sseq.filename, player.song.sbnk.filename, player.song.swar[].filter!(x => !!x).map!(x => x.filename));
 
 	writeln("Press enter to exit");
 	while(true) {
@@ -184,11 +158,7 @@ int main(string[] args) {
 				break;
 			}
 		}
-		//if (!player.isPlaying) {
-		//	break;
-		//}
 	}
-	//player.stop();
 
 	return 0;
 }
