@@ -1,5 +1,7 @@
 module m4a.m4a;
 
+import retroseq.utility;
+
 import m4a.cgb_audio;
 import m4a.internal;
 import m4a.m4a_tables;
@@ -75,12 +77,12 @@ struct M4APlayer {
 		gMPlayJumpTable[29] = &MP2K_event_endtie;
 		gMPlayJumpTable[30] = &MP2K_event_nothing;
 		gMPlayJumpTable[31] = &TrackStop;
-		gMPlayJumpTable[32] = &Funcify!FadeOutBody;
+		gMPlayJumpTable[32] = &Funcify!(FadeOutBody, M4APlayer);
 		gMPlayJumpTable[33] = &TrkVolPitSet;
 
 		soundInfo.cgbChans = cgbChans[];
-		soundInfo.cgbMixerFunc = &Funcify!cgbMixerFunc;
-		soundInfo.cgbNoteOffFunc = &Funcify!cgbNoteOffFunc;
+		soundInfo.cgbMixerFunc = &Funcify!(cgbMixerFunc, M4APlayer);
+		soundInfo.cgbNoteOffFunc = &Funcify!(cgbNoteOffFunc, M4APlayer);
 		soundInfo.cgbCalcFreqFunc = &cgbCalcFreqFunc;
 		soundInfo.maxScanlines = MAX_LINES;
 

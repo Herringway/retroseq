@@ -1,5 +1,7 @@
 module m4a.m4a_tables;
 
+import retroseq.utility;
+
 import m4a.internal;
 import m4a.m4a;
 import m4a.music_player;
@@ -41,7 +43,7 @@ immutable MPlayFunc[] gMPlayJumpTableTemplate =
 	&MP2K_event_endtie,
 	&MP2K_event_nothing,
 	&TrackStop,
-	&Funcify!(M4APlayer.FadeOutBody),
+	&Funcify!(M4APlayer.FadeOutBody, M4APlayer),
 	&TrkVolPitSet,
 	&MP2K_event_nothing,
 	&SoundMainBTM,

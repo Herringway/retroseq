@@ -5,6 +5,8 @@ import std.conv;
 import std.exception;
 import std.typecons;
 
+import retroseq.utility;
+
 import sseq.common;
 import sseq.fatsection;
 import sseq.infosection;

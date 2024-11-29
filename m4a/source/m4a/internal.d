@@ -1,11 +1,8 @@
 module m4a.internal;
 
-import m4a.m4a;
-import std.traits;
+import retroseq.utility;
 
-const(T)[] sliceMax(T)(const(ubyte)[] input, size_t start) @safe pure {
-	return cast(const(T)[])(input[start .. start + ((($ - start) / T.sizeof) * T.sizeof)]);
-}
+import m4a.m4a;
 
 struct RelativePointer(Element, Offset) {
 	align(1):
@@ -401,7 +398,3 @@ struct SongPointer {
 alias XcmdFunc = void function(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) pure;
 
 enum MAX_LINES = 0;
-
-void Funcify(alias Method)(ref M4APlayer player, Parameters!Method params) {
-	__traits(getMember, player, __traits(identifier, Method))(params);
-}

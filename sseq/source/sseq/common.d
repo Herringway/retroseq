@@ -1,10 +1,5 @@
 module sseq.common;
 
-T pop(T)(ref const(ubyte)[] buf) {
-	scope(exit) buf = buf[T.sizeof .. $];
-	return (cast(const(T)[])buf[0 .. 0 + T.sizeof])[0];
-}
-
 /*
  * The following function is used to convert an integer into a hexidecimal
  * string, the length being determined by the size of the integer.  8-bit

@@ -5,5 +5,8 @@
 	"copyright": "Copyright © 2024, Herringway",
 	"description": "NDS SSEQ format",
 	"license": "BSL-1",
+	"dependencies": {
+		"retroseq": "*"
+	},
 	"name": "sseq"
 }

@@ -1,5 +1,7 @@
 module sseq.sbnk;
 
+import retroseq.utility;
+
 import sseq.swar;
 import sseq.infosection;
 import sseq.ndsstdheader;
