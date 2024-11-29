@@ -6,7 +6,7 @@ import m4a.internal;
 import m4a.m4a;
 
 
-ubyte RunMixerFrame(M4APlayer* player, float[2][] audioBuffer) @system pure {
+ubyte RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure {
 	int samplesPerFrame = cast(int)audioBuffer.length;
 
 	player.playerCounter += audioBuffer.length;
@@ -15,10 +15,10 @@ ubyte RunMixerFrame(M4APlayer* player, float[2][] audioBuffer) @system pure {
 		uint maxScanlines = player.soundInfo.maxScanlines;
 
 		if (player.soundInfo.firstPlayerFunc != null) {
-			player.soundInfo.firstPlayerFunc(*player, *player.soundInfo.firstPlayer);
+			player.soundInfo.firstPlayerFunc(player, *player.soundInfo.firstPlayer);
 		}
 
-		player.soundInfo.cgbMixerFunc(*player);
+		player.soundInfo.cgbMixerFunc(player);
 	}
 	samplesPerFrame = player.soundInfo.samplesPerFrame;
 	float[2][] outBuffer = player.soundInfo.outBuffer;
@@ -31,7 +31,7 @@ ubyte RunMixerFrame(M4APlayer* player, float[2][] audioBuffer) @system pure {
 	}
 
 	//MixerRamFunc mixerRamFunc = ((MixerRamFunc)MixerCodeBuffer);
-	SampleMixer(&player.soundInfo, 0, cast(ushort)samplesPerFrame, outBuffer, cast(ubyte)dmaCounter);
+	SampleMixer(player.soundInfo, 0, cast(ushort)samplesPerFrame, outBuffer, cast(ubyte)dmaCounter);
 
 	player.gb.audio_generate(&player.soundInfo, cast(ushort)samplesPerFrame, cgbBuffer);
 
@@ -56,7 +56,7 @@ ubyte RunMixerFrame(M4APlayer* player, float[2][] audioBuffer) @system pure {
 }
 
 //__attribute__((target("thumb")))
-void SampleMixer (SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerFrame, float[2][] outBuffer, ubyte dmaCounter) @system pure {
+void SampleMixer (ref SoundMixerState mixer, uint scanlineLimit, ushort samplesPerFrame, float[2][] outBuffer, ubyte dmaCounter) @system pure {
 	uint reverb = mixer.reverb;
 	if (reverb) {
 		// The vanilla reverb effect outputs a mono sound from four sources:
@@ -94,15 +94,15 @@ void SampleMixer (SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerF
 	for (int i = 0; i < numChans; i++, chan = chan[1 .. $]) {
 		const wav = chan[0].wav;
 
-		if (TickEnvelope(&chan[0], wav)) {
-			GenerateAudio(*mixer, chan[0], wav, outBuffer, samplesPerFrame, divFreq);
+		if (TickEnvelope(chan[0], wav)) {
+			GenerateAudio(mixer, chan[0], wav, outBuffer, samplesPerFrame, divFreq);
 		}
 	}
 }
 
 // Returns 1 if channel is still active after moving envelope forward a frame
 //__attribute__((target("thumb")))
-private uint TickEnvelope(SoundChannel *chan, const Wave wav) @safe pure {
+private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 	// MP2K envelope shape
 	//                                                                 |
 	// (linear)^                                                       |
@@ -114,7 +114,7 @@ private uint TickEnvelope(SoundChannel *chan, const Wave wav) @safe pure {
 	//   /                 Release (exp) ''--..|\                      |
 	//  /                                        \                     |
 
-	ubyte status = chan.statusFlags;
+	const status = chan.statusFlags;
 	if ((status & 0xC7) == 0) {
 		return 0;
 	}
@@ -209,13 +209,13 @@ private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 	chan.envelopeVolumeLeft = chan.leftVolume * v / 256U;
 
 	int loopLen = 0;
-	const(byte)* loopStart;
+	const(byte)[] loopStart;
 	if (chan.statusFlags & 0x10) {
-		loopStart = &wav.sample[wav.header.loopStart];
+		loopStart = wav.sample[wav.header.loopStart .. $];
 		loopLen = wav.header.size - wav.header.loopStart;
 	}
 	int samplesLeftInWav = chan.count;
-	const(byte)* currentPointer = &chan.currentPointer[0];
+	const(byte)[] currentPointer = chan.currentPointer;
 	int envR = chan.envelopeVolumeRight;
 	int envL = chan.envelopeVolumeLeft;
 	/*if (chan.type & 8) {
@@ -248,7 +248,7 @@ private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 	}
 	short b = currentPointer[0];
 	short m = cast(short)(currentPointer[1] - b);
-	currentPointer += 1;
+	currentPointer = currentPointer[1 .. $];
 
 	for (ushort i = 0; i < samplesPerFrame; i++, outBuffer = outBuffer[1 .. $]) {
 		// Use linear interpolation to calculate a value between the currentPointer sample in the wav
@@ -274,7 +274,7 @@ private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 					}
 					b = currentPointer[newCoarsePos];
 					m = cast(short)(currentPointer[newCoarsePos + 1] - b);
-					currentPointer += newCoarsePos + 1;
+					currentPointer = currentPointer[newCoarsePos + 1 .. $];
 				} else {
 					chan.statusFlags = 0;
 					return;
@@ -282,13 +282,13 @@ private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 			} else {
 				b = currentPointer[newCoarsePos - 1];
 				m = cast(short)(currentPointer[newCoarsePos] - b);
-				currentPointer += newCoarsePos;
+				currentPointer = currentPointer[newCoarsePos .. $];
 			}
 		}
 	}
 
 	chan.fw = finePos;
 	chan.count = samplesLeftInWav;
-	chan.currentPointer = (currentPointer - 1)[0 .. size_t.max];
+	chan.currentPointer = (currentPointer.ptr - 1)[0 .. size_t.max];
 	//}
 }

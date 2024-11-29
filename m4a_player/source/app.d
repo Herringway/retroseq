@@ -80,7 +80,7 @@ extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
 		return;
 	}
 	try {
-		RunMixerFrame(cast(M4APlayer*)user, cast(float[2][])buf[0 .. bufSize]);
+		RunMixerFrame(*cast(M4APlayer*)user, cast(float[2][])buf[0 .. bufSize]);
 	} catch (Throwable e) {
 		assumeWontThrow(writeln(e));
 		done = true;
