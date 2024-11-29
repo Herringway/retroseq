@@ -38,6 +38,19 @@ struct PxToneSong {
 		desc.set_file_r(fd);
 		read(desc);
 	}
+	static bool detect(ubyte[] buffer) @safe {
+		PxToneSong tmpSong;
+		pxtnDescriptor desc;
+		desc.set_memory_r(buffer);
+		_enum_FMTVER fmt_ver;
+		ushort exe_ver;
+		try {
+			tmpSong._ReadVersion(desc, fmt_ver, exe_ver);
+		} catch(Exception) {
+			return false;
+		}
+		return true;
+	}
 	void clear() nothrow @safe {
 		text.set_name_buf("");
 		text.set_comment_buf("");
