@@ -27,3 +27,5 @@ songs
 *.ptcop
 *.pttune
 pixtone.tbl
+*.spc
+dump/
