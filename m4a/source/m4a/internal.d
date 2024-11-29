@@ -309,7 +309,6 @@ struct SongHeader {
 	ubyte priority;
 	ubyte reverb;
 	RelativePointer!(ToneData, uint) instrument;
-	RelativePointer!(ubyte, uint)[1] part;
 }
 
 enum MPT_FLG_VOLSET = 0x01;
@@ -396,7 +395,7 @@ struct MusicPlayerInfo {
 }
 
 
-struct Song {
+struct SongPointer {
 	RelativePointer!(SongHeader, uint) header;
 	ushort ms;
 	ushort me;

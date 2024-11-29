@@ -17,7 +17,7 @@ void SoundMainBTM(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) @saf
 
 // Removes chan from the doubly-linked list of channels associated with chan.track.
 // Gonna rename this to like "FreeChannel" or something, similar to VGMS
-void MP2KClearChain(ref SoundChannel chan) @system pure {
+void MP2KClearChain(ref SoundChannel chan) @safe pure {
 	MusicPlayerTrack *track = chan.track;
 	if (chan.track == null) {
 		return;
