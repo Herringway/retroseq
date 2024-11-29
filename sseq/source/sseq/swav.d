@@ -20,7 +20,6 @@ struct SWAV
 short[] decode(const(ubyte)[] origData, ref SWAV.Header header) @safe {
 	uint size = (header.loopOffset + header.nonLoopLength) * 4;
 	short[] data;
-	import std.logger; debug tracef("%s", header.waveType);
 	// Convert data accordingly
 	if (!header.waveType)
 	{

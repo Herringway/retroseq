@@ -40,7 +40,7 @@ struct Track
 {
 	byte trackId = -1;
 
-	ubyte[TS_BITS] state;
+	ubyte[TrackState.max + 1] state;
 	ubyte num, prio;
 
 	const(ubyte)[] trackData;
@@ -66,7 +66,7 @@ struct Track
 	ubyte modType, modSpeed, modDepth, modRange;
 	ushort modDelay;
 
-	ubyte[TUF_BITS] updateFlags;
+	ubyte[TrackUpdateFlags.max + 1] updateFlags;
 
 	void Init(ubyte handle, const(ubyte)[] dataPos, int n) @safe {
 		this.trackId = handle;
@@ -105,8 +105,8 @@ struct Track
 	}
 	void ClearState() @safe {
 		this.state = false;
-		this.state[TS_ALLOCBIT] = true;
-		this.state[TS_NOTEWAIT] = true;
+		this.state[TrackState.alloc] = true;
+		this.state[TrackState.noteWait] = true;
 		this.prio = 64;
 
 		this.trackDataCurrent = this.trackData;

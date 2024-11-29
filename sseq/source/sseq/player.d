@@ -74,7 +74,7 @@ struct Player
 			for (int j = 0; j < 16; ++j)
 			{
 				Channel* chn = &this.channels[j];
-				if (chn.state != CS_NONE && chn.trackId == trackId)
+				if (chn.state != ChannelState.none && chn.trackId == trackId)
 				{
 					if (bKillSound)
 						chn.Kill();
@@ -85,19 +85,17 @@ struct Player
 		}
 		this.FreeTracks();
 	}
-	int ChannelAlloc(int type, int priority) @safe {
-
-		static immutable ubyte[] pcmChnArray = [ 4, 5, 6, 7, 2, 0, 3, 1, 8, 9, 10, 11, 14, 12, 15, 13 ];
-		static immutable ubyte[] psgChnArray = [ 8, 9, 10, 11, 12, 13 ];
-		static immutable ubyte[] noiseChnArray = [ 14, 15 ];
-		static immutable ubyte[] arraySizes = [ pcmChnArray.length, psgChnArray.length, noiseChnArray.length ];
-		static immutable ubyte[][] arrayArray = [ pcmChnArray, psgChnArray, noiseChnArray ];
+	int ChannelAlloc(ChannelType type, int priority) @safe {
+		static immutable ubyte[][] arrayArray = [
+			ChannelType.pcm: [ 4, 5, 6, 7, 2, 0, 3, 1, 8, 9, 10, 11, 14, 12, 15, 13 ],
+			ChannelType.psg: [ 8, 9, 10, 11, 12, 13 ],
+			ChannelType.noise: [ 14, 15 ],
+		];
 
 		auto chnArray = arrayArray[type];
-		int arraySize = arraySizes[type];
 
 		int curChnNo = -1;
-		for (int i = 0; i < arraySize; ++i)
+		for (int i = 0; i < chnArray.length; ++i)
 		{
 			int thisChnNo = chnArray[i];
 			Channel* thisChn = &this.channels[thisChnNo];
@@ -125,10 +123,10 @@ struct Player
 		for (int i = 0; i < FSS_MAXTRACKS; ++i)
 		{
 			Track* thisTrk = &this.tracks[i];
-			if (!thisTrk.state[TS_ALLOCBIT])
+			if (!thisTrk.state[TrackState.alloc])
 			{
 				thisTrk.Zero();
-				thisTrk.state[TS_ALLOCBIT] = true;
+				thisTrk.state[TrackState.alloc] = true;
 				thisTrk.updateFlags = false;
 				return i;
 			}
@@ -148,10 +146,10 @@ struct Player
 	void runTrack(int trackID) @safe {
 		auto track = &this.tracks[trackID];
 		// Indicate "heartbeat" for this track
-		track.updateFlags[TUF_LEN] = true;
+		track.updateFlags[TrackUpdateFlags.len] = true;
 
 		// Exit if the track has already ended
-		if (track.state[TS_END])
+		if (track.state[TrackState.end])
 			return;
 
 		if (track.wait)
@@ -174,9 +172,9 @@ struct Player
 				int key = cmd + track.transpose;
 				int vel = track.overriding.val(track.trackDataCurrent, &read8, true);
 				int len = track.overriding.val(track.trackDataCurrent, &readvl);
-				if (track.state[TS_NOTEWAIT])
+				if (track.state[TrackState.noteWait])
 					track.wait = len;
-				if (track.state[TS_TIEBIT])
+				if (track.state[TrackState.tie])
 					NoteOnTie(*track, key, vel);
 				else
 					NoteOn(*track, key, vel, len);
@@ -232,18 +230,18 @@ struct Player
 
 					case SseqCommand.SSEQ_CMD_PAN:
 						track.pan = cast(byte)(track.overriding.val(track.trackDataCurrent, &read8) - 64);
-						track.updateFlags[TUF_PAN] = true;
+						track.updateFlags[TrackUpdateFlags.pan] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_VOL:
 						track.vol = cast(ubyte)track.overriding.val(track.trackDataCurrent, &read8);
-						track.updateFlags[TUF_VOL] = true;
+						track.updateFlags[TrackUpdateFlags.volume] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_MASTERVOL:
 						this.masterVol = cast(short)Cnv_Sust(track.overriding.val(track.trackDataCurrent, &read8));
 						for (ubyte i = 0; i < this.nTracks; ++i)
-							this.tracks[this.trackIds[i]].updateFlags[TUF_VOL] = true;
+							this.tracks[this.trackIds[i]].updateFlags[TrackUpdateFlags.volume] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_PRIO:
@@ -252,17 +250,17 @@ struct Player
 						break;
 
 					case SseqCommand.SSEQ_CMD_NOTEWAIT:
-						track.state[TS_NOTEWAIT] = !!read8(track.trackDataCurrent);
+						track.state[TrackState.noteWait] = !!read8(track.trackDataCurrent);
 						break;
 
 					case SseqCommand.SSEQ_CMD_TIE:
-						track.state[TS_TIEBIT] = !!read8(track.trackDataCurrent);
+						track.state[TrackState.tie] = !!read8(track.trackDataCurrent);
 						ReleaseAllNotes(*track);
 						break;
 
 					case SseqCommand.SSEQ_CMD_EXPR:
 						track.expr = cast(ubyte)track.overriding.val(track.trackDataCurrent, &read8);
-						track.updateFlags[TUF_VOL] = true;
+						track.updateFlags[TrackUpdateFlags.volume] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_TEMPO:
@@ -270,7 +268,7 @@ struct Player
 						break;
 
 					case SseqCommand.SSEQ_CMD_END:
-						track.state[TS_END] = true;
+						track.state[TrackState.end] = true;
 						return;
 
 					case SseqCommand.SSEQ_CMD_LOOPSTART:
@@ -305,12 +303,12 @@ struct Player
 
 					case SseqCommand.SSEQ_CMD_PITCHBEND:
 						track.pitchBend = cast(byte)track.overriding.val(track.trackDataCurrent, &read8);
-						track.updateFlags[TUF_TIMER] = true;
+						track.updateFlags[TrackUpdateFlags.timer] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_PITCHBENDRANGE:
 						track.pitchBendRange = cast(ubyte)read8(track.trackDataCurrent);
-						track.updateFlags[TUF_TIMER] = true;
+						track.updateFlags[TrackUpdateFlags.timer] = true;
 						break;
 
 					//-----------------------------------------------------------------
@@ -339,12 +337,12 @@ struct Player
 
 					case SseqCommand.SSEQ_CMD_PORTAKEY:
 						track.portaKey = cast(ubyte)(read8(track.trackDataCurrent) + track.transpose);
-						track.state[TS_PORTABIT] = true;
+						track.state[TrackState.porta] = true;
 						// Update here?
 						break;
 
 					case SseqCommand.SSEQ_CMD_PORTAFLAG:
-						track.state[TS_PORTABIT] = !!read8(track.trackDataCurrent);
+						track.state[TrackState.porta] = !!read8(track.trackDataCurrent);
 						// Update here?
 						break;
 
@@ -364,27 +362,27 @@ struct Player
 
 					case SseqCommand.SSEQ_CMD_MODDEPTH:
 						track.modDepth = cast(ubyte)track.overriding.val(track.trackDataCurrent, &read8);
-						track.updateFlags[TUF_MOD] = true;
+						track.updateFlags[TrackUpdateFlags.mod] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_MODSPEED:
 						track.modSpeed = cast(ubyte)track.overriding.val(track.trackDataCurrent, &read8);
-						track.updateFlags[TUF_MOD] = true;
+						track.updateFlags[TrackUpdateFlags.mod] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_MODTYPE:
 						track.modType = cast(ubyte)read8(track.trackDataCurrent);
-						track.updateFlags[TUF_MOD] = true;
+						track.updateFlags[TrackUpdateFlags.mod] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_MODRANGE:
 						track.modRange = cast(ubyte)read8(track.trackDataCurrent);
-						track.updateFlags[TUF_MOD] = true;
+						track.updateFlags[TrackUpdateFlags.mod] = true;
 						break;
 
 					case SseqCommand.SSEQ_CMD_MODDELAY:
 						track.modDelay = cast(ushort)track.overriding.val(track.trackDataCurrent, &read16);
-						track.updateFlags[TUF_MOD] = true;
+						track.updateFlags[TrackUpdateFlags.mod] = true;
 						break;
 
 					//-----------------------------------------------------------------
@@ -493,33 +491,33 @@ struct Player
 		//if (trackFlags.none())
 		//	return;
 
-		if (trackFlags[TUF_LEN])
+		if (trackFlags[TrackUpdateFlags.len])
 		{
 			int st = channel.state;
-			if (st > CS_START)
+			if (st > ChannelState.start)
 			{
-				if (st < CS_RELEASE && !--channel.noteLength)
+				if (st < ChannelState.release && !--channel.noteLength)
 					channel.Release();
 				if (channel.manualSweep && channel.sweepCnt < channel.sweepLen)
 					++channel.sweepCnt;
 			}
 		}
-		if (trackFlags[TUF_VOL])
+		if (trackFlags[TrackUpdateFlags.volume])
 		{
 			this.UpdateVol(*trk, channel);
-			channel.flags[CF_UPDVOL] = true;
+			channel.flags[ChannelFlags.updateVolume] = true;
 		}
-		if (trackFlags[TUF_PAN])
+		if (trackFlags[TrackUpdateFlags.pan])
 		{
 			this.UpdatePan(*trk, channel);
-			channel.flags[CF_UPDPAN] = true;
+			channel.flags[ChannelFlags.updatePan] = true;
 		}
-		if (trackFlags[TUF_TIMER])
+		if (trackFlags[TrackUpdateFlags.timer])
 		{
 			this.UpdateTune(*trk, channel);
-			channel.flags[CF_UPDTMR] = true;
+			channel.flags[ChannelFlags.updateTimer] = true;
 		}
-		if (trackFlags[TUF_MOD])
+		if (trackFlags[TrackUpdateFlags.mod])
 		{
 			int oldType = channel.modType;
 			int newType = trk.modType;
@@ -535,7 +533,7 @@ struct Player
 		for (int i = 0; i < 16; ++i)
 		{
 			Channel* chn = &this.channels[i];
-			if (chn.state > CS_NONE && chn.trackId == track.trackId && chn.state != CS_RELEASE)
+			if (chn.state > ChannelState.none && chn.trackId == track.trackId && chn.state != ChannelState.release)
 				chn.Release();
 		}
 	}
@@ -591,7 +589,7 @@ struct Player
 				noteDef = &instrument.ranges[0];
 			if (fRecord == 3)
 			{
-				nCh = this.ChannelAlloc(TYPE_NOISE, track.prio);
+				nCh = this.ChannelAlloc(ChannelType.noise, track.prio);
 				if (nCh < 0)
 					return -1;
 				chn = &this.channels[nCh];
@@ -599,7 +597,7 @@ struct Player
 			}
 			else
 			{
-				nCh = this.ChannelAlloc(TYPE_PSG, track.prio);
+				nCh = this.ChannelAlloc(ChannelType.psg, track.prio);
 				if (nCh < 0)
 					return -1;
 				chn = &this.channels[nCh];
@@ -612,7 +610,7 @@ struct Player
 
 		if (bIsPCM)
 		{
-			nCh = this.ChannelAlloc(TYPE_PCM, track.prio);
+			nCh = this.ChannelAlloc(ChannelType.pcm, track.prio);
 			if (nCh < 0)
 				return -1;
 			chn = &this.channels[nCh];
@@ -626,7 +624,7 @@ struct Player
 			chn.reg.samplePosition = -3;
 		}
 
-		chn.state = CS_START;
+		chn.state = ChannelState.start;
 		chn.trackId = track.trackId;
 		chn.flags = false;
 		chn.prio = track.prio;
@@ -661,7 +659,7 @@ struct Player
 		for (i = 0; i < 16; ++i)
 		{
 			chn = &this.channels[i];
-			if (chn.state > CS_NONE && chn.trackId == track.trackId && chn.state != CS_RELEASE)
+			if (chn.state > ChannelState.none && chn.trackId == track.trackId && chn.state != ChannelState.release)
 				break;
 		}
 
@@ -683,7 +681,7 @@ struct Player
 		this.UpdatePorta(track, *chn);
 
 		track.portaKey = cast(ubyte)key;
-		chn.flags[CF_UPDTMR] = true;
+		chn.flags[ChannelFlags.updateTimer] = true;
 
 		return i;
 	}
@@ -714,7 +712,7 @@ struct Player
 			{
 				Channel* chn = &this.channels[i];
 
-				if (chn.state > CS_NONE)
+				if (chn.state > ChannelState.none)
 				{
 					int sample = GenerateSample(*chn);
 					chn.IncrementSample();
@@ -772,7 +770,7 @@ struct Player
 		channel.manualSweep = false;
 		channel.sweepPitch = trk.sweepPitch;
 		channel.sweepCnt = 0;
-		if (!trk.state[TS_PORTABIT])
+		if (!trk.state[TrackState.porta])
 		{
 			channel.sweepLen = 0;
 			return;
@@ -796,35 +794,35 @@ struct Player
 
 	void UpdateChannel(ref Channel channel) @safe {
 		// Kill active channels that aren't physically active
-		if (channel.state > CS_START && !channel.reg.enable)
+		if (channel.state > ChannelState.start && !channel.reg.enable)
 		{
 			channel.Kill();
 			return;
 		}
 
-		bool bNotInSustain = channel.state != CS_SUSTAIN;
-		bool bInStart = channel.state == CS_START;
+		bool bNotInSustain = channel.state != ChannelState.sustain;
+		bool bInStart = channel.state == ChannelState.start;
 		bool bPitchSweep = channel.sweepPitch && channel.sweepLen && channel.sweepCnt <= channel.sweepLen;
 		bool bModulation = !!channel.modDepth;
-		bool bVolNeedUpdate = channel.flags[CF_UPDVOL] || bNotInSustain;
-		bool bPanNeedUpdate = channel.flags[CF_UPDPAN] || bInStart;
-		bool bTmrNeedUpdate = channel.flags[CF_UPDTMR] || bInStart || bPitchSweep;
+		bool bVolNeedUpdate = channel.flags[ChannelFlags.updateVolume] || bNotInSustain;
+		bool bPanNeedUpdate = channel.flags[ChannelFlags.updatePan] || bInStart;
+		bool bTmrNeedUpdate = channel.flags[ChannelFlags.updateTimer] || bInStart || bPitchSweep;
 		int modParam = 0;
 
-		switch (channel.state)
+		final switch (channel.state)
 		{
-			case CS_NONE:
+			case ChannelState.none:
 				return;
-			case CS_START:
+			case ChannelState.start:
 				channel.reg.ClearControlRegister();
 				channel.reg.source = channel.tempReg.SOURCE;
 				channel.reg.loopStart = channel.tempReg.REPEAT_POINT;
 				channel.reg.length = channel.tempReg.LENGTH;
 				channel.reg.totalLength = channel.reg.loopStart + channel.reg.length;
 				channel.ampl = AMPL_THRESHOLD;
-				channel.state = CS_ATTACK;
+				channel.state = ChannelState.attack;
 				goto case;
-			case CS_ATTACK:
+			case ChannelState.attack:
 			{
 				int newAmpl = channel.ampl;
 				int oldAmpl = channel.ampl >> 7;
@@ -833,21 +831,21 @@ struct Player
 				while ((newAmpl >> 7) == oldAmpl);
 				channel.ampl = newAmpl;
 				if (!channel.ampl)
-					channel.state = CS_DECAY;
+					channel.state = ChannelState.decay;
 				break;
 			}
-			case CS_DECAY:
+			case ChannelState.decay:
 			{
 				channel.ampl -= cast(int)(channel.decayRate);
 				int sustLvl = Cnv_Sust(channel.sustainLvl) << 7;
 				if (channel.ampl <= sustLvl)
 				{
 					channel.ampl = sustLvl;
-					channel.state = CS_SUSTAIN;
+					channel.state = ChannelState.sustain;
 				}
 				break;
 			}
-			case CS_RELEASE:
+			case ChannelState.release:
 				channel.ampl -= cast(int)(channel.releaseRate);
 				if (channel.ampl <= AMPL_THRESHOLD)
 				{
@@ -855,7 +853,8 @@ struct Player
 					return;
 				}
 				break;
-			default: break;
+			case ChannelState.sustain:
+				break;
 		}
 
 		if (bModulation && channel.modDelayCnt < channel.modDelay)
@@ -914,7 +913,7 @@ struct Player
 				tmr = Timer_Adjust(tmr, totalAdj);
 			channel.reg.timer = cast(ushort)-tmr;
 			channel.reg.sampleIncrease = (ARM7_CLOCK / cast(double)(this.sampleRate * 2)) / (0x10000 - channel.reg.timer);
-			channel.flags[CF_UPDTMR] = false;
+			channel.flags[ChannelFlags.updateTimer] = false;
 		}
 
 		if (bVolNeedUpdate || bPanNeedUpdate)
@@ -942,7 +941,7 @@ struct Player
 
 				channel.vol = cast(ushort)(((cr & SOUND_VOL(0x7F)) << 4) >> calcVolDivShift((cr & SOUND_VOLDIV(3)) >> 8));
 
-				channel.flags[CF_UPDVOL] = false;
+				channel.flags[ChannelFlags.updateVolume] = false;
 			}
 
 			if (bPanNeedUpdate)
@@ -956,7 +955,7 @@ struct Player
 
 				cr &= ~SOUND_PAN(0x7F);
 				cr |= SOUND_PAN(realPan);
-				channel.flags[CF_UPDPAN] = false;
+				channel.flags[ChannelFlags.updatePan] = false;
 			}
 
 			channel.tempReg.CR = cr;
@@ -1279,11 +1278,11 @@ private int getModFlag(int type) @safe
 	switch (type)
 	{
 		case 0:
-			return CF_UPDTMR;
+			return ChannelFlags.updateTimer;
 		case 1:
-			return CF_UPDVOL;
+			return ChannelFlags.updateVolume;
 		case 2:
-			return CF_UPDPAN;
+			return ChannelFlags.updatePan;
 		default:
 			return 0;
 	}

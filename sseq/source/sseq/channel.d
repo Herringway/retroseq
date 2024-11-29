@@ -82,13 +82,12 @@ struct Channel
 	byte chnId = -1;
 
 	TempSndReg tempReg;
-	ubyte state = CS_NONE;
+	ChannelState state = ChannelState.none;
 	byte trackId = -1; // -1 = none
 	ubyte prio;
 	bool manualSweep;
 
-	//std::bitset<CF_BITS> flags;
-	ubyte[CF_BITS] flags;
+	ubyte[ChannelFlags.max + 1] flags;
 	byte pan; // -64 .. 63
 	short extAmpl;
 
@@ -137,10 +136,10 @@ struct Channel
 	void Release() @safe {
 		this.noteLength = -1;
 		this.prio = 1;
-		this.state = CS_RELEASE;
+		this.state = ChannelState.release;
 	}
 	void Kill() @safe {
-		this.state = CS_NONE;
+		this.state = ChannelState.none;
 		this.trackId = -1;
 		this.prio = 0;
 		this.reg.ClearControlRegister();
