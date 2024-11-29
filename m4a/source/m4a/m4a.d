@@ -895,20 +895,14 @@ uint cgbCalcFreqFunc(ubyte chanNum, ubyte key, ubyte fineAdjust) @safe pure {
 
 
 void m4aMPlayTempoControl(MusicPlayerInfo *mplayInfo, ushort tempo) @safe pure {
-		mplayInfo.tempoScale = tempo;
-		mplayInfo.tempoInterval = cast(ushort)((mplayInfo.tempoRawBPM * mplayInfo.tempoScale) >> 8);
+	mplayInfo.tempoScale = tempo;
+	mplayInfo.tempoInterval = cast(ushort)((mplayInfo.tempoRawBPM * mplayInfo.tempoScale) >> 8);
 }
 
-void m4aMPlayVolumeControl(MusicPlayerInfo *mplayInfo, ushort trackBits, ushort volume) @system pure {
-	int i;
-	uint bit;
-	MusicPlayerTrack *track;
+void m4aMPlayVolumeControl(MusicPlayerInfo *mplayInfo, ushort trackBits, ushort volume) @safe pure {
+	uint bit = 1;
 
-	i = mplayInfo.trackCount;
-	track = &mplayInfo.tracks[0];
-	bit = 1;
-
-	while (i > 0) {
+	foreach (ref track; mplayInfo.tracks[0 .. mplayInfo.trackCount]) {
 		if (trackBits & bit) {
 			if (track.flags & MPT_FLG_EXIST) {
 				track.volPublic = cast(ubyte)(volume / 4);
@@ -916,22 +910,14 @@ void m4aMPlayVolumeControl(MusicPlayerInfo *mplayInfo, ushort trackBits, ushort 
 			}
 		}
 
-		i--;
-		track++;
 		bit <<= 1;
 	}
 }
 
-void m4aMPlayPitchControl(MusicPlayerInfo *mplayInfo, ushort trackBits, short pitch) @system pure {
-	int i;
-	uint bit;
-	MusicPlayerTrack *track;
+void m4aMPlayPitchControl(MusicPlayerInfo *mplayInfo, ushort trackBits, short pitch) @safe pure {
+	uint bit = 1;
 
-	i = mplayInfo.trackCount;
-	track = &mplayInfo.tracks[0];
-	bit = 1;
-
-	while (i > 0) {
+	foreach (ref track; mplayInfo.tracks[0 .. mplayInfo.trackCount]) {
 		if (trackBits & bit) {
 			if (track.flags & MPT_FLG_EXIST) {
 				track.keyShiftPublic = pitch >> 8;
@@ -940,22 +926,14 @@ void m4aMPlayPitchControl(MusicPlayerInfo *mplayInfo, ushort trackBits, short pi
 			}
 		}
 
-		i--;
-		track++;
 		bit <<= 1;
 	}
 }
 
-void m4aMPlayPanpotControl(MusicPlayerInfo *mplayInfo, ushort trackBits, byte pan) @system pure {
-	int i;
-	uint bit;
-	MusicPlayerTrack *track;
+void m4aMPlayPanpotControl(MusicPlayerInfo *mplayInfo, ushort trackBits, byte pan) @safe pure {
+	uint bit = 1;
 
-	i = mplayInfo.trackCount;
-	track = &mplayInfo.tracks[0];
-	bit = 1;
-
-	while (i > 0) {
+	foreach (ref track; mplayInfo.tracks[0 .. mplayInfo.trackCount]) {
 		if (trackBits & bit) {
 			if (track.flags & MPT_FLG_EXIST) {
 				track.panPublic = pan;
@@ -963,8 +941,6 @@ void m4aMPlayPanpotControl(MusicPlayerInfo *mplayInfo, ushort trackBits, byte pa
 			}
 		}
 
-		i--;
-		track++;
 		bit <<= 1;
 	}
 }
@@ -980,54 +956,38 @@ void ClearModM(ref MusicPlayerTrack track) @safe pure {
 	}
 }
 
-void m4aMPlayModDepthSet(MusicPlayerInfo *mplayInfo, ushort trackBits, ubyte modDepth) @system pure {
-	int i;
-	uint bit;
-	MusicPlayerTrack *track;
+void m4aMPlayModDepthSet(MusicPlayerInfo *mplayInfo, ushort trackBits, ubyte modDepth) @safe pure {
+	uint bit = 1;
 
-	i = mplayInfo.trackCount;
-	track = &mplayInfo.tracks[0];
-	bit = 1;
-
-	while (i > 0) {
+	foreach (ref track; mplayInfo.tracks[0 .. mplayInfo.trackCount]) {
 		if (trackBits & bit) {
 			if (track.flags & MPT_FLG_EXIST) {
 				track.modDepth = modDepth;
 
 				if (!track.modDepth) {
-					ClearModM(*track);
+					ClearModM(track);
 				}
 			}
 		}
 
-		i--;
-		track++;
 		bit <<= 1;
 	}
 }
 
-void m4aMPlayLFOSpeedSet(MusicPlayerInfo *mplayInfo, ushort trackBits, ubyte lfoSpeed) @system pure {
-	int i;
-	uint bit;
-	MusicPlayerTrack *track;
+void m4aMPlayLFOSpeedSet(MusicPlayerInfo *mplayInfo, ushort trackBits, ubyte lfoSpeed) @safe pure {
+	uint bit = 1;
 
-	i = mplayInfo.trackCount;
-	track = &mplayInfo.tracks[0];
-	bit = 1;
-
-	while (i > 0) {
+	foreach (ref track; mplayInfo.tracks[0 .. mplayInfo.trackCount]) {
 		if (trackBits & bit) {
 			if (track.flags & MPT_FLG_EXIST) {
 				track.lfoSpeed = lfoSpeed;
 
 				if (!track.lfoSpeed) {
-					ClearModM(*track);
+					ClearModM(track);
 				}
 			}
 		}
 
-		i--;
-		track++;
 		bit <<= 1;
 	}
 }
