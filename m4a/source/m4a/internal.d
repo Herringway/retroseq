@@ -59,6 +59,11 @@ enum SOUND_MODE_DA_BIT_6 = 0x00B00000;
 enum SOUND_MODE_DA_BIT = 0x00B00000;
 enum SOUND_MODE_DA_BIT_SHIFT = 20;
 
+
+struct Wave {
+	WaveData header;
+	const(byte)[] sample;
+}
 struct WaveData {
 	align(1):
 	ushort type;
@@ -67,7 +72,6 @@ struct WaveData {
 	uint freq;
 	uint loopStart;
 	uint size; // number of samples
-	byte[1] data; // samples
 }
 
 enum TONEDATA_TYPE_CGB = 0x07;
@@ -168,10 +172,10 @@ struct SoundChannel {
 		}
 	}
 	uint freq;
-	const(WaveData)* wav;
+	Wave wav;
 	byte[16] gbWav;
 	uint squareNoiseConfig;
-	const(byte)* currentPointer;
+	const(byte)[] currentPointer;
 	MusicPlayerTrack *track;
 	SoundChannel* prevChannelPointer;
 	SoundChannel* nextChannelPointer;

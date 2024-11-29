@@ -491,7 +491,9 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
 	chan.rhythmPan = forcedPan;
 	chan.type = instrument.type;
 	if (cgbType == 0) {
-		chan.wav = instrument.wav.toAbsolute(player.musicData);
+		const header = instrument.wav.toAbsoluteArray(player.musicData);
+		const waveData = (cast(const(byte)[])header)[WaveData.sizeof .. WaveData.sizeof + header[0].size];
+		chan.wav = Wave(header[0], waveData);
 	} else if (cgbType == 3) {
 		chan.gbWav = instrument.cgbSample.toAbsoluteArray(player.musicData)[0];
 	} else {

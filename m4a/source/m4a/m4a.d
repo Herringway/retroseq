@@ -236,27 +236,15 @@ struct M4APlayer {
 
 		soundInfo.mp2kEventFuncTable = gMPlayJumpTable;
 	}
-	void SoundClear() @system {
+	void SoundClear() @safe {
 		int i = MAX_DIRECTSOUND_CHANNELS;
-		SoundChannel* chan = &soundInfo.chans[0];
-
-		while (i > 0) {
+		foreach (ref chan; soundInfo.chans[0 .. MAX_DIRECTSOUND_CHANNELS]) {
 			chan.statusFlags = 0;
-			i--;
-			chan++;
 		}
 
-		chan = &soundInfo.cgbChans[0];
-
-		if (chan) {
-			i = 1;
-
-			while (i <= 4) {
-				soundInfo.cgbNoteOffFunc(this, cast(ubyte)i);
-				chan.statusFlags = 0;
-				i++;
-				chan++;
-			}
+		foreach (idx, ref chan; soundInfo.cgbChans) {
+			soundInfo.cgbNoteOffFunc(this, cast(ubyte)(idx + 1));
+			chan.statusFlags = 0;
 		}
 	}
 
@@ -348,12 +336,10 @@ struct M4APlayer {
 		}
 	}
 
-	void FadeOutBody(ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack) @system pure {
+	void FadeOutBody(ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack) @safe pure {
 		return FadeOutBody(mplayInfo);
 	}
-	void FadeOutBody(ref MusicPlayerInfo mplayInfo) @system pure {
-		int i;
-		MusicPlayerTrack *track;
+	void FadeOutBody(ref MusicPlayerInfo mplayInfo) @safe pure {
 		ushort fadeVolume;
 
 		if (mplayInfo.fadeInterval == 0) {
@@ -372,13 +358,10 @@ struct M4APlayer {
 			}
 		} else {
 			if ((short)(mplayInfo.fadeVolume -= (4 << FADE_VOL_SHIFT)) <= 0) {
-				i = mplayInfo.trackCount;
-				track = &mplayInfo.tracks[0];
-
-				while (i > 0) {
+				foreach (ref track; mplayInfo.tracks[0 .. mplayInfo.trackCount]) {
 					uint val;
 
-					TrackStop(this, mplayInfo, *track);
+					TrackStop(this, mplayInfo, track);
 
 					val = TEMPORARY_FADE;
 					fadeVolume = mplayInfo.fadeVolume;
@@ -387,9 +370,6 @@ struct M4APlayer {
 					if (!val) {
 						track.flags = 0;
 					}
-
-					i--;
-					track++;
 				}
 
 				if (mplayInfo.fadeVolume & TEMPORARY_FADE) {
@@ -403,19 +383,13 @@ struct M4APlayer {
 			}
 		}
 
-		i = mplayInfo.trackCount;
-		track = &mplayInfo.tracks[0];
-
-		while (i > 0) {
+		foreach (ref track; mplayInfo.tracks[0 .. mplayInfo.trackCount]) {
 			if (track.flags & MPT_FLG_EXIST) {
 				fadeVolume = mplayInfo.fadeVolume;
 
 				track.volPublic = cast(ubyte)(fadeVolume >> FADE_VOL_SHIFT);
 				track.flags |= MPT_FLG_VOLCHG;
 			}
-
-			i--;
-			track++;
 		}
 	}
 	void cgbNoteOffFunc(ubyte chanNum) @safe pure {
@@ -557,9 +531,9 @@ struct M4APlayer {
 							*nrx1ptr = cast(ubyte)((channels.squareNoiseConfig << 6) + channels.length);
 							goto init_env_step_time_dir;
 						case 3:
-							if (&channels.gbWav[0] != channels.currentPointer) {
+							if (channels.gbWav !is channels.currentPointer) {
 								*nrx0ptr = 0x40;
-								channels.currentPointer = &channels.gbWav[0];
+								channels.currentPointer = channels.gbWav;
 								gb.set_wavram(cast(ubyte[])channels.gbWav[]);
 							}
 							*nrx0ptr = 0;
@@ -754,7 +728,7 @@ ushort getOrigSampleRate(ubyte rate) @safe pure {
 	return gPcmSamplesPerVBlankTable[rate];
 }
 
-uint MidiKeyToFreq(const(WaveData)* wav, ubyte key, ubyte fineAdjust) @safe pure {
+uint MidiKeyToFreq(ref Wave wav, ubyte key, ubyte fineAdjust) @safe pure {
 	uint val1;
 	uint val2;
 	uint fineAdjustShifted = fineAdjust << 24;
@@ -770,7 +744,7 @@ uint MidiKeyToFreq(const(WaveData)* wav, ubyte key, ubyte fineAdjust) @safe pure
 	val2 = gScaleTable[key + 1];
 	val2 = gFreqTable[val2 & 0xF] >> (val2 >> 4);
 
-	return umul3232H32(wav.freq, val1 + umul3232H32(val2 - val1, fineAdjustShifted));
+	return umul3232H32(wav.header.freq, val1 + umul3232H32(val2 - val1, fineAdjustShifted));
 }
 
 void MP2K_event_nothing(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) @safe pure {

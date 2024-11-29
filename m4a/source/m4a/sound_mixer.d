@@ -95,14 +95,14 @@ void SampleMixer (SoundMixerState *mixer, uint scanlineLimit, ushort samplesPerF
 		const wav = chan[0].wav;
 
 		if (TickEnvelope(&chan[0], wav)) {
-			GenerateAudio(mixer, &chan[0], wav, outBuffer, samplesPerFrame, divFreq);
+			GenerateAudio(*mixer, chan[0], wav, outBuffer, samplesPerFrame, divFreq);
 		}
 	}
 }
 
 // Returns 1 if channel is still active after moving envelope forward a frame
 //__attribute__((target("thumb")))
-private uint TickEnvelope(SoundChannel *chan, const(WaveData)* wav) @system pure {
+private uint TickEnvelope(SoundChannel *chan, const Wave wav) @safe pure {
 	// MP2K envelope shape
 	//                                                                 |
 	// (linear)^                                                       |
@@ -191,11 +191,11 @@ private uint TickEnvelope(SoundChannel *chan, const(WaveData)* wav) @system pure
 	} else {
 		// Init channel
 		chan.statusFlags = 3;
-		chan.currentPointer = &wav.data[chan.count];
-		chan.count = wav.size - chan.count;
+		chan.currentPointer = wav.sample[chan.count .. $];
+		chan.count = wav.header.size - chan.count;
 		chan.fw = 0;
 		chan.envelopeVolume = 0;
-		if (wav.loopFlags & 0xC0) {
+		if (wav.header.loopFlags & 0xC0) {
 			chan.statusFlags |= 0x10;
 		}
 		goto attack;
@@ -203,7 +203,7 @@ private uint TickEnvelope(SoundChannel *chan, const(WaveData)* wav) @system pure
 }
 
 //__attribute__((target("thumb")))
-private void GenerateAudio(SoundMixerState *mixer, SoundChannel *chan, const(WaveData)* wav, float[2][] outBuffer, ushort samplesPerFrame, float divFreq) pure {
+private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, const Wave wav, float[2][] outBuffer, ushort samplesPerFrame, float divFreq) @system pure {
 	ubyte v = cast(ubyte)(chan.envelopeVolume * (mixer.masterVol + 1) / 16U);
 	chan.envelopeVolumeRight = chan.rightVolume * v / 256U;
 	chan.envelopeVolumeLeft = chan.leftVolume * v / 256U;
@@ -211,11 +211,11 @@ private void GenerateAudio(SoundMixerState *mixer, SoundChannel *chan, const(Wav
 	int loopLen = 0;
 	const(byte)* loopStart;
 	if (chan.statusFlags & 0x10) {
-		loopStart = &wav.data[0] + wav.loopStart;
-		loopLen = wav.size - wav.loopStart;
+		loopStart = &wav.sample[wav.header.loopStart];
+		loopLen = wav.header.size - wav.header.loopStart;
 	}
 	int samplesLeftInWav = chan.count;
-	const(byte)* currentPointer = chan.currentPointer;
+	const(byte)* currentPointer = &chan.currentPointer[0];
 	int envR = chan.envelopeVolumeRight;
 	int envL = chan.envelopeVolumeLeft;
 	/*if (chan.type & 8) {
@@ -289,6 +289,6 @@ private void GenerateAudio(SoundMixerState *mixer, SoundChannel *chan, const(Wav
 
 	chan.fw = finePos;
 	chan.count = samplesLeftInWav;
-	chan.currentPointer = currentPointer - 1;
+	chan.currentPointer = (currentPointer - 1)[0 .. size_t.max];
 	//}
 }
