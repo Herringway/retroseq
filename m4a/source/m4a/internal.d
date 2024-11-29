@@ -14,9 +14,6 @@ struct RelativePointer(Element, Offset) {
 	bool isValid() const @safe pure {
 		return offset >= Base;
 	}
-	const(Element)* toAbsolute(const(void)[] base) inout {
-		return cast(const(Element)*)(&base[offset - Base]);
-	}
 	const(Element)[] toAbsoluteArray(const(ubyte)[] base) {
 		const realOffset = offset - Base;
 		return sliceMax!Element(cast(const(ubyte)[])base, realOffset);
