@@ -409,7 +409,7 @@ struct M4APlayer {
 
 	}
 
-	private int CgbPan(SoundChannel *chan) @safe pure {
+	private int CgbPan(ref SoundChannel chan) @safe pure {
 		uint rightVolume = chan.rightVolume;
 		uint leftVolume = chan.leftVolume;
 
@@ -429,7 +429,7 @@ struct M4APlayer {
 		return 0;
 	}
 
-	void CgbModVol(SoundChannel *chan) @safe pure {
+	void CgbModVol(ref SoundChannel chan) @safe pure {
 		if ((soundInfo.mode & 1) || !CgbPan(chan)) {
 			chan.pan = 0xFF;
 			chan.envelopeGoal = (uint)(chan.rightVolume + chan.leftVolume) >> 4;
@@ -448,9 +448,7 @@ struct M4APlayer {
 		chan.pan &= chan.panMask;
 	}
 
-	void cgbMixerFunc() @system pure {
-		int ch;
-		SoundChannel *channels;
+	void cgbMixerFunc() @safe pure {
 		int envelopeStepTimeAndDir;
 		int prevC15;
 		ubyte *nrx0ptr;
@@ -468,14 +466,14 @@ struct M4APlayer {
 			soundInfo.cgbCounter15 = 14;
 		}
 
-		for (ch = 1, channels = &soundInfo.cgbChans[0]; ch <= 4; ch++, channels++) {
+		foreach (idx, ref channel; soundInfo.cgbChans) {
 			int envelopeVolume, sustainGoal;
-			if (!(channels.statusFlags & SOUND_CHANNEL_SF_ON)) {
+			if (!(channel.statusFlags & SOUND_CHANNEL_SF_ON)) {
 				continue;
 			}
 
 			/* 1. determine hardware channel registers */
-			switch (ch) {
+			switch (idx + 1) {
 				case 1:
 					nrx0ptr = &soundInfo.reg.NR10;
 					nrx1ptr = &soundInfo.reg.NR11;
@@ -510,50 +508,50 @@ struct M4APlayer {
 			envelopeStepTimeAndDir = *nrx2ptr;
 
 			/* 2. calculate envelope volume */
-			if (channels.statusFlags & SOUND_CHANNEL_SF_START) {
-				if (!(channels.statusFlags & SOUND_CHANNEL_SF_STOP)) {
-					channels.statusFlags = SOUND_CHANNEL_SF_ENV_ATTACK;
-					channels.cgbStatus = CGB_CHANNEL_MO_PIT | CGB_CHANNEL_MO_VOL;
-					CgbModVol(channels);
-					switch (ch) {
+			if (channel.statusFlags & SOUND_CHANNEL_SF_START) {
+				if (!(channel.statusFlags & SOUND_CHANNEL_SF_STOP)) {
+					channel.statusFlags = SOUND_CHANNEL_SF_ENV_ATTACK;
+					channel.cgbStatus = CGB_CHANNEL_MO_PIT | CGB_CHANNEL_MO_VOL;
+					CgbModVol(channel);
+					switch (idx + 1) {
 						case 1:
-							*nrx0ptr = channels.sweep;
-							gb.set_sweep(channels.sweep);
+							*nrx0ptr = channel.sweep;
+							gb.set_sweep(channel.sweep);
 
 							goto case;
 						case 2:
-							*nrx1ptr = cast(ubyte)((channels.squareNoiseConfig << 6) + channels.length);
+							*nrx1ptr = cast(ubyte)((channel.squareNoiseConfig << 6) + channel.length);
 							goto init_env_step_time_dir;
 						case 3:
-							if (channels.gbWav !is channels.currentPointer) {
+							if (channel.gbWav !is channel.currentPointer) {
 								*nrx0ptr = 0x40;
-								channels.currentPointer = channels.gbWav;
-								gb.set_wavram(cast(ubyte[])channels.gbWav[]);
+								channel.currentPointer = channel.gbWav;
+								gb.set_wavram(cast(ubyte[])channel.gbWav[]);
 							}
 							*nrx0ptr = 0;
-							*nrx1ptr = channels.length;
-							if (channels.length) {
-								channels.n4 = 0xC0;
+							*nrx1ptr = channel.length;
+							if (channel.length) {
+								channel.n4 = 0xC0;
 							} else {
-								channels.n4 = 0x80;
+								channel.n4 = 0x80;
 							}
 							break;
 						default:
-							*nrx1ptr = channels.length;
-							*nrx3ptr = cast(ubyte)(channels.squareNoiseConfig << 3);
+							*nrx1ptr = channel.length;
+							*nrx3ptr = cast(ubyte)(channel.squareNoiseConfig << 3);
 						init_env_step_time_dir:
-							envelopeStepTimeAndDir = channels.attack + CGB_NRx2_ENV_DIR_INC;
-							if (channels.length) {
-								channels.n4 = 0x40;
+							envelopeStepTimeAndDir = channel.attack + CGB_NRx2_ENV_DIR_INC;
+							if (channel.length) {
+								channel.n4 = 0x40;
 							} else {
-								channels.n4 = 0x00;
+								channel.n4 = 0x00;
 							}
 							break;
 					}
-					gb.set_length(cast(ubyte)(ch - 1), channels.length);
-					channels.envelopeCounter = channels.attack;
-					if (cast(byte)(channels.attack & mask)) {
-						channels.envelopeVolume = 0;
+					gb.set_length(cast(ubyte)(idx), channel.length);
+					channel.envelopeCounter = channel.attack;
+					if (cast(byte)(channel.attack & mask)) {
+						channel.envelopeVolume = 0;
 						goto envelope_step_complete;
 					} else {
 						// skip attack phase if attack is instantaneous (=0)
@@ -562,23 +560,23 @@ struct M4APlayer {
 				} else {
 					goto oscillator_off;
 				}
-			} else if (channels.statusFlags & SOUND_CHANNEL_SF_IEC) {
-				channels.echoLength--;
-				if (cast(byte)(channels.echoLength & mask) <= 0) {
+			} else if (channel.statusFlags & SOUND_CHANNEL_SF_IEC) {
+				channel.echoLength--;
+				if (cast(byte)(channel.echoLength & mask) <= 0) {
 				oscillator_off:
-					cgbNoteOffFunc(cast(ubyte)ch);
-					channels.statusFlags = 0;
+					cgbNoteOffFunc(cast(ubyte)(idx + 1));
+					channel.statusFlags = 0;
 					goto channel_complete;
 				}
 				goto envelope_complete;
 			}
-			else if ((channels.statusFlags & SOUND_CHANNEL_SF_STOP) && (channels.statusFlags & SOUND_CHANNEL_SF_ENV)) {
-				channels.statusFlags &= ~SOUND_CHANNEL_SF_ENV;
-				channels.envelopeCounter = channels.release;
-				if (cast(byte)(channels.release & mask)) {
-					channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
-					if (ch != 3) {
-						envelopeStepTimeAndDir = channels.release | CGB_NRx2_ENV_DIR_DEC;
+			else if ((channel.statusFlags & SOUND_CHANNEL_SF_STOP) && (channel.statusFlags & SOUND_CHANNEL_SF_ENV)) {
+				channel.statusFlags &= ~SOUND_CHANNEL_SF_ENV;
+				channel.envelopeCounter = channel.release;
+				if (cast(byte)(channel.release & mask)) {
+					channel.cgbStatus |= CGB_CHANNEL_MO_VOL;
+					if (idx + 1 != 3) {
+						envelopeStepTimeAndDir = channel.release | CGB_NRx2_ENV_DIR_DEC;
 					}
 					goto envelope_step_complete;
 				} else {
@@ -587,21 +585,21 @@ struct M4APlayer {
 			}
 			else {
 			envelope_step_repeat:
-				if (channels.envelopeCounter == 0) {
-					if (ch == 3) {
-						channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
+				if (channel.envelopeCounter == 0) {
+					if (idx + 1 == 3) {
+						channel.cgbStatus |= CGB_CHANNEL_MO_VOL;
 					}
 
-					CgbModVol(channels);
-					if ((channels.statusFlags & SOUND_CHANNEL_SF_ENV) == SOUND_CHANNEL_SF_ENV_RELEASE) {
-						channels.envelopeVolume--;
-						if (cast(byte)(channels.envelopeVolume & mask) <= 0) {
+					CgbModVol(channel);
+					if ((channel.statusFlags & SOUND_CHANNEL_SF_ENV) == SOUND_CHANNEL_SF_ENV_RELEASE) {
+						channel.envelopeVolume--;
+						if (cast(byte)(channel.envelopeVolume & mask) <= 0) {
 						envelope_pseudoecho_start:
-							channels.envelopeVolume = ((channels.envelopeGoal * channels.echoVolume) + 0xFF) >> 8;
-							if (channels.envelopeVolume) {
-								channels.statusFlags |= SOUND_CHANNEL_SF_IEC;
-								channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
-								if (ch != 3) {
+							channel.envelopeVolume = ((channel.envelopeGoal * channel.echoVolume) + 0xFF) >> 8;
+							if (channel.envelopeVolume) {
+								channel.statusFlags |= SOUND_CHANNEL_SF_IEC;
+								channel.cgbStatus |= CGB_CHANNEL_MO_VOL;
+								if (idx + 1 != 3) {
 									envelopeStepTimeAndDir = 0 | CGB_NRx2_ENV_DIR_INC;
 								}
 								goto envelope_complete;
@@ -609,50 +607,50 @@ struct M4APlayer {
 								goto oscillator_off;
 							}
 						} else {
-							channels.envelopeCounter = channels.release;
+							channel.envelopeCounter = channel.release;
 						}
-					} else if ((channels.statusFlags & SOUND_CHANNEL_SF_ENV) == SOUND_CHANNEL_SF_ENV_SUSTAIN) {
+					} else if ((channel.statusFlags & SOUND_CHANNEL_SF_ENV) == SOUND_CHANNEL_SF_ENV_SUSTAIN) {
 					envelope_sustain:
-						channels.envelopeVolume = channels.sustainGoal;
-						channels.envelopeCounter = 7;
-					} else if ((channels.statusFlags & SOUND_CHANNEL_SF_ENV) == SOUND_CHANNEL_SF_ENV_DECAY) {
+						channel.envelopeVolume = channel.sustainGoal;
+						channel.envelopeCounter = 7;
+					} else if ((channel.statusFlags & SOUND_CHANNEL_SF_ENV) == SOUND_CHANNEL_SF_ENV_DECAY) {
 
-						channels.envelopeVolume--;
-						envelopeVolume = cast(byte)(channels.envelopeVolume & mask);
-						sustainGoal = (byte)(channels.sustainGoal);
+						channel.envelopeVolume--;
+						envelopeVolume = cast(byte)(channel.envelopeVolume & mask);
+						sustainGoal = (byte)(channel.sustainGoal);
 						if (envelopeVolume <= sustainGoal) {
 						envelope_sustain_start:
-							if (channels.sustain == 0) {
-								channels.statusFlags &= ~SOUND_CHANNEL_SF_ENV;
+							if (channel.sustain == 0) {
+								channel.statusFlags &= ~SOUND_CHANNEL_SF_ENV;
 								goto envelope_pseudoecho_start;
 							} else {
-								channels.statusFlags--;
-								channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
-								if (ch != 3) {
+								channel.statusFlags--;
+								channel.cgbStatus |= CGB_CHANNEL_MO_VOL;
+								if (idx + 1 != 3) {
 									envelopeStepTimeAndDir = 0 | CGB_NRx2_ENV_DIR_INC;
 								}
 								goto envelope_sustain;
 							}
 						} else {
-							channels.envelopeCounter = channels.decay;
+							channel.envelopeCounter = channel.decay;
 						}
 					} else {
-						channels.envelopeVolume++;
-						if ((ubyte)(channels.envelopeVolume & mask) >= channels.envelopeGoal) {
+						channel.envelopeVolume++;
+						if ((ubyte)(channel.envelopeVolume & mask) >= channel.envelopeGoal) {
 						envelope_decay_start:
-							channels.statusFlags--;
-							channels.envelopeCounter = channels.decay;
-							if ((ubyte)(channels.envelopeCounter & mask)) {
-								channels.cgbStatus |= CGB_CHANNEL_MO_VOL;
-								channels.envelopeVolume = channels.envelopeGoal;
-								if (ch != 3) {
-									envelopeStepTimeAndDir = channels.decay | CGB_NRx2_ENV_DIR_DEC;
+							channel.statusFlags--;
+							channel.envelopeCounter = channel.decay;
+							if ((ubyte)(channel.envelopeCounter & mask)) {
+								channel.cgbStatus |= CGB_CHANNEL_MO_VOL;
+								channel.envelopeVolume = channel.envelopeGoal;
+								if (idx + 1 != 3) {
+									envelopeStepTimeAndDir = channel.decay | CGB_NRx2_ENV_DIR_DEC;
 								}
 							} else {
 								goto envelope_sustain_start;
 							}
 						} else {
-							channels.envelopeCounter = channels.attack;
+							channel.envelopeCounter = channel.attack;
 						}
 					}
 				}
@@ -661,7 +659,7 @@ struct M4APlayer {
 		envelope_step_complete:
 			// every 15 frames, envelope calculation has to be done twice
 			// to keep up with the hardware envelope rate (1/64 s)
-			channels.envelopeCounter--;
+			channel.envelopeCounter--;
 			if (prevC15 == 0) {
 				prevC15--;
 				goto envelope_step_repeat;
@@ -669,51 +667,51 @@ struct M4APlayer {
 
 		envelope_complete:
 			/* 3. apply pitch to HW registers */
-			if (channels.cgbStatus & CGB_CHANNEL_MO_PIT) {
-				if (ch < 4 && (channels.type & TONEDATA_TYPE_FIX)) {
+			if (channel.cgbStatus & CGB_CHANNEL_MO_PIT) {
+				if (idx + 1 < 4 && (channel.type & TONEDATA_TYPE_FIX)) {
 					int dac_pwm_rate = soundInfo.reg.SOUNDBIAS_H;
 
 					if (dac_pwm_rate < 0x40) { // if PWM rate = 32768 Hz
-						channels.freq = (channels.freq + 2) & 0x7fc;
+						channel.freq = (channel.freq + 2) & 0x7fc;
 					} else if (dac_pwm_rate < 0x80) { // if PWM rate = 65536 Hz
-						channels.freq = (channels.freq + 1) & 0x7fe;
+						channel.freq = (channel.freq + 1) & 0x7fe;
 					}
 				}
 
-				if (ch != 4) {
-					*nrx3ptr = cast(ubyte)channels.freq;
+				if (idx + 1 != 4) {
+					*nrx3ptr = cast(ubyte)channel.freq;
 				} else {
-					*nrx3ptr = cast(ubyte)((*nrx3ptr & 0x08) | channels.freq);
+					*nrx3ptr = cast(ubyte)((*nrx3ptr & 0x08) | channel.freq);
 				}
-				channels.n4 = cast(ubyte)((channels.n4 & 0xC0) + (*(cast(ubyte*)(&channels.freq) + 1)));
-				*nrx4ptr = cast(byte)(channels.n4 & mask);
+				channel.n4 = cast(ubyte)((channel.n4 & 0xC0) + (channel.freq >> 8));
+				*nrx4ptr = cast(byte)(channel.n4 & mask);
 			}
 
 			/* 4. apply envelope & volume to HW registers */
-			if (channels.cgbStatus & CGB_CHANNEL_MO_VOL) {
-				soundInfo.reg.NR51 = (soundInfo.reg.NR51 & ~channels.panMask) | channels.pan;
-				if (ch == 3) {
-					*nrx2ptr = gCgb3Vol[channels.envelopeVolume];
-					if (channels.n4 & 0x80) {
+			if (channel.cgbStatus & CGB_CHANNEL_MO_VOL) {
+				soundInfo.reg.NR51 = (soundInfo.reg.NR51 & ~channel.panMask) | channel.pan;
+				if (idx + 1 == 3) {
+					*nrx2ptr = gCgb3Vol[channel.envelopeVolume];
+					if (channel.n4 & 0x80) {
 						*nrx0ptr = 0x80;
-						*nrx4ptr = channels.n4;
-						channels.n4 &= 0x7f;
+						*nrx4ptr = channel.n4;
+						channel.n4 &= 0x7f;
 					}
 				} else {
 					envelopeStepTimeAndDir &= 0xf;
-					*nrx2ptr = cast(ubyte)((channels.envelopeVolume << 4) + envelopeStepTimeAndDir);
-					*nrx4ptr = channels.n4 | 0x80;
-					if (ch == 1 && !(*nrx0ptr & 0x08)) {
-						*nrx4ptr = channels.n4 | 0x80;
+					*nrx2ptr = cast(ubyte)((channel.envelopeVolume << 4) + envelopeStepTimeAndDir);
+					*nrx4ptr = channel.n4 | 0x80;
+					if (idx + 1 == 1 && !(*nrx0ptr & 0x08)) {
+						*nrx4ptr = channel.n4 | 0x80;
 					}
 				}
-				gb.set_envelope(cast(ubyte)(ch - 1), *nrx2ptr);
-				gb.toggle_length(cast(ubyte)(ch - 1), (*nrx4ptr & 0x40));
-				gb.trigger_note(cast(ubyte)(ch - 1));
+				gb.set_envelope(cast(ubyte)idx, *nrx2ptr);
+				gb.toggle_length(cast(ubyte)idx, (*nrx4ptr & 0x40));
+				gb.trigger_note(cast(ubyte)idx);
 			}
 
 		channel_complete:
-			channels.cgbStatus = 0;
+			channel.cgbStatus = 0;
 		}
 	}
 }
