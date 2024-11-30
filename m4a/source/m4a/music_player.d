@@ -48,7 +48,7 @@ void MPlayJumpTableCopy(MPlayFunc[] mplayJumpTable) @safe pure {
 }
 
 // Ends the current track. (Fine as in the Italian musical word, not English)
-void MP2K_event_fine(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_fine(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
 	for (SoundChannel *chan = track.chan; chan != null; chan = chan.nextChannelPointer) {
 		if (chan.statusFlags & 0xC7) {
 			chan.statusFlags |= 0x40;
@@ -64,7 +64,7 @@ void MP2K_event_goto(ref M4APlayer player, ref MusicPlayerInfo, ref MusicPlayerT
 }
 
 // Sets the track's cmdPtr to the specified address after backing up its current position.
-void MP2K_event_patt(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_patt(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @safe pure {
 	ubyte level = track.patternLevel;
 	if (level < 3) {
 		track.patternStack[level] = track.cmdPtr[4 .. $]; // sizeof(ubyte *);
@@ -171,7 +171,7 @@ void MP2K_event_port(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack tr
 	track.cmdPtr = track.cmdPtr[2 .. $];
 }
 
-void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @system pure {
+void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @safe pure {
 	if (subPlayer.nextPlayerFunc != null) {
 		subPlayer.nextPlayerFunc(player, *subPlayer.nextPlayer);
 	}
@@ -356,7 +356,7 @@ void ChnVolSetAsm(ref SoundChannel chan, ref MusicPlayerTrack track) @safe pure 
 	chan.leftVolume = cast(ubyte)leftVolume;
 }
 
-void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @trusted pure {
 	// A note can be anywhere from 1 to 4 bytes long. First is always the note length...
 	track.gateTime = gClockTable[clock];
 	if (track.cmdPtr[0] < 0x80) {
@@ -532,7 +532,7 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
 	track.flags &= ~0xF;
 }
 
-void MP2K_event_endtie(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @system pure {
+void MP2K_event_endtie(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
 	ubyte key = track.cmdPtr[0];
 	if (key < 0x80) {
 		track.key = key;

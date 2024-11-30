@@ -176,13 +176,13 @@ struct SoundChannel {
 
 enum MAX_DIRECTSOUND_CHANNELS = 16;
 
-alias MPlayFunc = void function(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) pure;
-alias PlyNoteFunc = void function(ref M4APlayer, uint, ref MusicPlayerInfo, ref MusicPlayerTrack) pure;
-alias CgbSoundFunc = void function(ref M4APlayer) pure;
+alias MPlayFunc = void function(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) @safe pure;
+alias PlyNoteFunc = void function(ref M4APlayer, uint, ref MusicPlayerInfo, ref MusicPlayerTrack) @safe pure;
+alias CgbSoundFunc = void function(ref M4APlayer) @safe pure;
 alias CgbOscOffFunc = void function(ref M4APlayer, ubyte) @safe pure;
-alias MidiKeyToCgbFreqFunc = uint function(ubyte, ubyte, ubyte) pure;
-alias ExtVolPitFunc = void function() pure;
-alias MPlayMainFunc = void function(ref M4APlayer, ref MusicPlayerInfo) pure;
+alias MidiKeyToCgbFreqFunc = uint function(ubyte, ubyte, ubyte) @safe pure;
+alias ExtVolPitFunc = void function() @safe pure;
+alias MPlayMainFunc = void function(ref M4APlayer, ref MusicPlayerInfo) @safe pure;
 
 // SOUNDCNT_H
 enum SOUND_CGB_MIX_QUARTER = 0x0000;
@@ -395,6 +395,6 @@ struct SongPointer {
 	ushort me;
 }
 
-alias XcmdFunc = void function(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) pure;
+alias XcmdFunc = void function(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) @safe pure;
 
 enum MAX_LINES = 0;

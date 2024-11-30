@@ -992,7 +992,7 @@ void m4aMPlayLFOSpeedSet(MusicPlayerInfo *mplayInfo, ushort trackBits, ubyte lfo
 	}
 }
 
-void ply_memacc(ref M4APlayer player, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track) @system pure {
+void ply_memacc(ref M4APlayer player, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track) @safe pure {
 	uint op;
 	ubyte *addr;
 	ubyte data;
@@ -1123,14 +1123,14 @@ cond_false:
 	track.cmdPtr = track.cmdPtr[4 .. $];
 }
 
-void ply_xcmd(ref M4APlayer player, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track) @system pure {
+void ply_xcmd(ref M4APlayer player, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track) @safe pure {
 	uint n = track.cmdPtr[0];
 	track.cmdPtr = track.cmdPtr[1 .. $];
 
 	gXcmdTable[n](player, mplayInfo, track);
 }
 
-void ply_xxx(ref M4APlayer player, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track) @system pure {
+void ply_xxx(ref M4APlayer player, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track) @safe pure {
 	player.gMPlayJumpTable[0](player, mplayInfo, track);
 }
 
@@ -1198,7 +1198,7 @@ void ply_xswee(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrac
 	track.cmdPtr = track.cmdPtr[1 .. $];
 }
 
-void ply_xcmd_0C(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track) @system pure {
+void ply_xcmd_0C(ref M4APlayer, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track) @trusted pure {
 	uint unk;
 
 	READ_XCMD_BYTE(track, unk, 0); // UB: uninitialized variable
