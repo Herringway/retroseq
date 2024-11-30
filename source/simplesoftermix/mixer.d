@@ -5,7 +5,7 @@ import std.algorithm.comparison : clamp, max, min;
 import std.math : pow;
 
 struct Mixer {
-	private static struct Sound {
+	static struct Sound {
 		private const(byte)[] samples;
 		private size_t position;
 		private ushort positionSubsample;
