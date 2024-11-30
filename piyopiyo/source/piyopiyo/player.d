@@ -6,10 +6,10 @@ import std.math;
 
 import core.time;
 
-import simplesoftermix.interpolation;
-import simplesoftermix.mixer;
+import retroseq.interpolation;
+import retroseq.mixer;
 
-public import simplesoftermix.interpolation : InterpolationMethod;
+public import retroseq.interpolation : InterpolationMethod;
 
 private immutable int[12] freqTable = [ 1551, 1652, 1747, 1848, 1955, 2074, 2205, 2324, 2461, 2616, 2770, 2938 ];
 

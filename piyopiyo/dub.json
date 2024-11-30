@@ -4,6 +4,6 @@
 	"name": "piyopiyo",
 	"stringImportPaths": ["data"],
 	"dependencies": {
-		"simplesoftmix": "~>0.0"
+		"retroseq": "*"
 	}
 }

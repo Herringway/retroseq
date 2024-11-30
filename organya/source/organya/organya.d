@@ -6,11 +6,11 @@ import std.exception;
 import std.experimental.logger;
 import std.math;
 
-import simplesoftermix.interpolation;
-import simplesoftermix.mixer;
+import retroseq.interpolation;
+import retroseq.mixer;
 import organya.pixtone;
 
-public import simplesoftermix.interpolation : InterpolationMethod;
+public import retroseq.interpolation : InterpolationMethod;
 
 private enum maxTrack = 16;
 private enum maxMelody = 8;
