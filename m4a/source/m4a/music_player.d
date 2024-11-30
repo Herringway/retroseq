@@ -1,5 +1,7 @@
 module m4a.music_player;
 
+import retroseq.utility;
+
 import m4a.mp2k_common;
 import m4a.internal;
 import m4a.m4a;
@@ -36,11 +38,6 @@ void MP2KClearChain(ref SoundChannel chan) @safe pure {
 	}
 
 	chan.track = null;
-}
-
-ubyte ConsumeTrackByte(ref MusicPlayerTrack track) @safe pure {
-	scope(exit) track.cmdPtr = track.cmdPtr[1 .. $];
-	return track.cmdPtr[0];
 }
 
 void MPlayJumpTableCopy(MPlayFunc[] mplayJumpTable) @safe pure {
@@ -94,7 +91,7 @@ void MP2K_event_rept(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref Mu
 		MP2K_event_goto(player, subPlayer, track);
 	} else {
 		ubyte repeatCount = ++track.repeatCount;
-		if (repeatCount < ConsumeTrackByte(track)) {
+		if (repeatCount < track.cmdPtr.pop!ubyte) {
 			MP2K_event_goto(player, subPlayer, track);
 		} else {
 			track.repeatCount = 0;
@@ -105,55 +102,55 @@ void MP2K_event_rept(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref Mu
 
 // Sets the note priority for new notes in this track.
 void MP2K_event_prio(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
-	track.priority = ConsumeTrackByte(track);
+	track.priority = track.cmdPtr.pop!ubyte;
 }
 
 // Sets the BPM of all tracks to the specified tempo (in beats per half-minute, because 255 as a max tempo
 // kinda sucks but 510 is plenty).
 void MP2K_event_tempo(ref M4APlayer, ref MusicPlayerInfo player, ref MusicPlayerTrack track) @safe pure {
-	ushort bpm = ConsumeTrackByte(track);
+	ushort bpm = track.cmdPtr.pop!ubyte;
 	bpm *= 2;
 	player.tempoRawBPM = bpm;
 	player.tempoInterval = cast(ushort)((bpm * player.tempoScale) / 256);
 }
 
 void MP2K_event_keysh(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
-	track.keyShift = ConsumeTrackByte(track);
+	track.keyShift = track.cmdPtr.pop!ubyte;
 	track.flags |= 0xC;
 }
 
 void MP2K_event_voice(ref M4APlayer, ref MusicPlayerInfo player, ref MusicPlayerTrack track) @safe pure {
-	ubyte voice = ConsumeTrackByte(track);
+	ubyte voice = track.cmdPtr.pop!ubyte;
 	const(ToneData)* instrument = &player.voicegroup[voice];
 	track.instrument = *instrument;
 }
 
 void MP2K_event_vol(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
-	track.vol = ConsumeTrackByte(track);
+	track.vol = track.cmdPtr.pop!ubyte;
 	track.flags |= 0x3;
 }
 
 void MP2K_event_pan(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
-	track.pan = cast(byte)(ConsumeTrackByte(track) - 0x40);
+	track.pan = cast(byte)(track.cmdPtr.pop!ubyte - 0x40);
 	track.flags |= 0x3;
 }
 
 void MP2K_event_bend(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
-	track.bend = cast(byte)(ConsumeTrackByte(track) - 0x40);
+	track.bend = cast(byte)(track.cmdPtr.pop!ubyte - 0x40);
 	track.flags |= 0xC;
 }
 
 void MP2K_event_bendr(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
-	track.bendRange = ConsumeTrackByte(track);
+	track.bendRange = track.cmdPtr.pop!ubyte;
 	track.flags |= 0xC;
 }
 
 void MP2K_event_lfodl(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
-	track.lfoDelay = ConsumeTrackByte(track);
+	track.lfoDelay = track.cmdPtr.pop!ubyte;
 }
 
 void MP2K_event_modt(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
-	ubyte type = ConsumeTrackByte(track);
+	ubyte type = track.cmdPtr.pop!ubyte;
 	if (type != track.modType) {
 		track.modType = type;
 		track.flags |= 0xF;
@@ -161,7 +158,7 @@ void MP2K_event_modt(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack tr
 }
 
 void MP2K_event_tune(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
-	track.tune = cast(byte)(ConsumeTrackByte(track) - 0x40);
+	track.tune = cast(byte)(track.cmdPtr.pop!ubyte - 0x40);
 	track.flags |= 0xC;
 }
 
@@ -361,13 +358,13 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
 	track.gateTime = gClockTable[clock];
 	if (track.cmdPtr[0] < 0x80) {
 		// Then the note name...
-		track.key = ConsumeTrackByte(track);
+		track.key = track.cmdPtr.pop!ubyte;
 		if (track.cmdPtr[0] < 0x80) {
 			// Then the velocity...
-			track.velocity = ConsumeTrackByte(track);
+			track.velocity = track.cmdPtr.pop!ubyte;
 			if (track.cmdPtr[0] < 0x80) {
 				// Then a number to add ticks to get exotic or more precise note lengths without TIE.
-				track.gateTime += ConsumeTrackByte(track);
+				track.gateTime += track.cmdPtr.pop!ubyte;
 			}
 		}
 	}
@@ -552,14 +549,14 @@ void MP2K_event_endtie(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack 
 }
 
 void MP2K_event_lfos(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
-	track.lfoSpeed = ConsumeTrackByte(track);
+	track.lfoSpeed = track.cmdPtr.pop!ubyte;
 	if (track.lfoSpeed == 0) {
 		ClearModM(track);
 	}
 }
 
 void MP2K_event_mod(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
-	track.modDepth = ConsumeTrackByte(track);
+	track.modDepth = track.cmdPtr.pop!ubyte;
 	if (track.modDepth == 0) {
 		ClearModM(track);
 	}
