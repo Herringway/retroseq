@@ -1,6 +1,6 @@
-module simplesoftermix.mixer;
+module retroseq.mixer;
 
-import simplesoftermix.interpolation;
+import retroseq.interpolation;
 import std.algorithm.comparison : clamp, max, min;
 import std.math : pow;
 

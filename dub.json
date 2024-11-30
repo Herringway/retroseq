@@ -1,9 +1,0 @@
-{
-	"authors": [
-		"Herringway"
-	],
-	"copyright": "Copyright © 2023, Herringway",
-	"description": "A simple software audio mixer.",
-	"license": "BSL-1.0",
-	"name": "simplesoftmix"
-}
