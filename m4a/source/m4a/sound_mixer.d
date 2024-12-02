@@ -46,7 +46,6 @@ void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure {
 	}
 }
 
-//__attribute__((target("thumb")))
 void SampleMixer (ref SoundMixerState mixer, uint scanlineLimit, ushort samplesPerFrame, float[2][] outBuffer, ubyte dmaCounter) @system pure {
 	uint reverb = mixer.reverb;
 	if (reverb) {
@@ -92,7 +91,6 @@ void SampleMixer (ref SoundMixerState mixer, uint scanlineLimit, ushort samplesP
 }
 
 // Returns 1 if channel is still active after moving envelope forward a frame
-//__attribute__((target("thumb")))
 private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 	// MP2K envelope shape
 	//                                                                 |
@@ -193,7 +191,6 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 	}
 }
 
-//__attribute__((target("thumb")))
 private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, const Wave wav, float[2][] outBuffer, ushort samplesPerFrame, float divFreq) @system pure {
 	ubyte v = cast(ubyte)(chan.envelopeVolume * (mixer.masterVol + 1) / 16U);
 	chan.envelopeVolumeRight = chan.rightVolume * v / 256U;
