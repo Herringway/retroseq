@@ -125,8 +125,7 @@ struct Organya {
 		}
 
 		noteAlloc(info.allocatedNotes);
-		mixer = Mixer(method, outputFrequency);
-		mixer.callback = &playData;
+		mixer = Mixer(method, outputFrequency, &playData);
 	}
 	// 曲情報を取得 (Get song information)
 	public MusicInfo getMusicInfo() @safe {

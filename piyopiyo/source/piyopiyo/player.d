@@ -64,8 +64,7 @@ struct PiyoPiyo {
 	private size_t[int] loadedSamples;
 	private Mixer mixer;
 	public void initialize(uint sampleRate, InterpolationMethod interpolationMethod) @safe {
-		mixer = Mixer(interpolationMethod, sampleRate);
-		mixer.callback = &update;
+		mixer = Mixer(interpolationMethod, sampleRate, &update);
 		loadedSamples[472] = loadWav(wavBASS1);
 		loadedSamples[473] = loadWav(wavBASS1);
 		loadedSamples[474] = loadWav(wavBASS2);

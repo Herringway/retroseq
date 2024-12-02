@@ -75,7 +75,10 @@ struct Mixer {
 	}
 	private InterpolationMethod interpolationMethod;
 	private uint outputFrequency = 48000;
+	private void delegate() @safe nothrow callback;
 	private Sound[] activeSoundList;
+	private size_t samplesUntilNextCallback;
+	private Duration callbackFrequency;
 	/++
 		Get a reference to an existing sound, suitable for modification.
 		Params:
@@ -116,6 +119,10 @@ struct Mixer {
 
 		return activeSoundList.length - 1;
 	}
+	void setCallbackFrequency(Duration duration) @safe pure nothrow {
+		callbackFrequency = duration;
+		samplesUntilNextCallback = (duration.total!"msecs" * outputFrequency) / 1000;
+	}
 	/// Ditto
 	size_t createSound(uint inFrequency, const(ubyte)[] inSamples) @safe pure {
 		auto newSamples = new byte[](inSamples.length);
@@ -146,13 +153,6 @@ struct Mixer {
 		}
 		return result;
 	}
-	void setCallbackFrequency(Duration duration) @safe pure nothrow {
-		callbackFrequency = duration;
-		samplesUntilNextCallback = (duration.total!"msecs" * outputFrequency) / 1000;
-	}
-	size_t samplesUntilNextCallback;
-	Duration callbackFrequency;
-	void delegate() @safe nothrow callback;
 	/// Pop the latest samples off, so the next pair can be mixed
 	void popFront() @safe nothrow {
 		if ((callback !is null) && (--samplesUntilNextCallback == 0)) {
