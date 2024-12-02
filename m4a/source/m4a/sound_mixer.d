@@ -6,7 +6,7 @@ import m4a.internal;
 import m4a.m4a;
 
 
-ubyte RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure {
+void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure {
 	int samplesPerFrame = cast(int)audioBuffer.length;
 
 	player.playerCounter += audioBuffer.length;
@@ -30,29 +30,20 @@ ubyte RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure {
 		outBuffer = outBuffer[samplesPerFrame * (player.soundInfo.pcmDmaPeriod - (dmaCounter - 1)) .. $];
 	}
 
-	//MixerRamFunc mixerRamFunc = ((MixerRamFunc)MixerCodeBuffer);
 	SampleMixer(player.soundInfo, 0, cast(ushort)samplesPerFrame, outBuffer, cast(ubyte)dmaCounter);
 
 	player.gb.audio_generate(&player.soundInfo, cast(ushort)samplesPerFrame, cgbBuffer);
 
 	samplesPerFrame = player.soundInfo.samplesPerFrame;
-	float[2][] m4aBuffer = player.soundInfo.outBuffer;
-	cgbBuffer = player.soundInfo.cgbBuffer;
-
-	if (dmaCounter > 1) {
-		m4aBuffer = m4aBuffer[samplesPerFrame * (player.soundInfo.pcmDmaPeriod - (dmaCounter - 1)) .. $];
-	}
 
 	for (uint i = 0; i < audioBuffer.length; i++) {
-		audioBuffer[i][0] = m4aBuffer[i][0] + cgbBuffer[i][0];
-		audioBuffer[i][1] = m4aBuffer[i][1] + cgbBuffer[i][1];
+		audioBuffer[i][0] = outBuffer[i][0] + cgbBuffer[i][0];
+		audioBuffer[i][1] = outBuffer[i][1] + cgbBuffer[i][1];
 	}
 
 	if (cast(byte)(--player.soundInfo.dmaCounter) <= 0) {
 		player.soundInfo.dmaCounter = player.soundInfo.pcmDmaPeriod;
 	}
-
-	return 1;
 }
 
 //__attribute__((target("thumb")))
