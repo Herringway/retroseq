@@ -62,11 +62,10 @@ struct PiyoPiyo {
 	private int volume;
 	private bool fading;
 	private size_t[int] loadedSamples;
-	private uint sampleRate;
-	private uint masterTimer;
 	private Mixer mixer;
 	public void initialize(uint sampleRate, InterpolationMethod interpolationMethod) @safe {
 		mixer = Mixer(interpolationMethod, sampleRate);
+		mixer.callback = &update;
 		loadedSamples[472] = loadWav(wavBASS1);
 		loadedSamples[473] = loadWav(wavBASS1);
 		loadedSamples[474] = loadWav(wavBASS2);
@@ -92,8 +91,6 @@ struct PiyoPiyo {
 		loadedSamples[494] = loadWav(wavSYMBAL1);
 		loadedSamples[495] = loadWav(wavSYMBAL1);
 		initialized = true;
-
-		this.sampleRate = sampleRate;
 	}
 	private bool readData(const ubyte[] data) @safe {
 		//Fail if PiyoPiyo hasn't been initialised
@@ -290,32 +287,11 @@ struct PiyoPiyo {
 	}
 
 	public void fillBuffer(scope short[2][] finalBuffer) @safe nothrow {
-		if (masterTimer == 0) {
-			mixer.mixSounds(finalBuffer);
-		} else {
-			uint framesDone = 0;
-			finalBuffer[] = [0, 0];
-
-			while (framesDone != finalBuffer.length) {
-				static ulong updateTimer;
-
-				if (updateTimer == 0) {
-					updateTimer = masterTimer;
-					update();
-				}
-
-				const ulong framesToDo = min(updateTimer, finalBuffer.length - framesDone);
-
-				mixer.mixSounds(finalBuffer[framesDone .. framesDone + framesToDo]);
-
-				framesDone += framesToDo;
-				updateTimer -= framesToDo;
-			}
-		}
+		mixer.mixSounds(finalBuffer);
 	}
 
 	private void setMusicTimer(uint milliseconds) @safe {
-		masterTimer = (milliseconds * sampleRate) / 1000;
+		mixer.setCallbackFrequency(milliseconds.msecs);
 	}
 }
 

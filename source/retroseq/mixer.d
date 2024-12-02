@@ -1,6 +1,7 @@
 module retroseq.mixer;
 
 import retroseq.interpolation;
+import core.time;
 import std.algorithm.comparison : clamp, max, min;
 import std.math : pow;
 
@@ -145,8 +146,19 @@ struct Mixer {
 		}
 		return result;
 	}
+	void setCallbackFrequency(Duration duration) @safe pure nothrow {
+		callbackFrequency = duration;
+		samplesUntilNextCallback = (duration.total!"msecs" * outputFrequency) / 1000;
+	}
+	size_t samplesUntilNextCallback;
+	Duration callbackFrequency;
+	void delegate() @safe nothrow callback;
 	/// Pop the latest samples off, so the next pair can be mixed
-	void popFront() @safe pure nothrow {
+	void popFront() @safe nothrow {
+		if ((callback !is null) && (--samplesUntilNextCallback == 0)) {
+			callback();
+			samplesUntilNextCallback = (callbackFrequency.total!"msecs" * outputFrequency) / 1000;
+		}
 		foreach (ref sound; activeSoundList) {
 			if (!sound.playing) {
 				continue;
@@ -175,7 +187,7 @@ struct Mixer {
 /++
 	Convenience function for mixing to a stream
 +/
-void mixSounds(ref Mixer mixer, scope short[2][] stream) @safe pure nothrow {
+void mixSounds(ref Mixer mixer, scope short[2][] stream) @safe nothrow {
 	foreach (ref pair; stream) {
 		assert(!mixer.empty);
 		pair = mixer.front;

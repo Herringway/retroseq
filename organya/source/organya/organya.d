@@ -110,8 +110,6 @@ struct Organya {
 	private ubyte[maxTrack] playingSounds = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];	// 再生中の音 (Sound being played)
 	private ubyte[maxTrack] keyOn;	// キースイッチ (Key switch)
 	private ubyte[maxTrack] keyTwin;	// 今使っているキー(連続時のノイズ防止の為に二つ用意) (Currently used keys (prepared for continuous noise prevention))
-	private uint masterTimer;
-	private uint outputFrequency = 48000;
 	public void initialize(uint outputFrequency, InterpolationMethod method) @safe {
 		info.allocatedNotes = allocNote;
 		info.dot = 4;
@@ -128,7 +126,7 @@ struct Organya {
 
 		noteAlloc(info.allocatedNotes);
 		mixer = Mixer(method, outputFrequency);
-		this.outputFrequency = outputFrequency;
+		mixer.callback = &playData;
 	}
 	// 曲情報を取得 (Get song information)
 	public MusicInfo getMusicInfo() @safe {
@@ -557,28 +555,7 @@ struct Organya {
 	}
 
 	public void fillBuffer(scope short[2][] finalBuffer) nothrow @safe {
-		if (masterTimer == 0) {
-			mixer.mixSounds(finalBuffer);
-		} else {
-			uint framesDone = 0;
-			finalBuffer[] = [0, 0];
-
-			while (framesDone != finalBuffer.length) {
-				static ulong callbackTimer;
-
-				if (callbackTimer == 0) {
-					callbackTimer = masterTimer;
-					playData();
-				}
-
-				const ulong framesToDo = min(callbackTimer, finalBuffer.length - framesDone);
-
-				mixer.mixSounds(finalBuffer[framesDone .. framesDone + framesToDo]);
-
-				framesDone += framesToDo;
-				callbackTimer -= framesToDo;
-			}
-		}
+		mixer.mixSounds(finalBuffer);
 	}
 	public void loadData(const(ubyte)[] data) @safe {
 		import std.file : read;
@@ -673,7 +650,7 @@ struct Organya {
 		pixtoneSize += makePixToneObject(pixtoneParameters[138 .. 139], 7);
 	}
 	void setMusicTimer(uint milliseconds) @safe {
-		masterTimer = (milliseconds * outputFrequency) / 1000;
+		mixer.setCallbackFrequency(milliseconds.msecs);
 	}
 
 	private int makePixToneObject(const(PixtoneParameter)[] ptp, int no) @safe {
