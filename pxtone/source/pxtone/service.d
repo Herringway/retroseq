@@ -623,7 +623,9 @@ public:
 				voice.type = songVoice.type;
 				songVoice.p_pcm.Copy(voice.p_pcm);
 				songVoice.p_ptn.Copy(voice.p_ptn);
-				songVoice.p_oggv.Copy(voice.p_oggv);
+				version(pxINCLUDE_OGGVORBIS) {
+					songVoice.p_oggv.Copy(voice.p_oggv);
+				}
 				voice.wave.num = songVoice.wave.num;
 				voice.wave.reso = songVoice.wave.reso;
 				voice.wave.points = songVoice.wave.points.dup;
