@@ -15,6 +15,7 @@ import pxtone.unit;
 import std.exception;
 import std.format;
 import std.stdio;
+import std.string;
 
 struct PxToneSong {
 	PxtnText text;
@@ -601,7 +602,7 @@ struct PxToneSong {
 			throw new PxtoneException("fmt unknown");
 		}
 
-		if (!units[assi.unitIndex].setNameBuf(assi.name[])) {
+		if (!units[assi.unitIndex].setNameBuf(assi.name.fromStringz)) {
 			throw new PxtoneException("FATAL");
 		}
 	}
@@ -775,10 +776,13 @@ struct PxToneSong {
 }
 
 unittest {
+	import std.algorithm.comparison : equal;
+	import std.algorithm.iteration : map;
 	import std.file : read;
 	auto song = PxToneSong(cast(ubyte[])read("pxtone/sample data/sample.ptcop"));
 	assert(song.text.getCommentBuf() == "boss03\r\n13/03/07\r\n13/06/27 fix tr1 maes9-\r\n");
 	assert(song.text.getNameBuf() == "Hard Cording");
+	assert(song.units.map!(x => x.getNameBuf().dup).equal(["Brass", "Techno", "Middle", "Bass", "Dr Hi Hat", "u-drum_snare2", "Dr Bass"]));
 }
 
 
