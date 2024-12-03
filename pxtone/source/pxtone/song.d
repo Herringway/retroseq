@@ -774,6 +774,13 @@ struct PxToneSong {
 	}
 }
 
+unittest {
+	import std.file : read;
+	auto song = PxToneSong(cast(ubyte[])read("pxtone/sample data/sample.ptcop"));
+	assert(song.text.getCommentBuf() == "boss03\r\n13/03/07\r\n13/06/27 fix tr1 maes9-\r\n");
+	assert(song.text.getNameBuf() == "Hard Cording");
+}
+
 
 private Tag checkTagCode(scope const char[] pCode) nothrow @safe {
 	switch(pCode[0 .. identifierCodeSize]) {
