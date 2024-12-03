@@ -5,90 +5,90 @@ import pxtone.pxtn;
 import pxtone.error;
 import pxtone.descriptor;
 
-enum TUNEOVERDRIVE_CUT_MAX = 99.9f;
-enum TUNEOVERDRIVE_CUT_MIN = 50.0f;
-enum TUNEOVERDRIVE_AMP_MAX = 8.0f;
-enum TUNEOVERDRIVE_AMP_MIN = 0.1f;
-enum TUNEOVERDRIVE_DEFAULT_CUT = 90.0f;
-enum TUNEOVERDRIVE_DEFAULT_AMP = 2.0f;
+private enum tuneOverdriveCutMax = 99.9f;
+private enum tuneOverdriveCutMin = 50.0f;
+private enum tuneOverdriveAmpMax = 8.0f;
+private enum tuneOverdriveAmpMin = 0.1f;
+private enum tuneOverdriveDefaultCut = 90.0f;
+private enum tuneOverdriveDefaultAmp = 2.0f;
 
 struct pxtnOverDrive {
-	bool _b_played = true;
+	bool played = true;
 
-	int _group;
-	float _cut_f;
-	float _amp_f;
+	int group;
+	float cut;
+	float amp;
 
-	int _cut_16bit_top;
+	int cut16BitTop;
 
-	float get_cut() const nothrow @safe {
-		return _cut_f;
+	float getCut() const nothrow @safe {
+		return cut;
 	}
 
-	float get_amp() const nothrow @safe {
-		return _amp_f;
+	float getAmp() const nothrow @safe {
+		return amp;
 	}
 
-	int get_group() const nothrow @safe {
-		return _group;
+	int getGroup() const nothrow @safe {
+		return group;
 	}
 
-	void Set(float cut, float amp, int group) nothrow @safe {
-		_cut_f = cut;
-		_amp_f = amp;
-		_group = group;
+	void set(float cut, float amp, int group) nothrow @safe {
+		this.cut = cut;
+		this.amp = amp;
+		this.group = group;
 	}
 
-	bool get_played() const nothrow @safe {
-		return _b_played;
+	bool getPlayed() const nothrow @safe {
+		return played;
 	}
 
-	void set_played(bool b) nothrow @safe {
-		_b_played = b;
+	void setPlayed(bool b) nothrow @safe {
+		played = b;
 	}
 
-	bool switch_played() nothrow @safe {
-		_b_played = _b_played ? false : true;
-		return _b_played;
+	bool switchPlayed() nothrow @safe {
+		played = played ? false : true;
+		return played;
 	}
 
-	void Tone_Ready() nothrow @safe {
-		_cut_16bit_top = cast(int)(32767 * (100 - _cut_f) / 100);
+	void toneReady() nothrow @safe {
+		cut16BitTop = cast(int)(32767 * (100 - cut) / 100);
 	}
 
-	void Tone_Supple(int[] group_smps) const nothrow @safe {
-		if (!_b_played) {
+	void toneSupple(int[] groupSamples) const nothrow @safe {
+		if (!played) {
 			return;
 		}
-		int work = group_smps[_group];
-		if (work > _cut_16bit_top) {
-			work = _cut_16bit_top;
-		} else if (work < -_cut_16bit_top) {
-			work = -_cut_16bit_top;
+		int work = groupSamples[group];
+		if (work > cut16BitTop) {
+			work = cut16BitTop;
+		} else if (work < -cut16BitTop) {
+			work = -cut16BitTop;
 		}
-		group_smps[_group] = cast(int)(cast(float) work * _amp_f);
+		groupSamples[group] = cast(int)(cast(float) work * amp);
 	}
 
-	void Write(ref pxtnDescriptor p_doc) const @safe {
-		_OVERDRIVESTRUCT over;
+	void write(ref PxtnDescriptor pDoc) const @safe {
+		Overdrive over;
 		int size;
 
-		over.cut = _cut_f;
-		over.amp = _amp_f;
-		over.group = cast(ushort) _group;
+		over.cut = cut;
+		over.amp = amp;
+		over.group = cast(ushort) group;
 
 		// dela ----------
-		size = _OVERDRIVESTRUCT.sizeof;
-		p_doc.w_asfile(size);
-		p_doc.w_asfile(over);
+		size = Overdrive.sizeof;
+		pDoc.write(size);
+		pDoc.write(over);
 	}
 
-	void Read(ref pxtnDescriptor p_doc) @safe {
-		_OVERDRIVESTRUCT over;
+	void read(ref PxtnDescriptor pDoc) @safe {
+		Overdrive over;
 		int size = 0;
 
-		p_doc.r(size);
-		p_doc.r(over);
+		pDoc.read(size);
+		pDoc.read(over);
 
 		if (over.xxx) {
 			throw new PxtoneException("fmt unknown");
@@ -96,21 +96,21 @@ struct pxtnOverDrive {
 		if (over.yyy) {
 			throw new PxtoneException("fmt unknown");
 		}
-		if (over.cut > TUNEOVERDRIVE_CUT_MAX || over.cut < TUNEOVERDRIVE_CUT_MIN) {
+		if (over.cut > tuneOverdriveCutMax || over.cut < tuneOverdriveCutMin) {
 			throw new PxtoneException("fmt unknown");
 		}
-		if (over.amp > TUNEOVERDRIVE_AMP_MAX || over.amp < TUNEOVERDRIVE_AMP_MIN) {
+		if (over.amp > tuneOverdriveAmpMax || over.amp < tuneOverdriveAmpMin) {
 			throw new PxtoneException("fmt unknown");
 		}
 
-		_cut_f = over.cut;
-		_amp_f = over.amp;
-		_group = over.group;
+		cut = over.cut;
+		amp = over.amp;
+		group = over.group;
 	}
 }
 
 // (8byte) =================
-struct _OVERDRIVESTRUCT {
+struct Overdrive {
 	ushort xxx;
 	ushort group;
 	float cut = 0.0;

@@ -4,74 +4,73 @@ import pxtone.pxtn;
 
 import std.math;
 
-struct pxtnPulse_Oscillator {
+struct PxtnPulseOscillator {
 private:
-	const(pxtnPOINT)[] _p_point = null;
-	int _point_num = 0;
-	int _point_reso = 0;
-	int _volume = 0;
-	int _sample_num = 0;
+	const(PxtnPoint)[] pPoint = null;
+	int pointNum = 0;
+	int pointReso = 0;
+	int volume = 0;
+	int sampleNum = 0;
 
 public:
-	void ReadyGetSample(return const scope pxtnPOINT[] p_point, int point_num, int volume, int sample_num, int point_reso) nothrow @safe scope {
-		_volume = volume;
-		_p_point = p_point;
-		_sample_num = sample_num;
-		_point_num = point_num;
-		_point_reso = point_reso;
+	void readyGetSample(return const scope PxtnPoint[] pPoint, int pointNum, int volume, int sampleNum, int pointReso) nothrow @safe scope {
+		this.volume = volume;
+		this.pPoint = pPoint;
+		this.sampleNum = sampleNum;
+		this.pointNum = pointNum;
+		this.pointReso = pointReso;
 	}
 
-	double GetOneSample_Overtone(int index) nothrow @safe scope {
+	double getOneSampleOvertone(int index) nothrow @safe scope {
 		int o;
-		double work_double;
+		double workDouble = 0;
 		double pi = 3.1415926535897932;
 		double sss;
 
-		work_double = 0;
-		for (o = 0; o < _point_num; o++) {
-			sss = 2 * pi * (_p_point[o].x) * index / _sample_num;
-			work_double += (sin(sss) * cast(double) _p_point[o].y / (_p_point[o].x) / 128);
+		for (o = 0; o < pointNum; o++) {
+			sss = 2 * pi * (pPoint[o].x) * index / sampleNum;
+			workDouble += (sin(sss) * cast(double) pPoint[o].y / (pPoint[o].x) / 128);
 		}
-		work_double = work_double * _volume / 128;
+		workDouble = workDouble * volume / 128;
 
-		return work_double;
+		return workDouble;
 	}
 
-	double GetOneSample_Coodinate(int index) nothrow @safe scope {
+	double getOneSampleCoordinate(int index) nothrow @safe scope {
 		int i;
 		int c;
 		int x1, y1, x2, y2;
 		int w, h;
 		double work;
 
-		i = _point_reso * index / _sample_num;
+		i = pointReso * index / sampleNum;
 
 		// find target 2 ponits
 		c = 0;
-		while (c < _point_num) {
-			if (_p_point[c].x > i) {
+		while (c < pointNum) {
+			if (pPoint[c].x > i) {
 				break;
 			}
 			c++;
 		}
 
 		//末端
-		if (c == _point_num) {
-			x1 = _p_point[c - 1].x;
-			y1 = _p_point[c - 1].y;
-			x2 = _point_reso;
-			y2 = _p_point[0].y;
+		if (c == pointNum) {
+			x1 = pPoint[c - 1].x;
+			y1 = pPoint[c - 1].y;
+			x2 = pointReso;
+			y2 = pPoint[0].y;
 		} else {
 			if (c) {
-				x1 = _p_point[c - 1].x;
-				y1 = _p_point[c - 1].y;
-				x2 = _p_point[c].x;
-				y2 = _p_point[c].y;
+				x1 = pPoint[c - 1].x;
+				y1 = pPoint[c - 1].y;
+				x2 = pPoint[c].x;
+				y2 = pPoint[c].y;
 			} else {
-				x1 = _p_point[0].x;
-				y1 = _p_point[0].y;
-				x2 = _p_point[0].x;
-				y2 = _p_point[0].y;
+				x1 = pPoint[0].x;
+				y1 = pPoint[0].y;
+				x2 = pPoint[0].x;
+				y2 = pPoint[0].y;
 			}
 		}
 
@@ -85,7 +84,7 @@ public:
 			work = y1;
 		}
 
-		return work * _volume / 128 / 128;
+		return work * volume / 128 / 128;
 
 	}
 }

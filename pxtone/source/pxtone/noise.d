@@ -9,14 +9,14 @@ import pxtone.pulse.noise;
 import pxtone.pulse.pcm;
 import pxtone.error;
 
-struct pxtoneNoise {
-	private pxtnPulse_NoiseBuilder _bldr;
-	private int _ch_num = 2;
-	private int _sps = 44100;
-	private int _bps = 16;
+struct PxtoneNoise {
+	private PxtnPulseNoiseBuilder bldr;
+	private int channels = 2;
+	private int sps = 44100;
+	private int bps = 16;
 
-	bool quality_set(int ch_num, int sps, int bps) nothrow @safe {
-		switch (ch_num) {
+	bool qualitySet(int channels, int sps, int bps) nothrow @safe {
+		switch (channels) {
 		case 1:
 		case 2:
 			break;
@@ -42,32 +42,32 @@ struct pxtoneNoise {
 			return false;
 		}
 
-		_ch_num = ch_num;
-		_bps = bps;
-		_sps = sps;
+		this.channels = channels;
+		this.bps = bps;
+		this.sps = sps;
 
 		return false;
 	}
 
-	void quality_get(out int p_ch_num, out int p_sps, out int p_bps) const nothrow @safe {
-		if (p_ch_num) {
-			p_ch_num = _ch_num;
+	void qualityGet(out int pChannels, out int pSPS, out int pBPS) const nothrow @safe {
+		if (pChannels) {
+			pChannels = channels;
 		}
-		if (p_sps) {
-			p_sps = _sps;
+		if (pSPS) {
+			pSPS = sps;
 		}
-		if (p_bps) {
-			p_bps = _bps;
+		if (pBPS) {
+			pBPS = bps;
 		}
 	}
 
-	void generate(ref pxtnDescriptor p_doc, out void[] pp_buf, out int p_size) const @safe {
-		pxtnPulse_Noise noise;
+	void generate(ref PxtnDescriptor pDoc, out void[] ppBuf, out int pSize) const @safe {
+		PxtnPulseNoise noise;
 
-		noise.read(p_doc);
-		pxtnPulse_PCM pcm = _bldr.BuildNoise(noise, _ch_num, _sps, _bps);
+		noise.read(pDoc);
+		PxtnPulsePCM pcm = bldr.buildNoise(noise, channels, sps, bps);
 
-		p_size = pcm.get_buf_size();
-		pp_buf = pcm.Devolve_SamplingBuffer();
+		pSize = pcm.getBufferSize();
+		ppBuf = pcm.devolveSamplingBuffer();
 	}
 }

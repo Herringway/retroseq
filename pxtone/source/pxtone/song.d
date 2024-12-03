@@ -17,59 +17,59 @@ import std.format;
 import std.stdio;
 
 struct PxToneSong {
-	pxtnText text;
-	pxtnMaster master;
-	pxtnEvelist evels;
+	PxtnText text;
+	PxtnMaster master;
+	PxtnEventList evels;
 
 
-	_DELAYSTRUCT[] _delays;
-	pxtnOverDrive*[] _ovdrvs;
-	pxtnWoice*[] _woices;
-	pxtnUnit[] _units;
+	Delay[] delays;
+	pxtnOverDrive*[] overdrives;
+	pxtnWoice*[] woices;
+	PxtnUnit[] units;
 
 	this(ubyte[] buffer) @safe {
-		pxtnDescriptor desc;
-		desc.set_memory_r(buffer);
+		PxtnDescriptor desc;
+		desc.setMemoryReadOnly(buffer);
 		read(desc);
 	}
 
 	this(File fd) @safe {
-		pxtnDescriptor desc;
-		desc.set_file_r(fd);
+		PxtnDescriptor desc;
+		desc.setFileReadOnly(fd);
 		read(desc);
 	}
 	static bool detect(ubyte[] buffer) @safe {
 		PxToneSong tmpSong;
-		pxtnDescriptor desc;
-		desc.set_memory_r(buffer);
-		_enum_FMTVER fmt_ver;
-		ushort exe_ver;
+		PxtnDescriptor desc;
+		desc.setMemoryReadOnly(buffer);
+		FMTVER fmtVer;
+		ushort exeVer;
 		try {
-			tmpSong._ReadVersion(desc, fmt_ver, exe_ver);
+			tmpSong.readVersion(desc, fmtVer, exeVer);
 		} catch(Exception) {
 			return false;
 		}
 		return true;
 	}
 	void clear() nothrow @safe {
-		text.set_name_buf("");
-		text.set_comment_buf("");
+		text.setNameBuf("");
+		text.setCommentBuf("");
 
-		evels.Clear();
+		evels.clear();
 
-		_delays = _delays.init;
-		_ovdrvs = _ovdrvs.init;
-		_woices = _woices.init;
-		_units = _units.init;
+		delays = delays.init;
+		overdrives = overdrives.init;
+		woices = woices.init;
+		units = units.init;
 
-		master.Reset();
+		master.reset();
 
-		evels.Release();
+		evels.release();
 	}
-	void read(ref pxtnDescriptor p_doc) @safe {
-		ushort exe_ver = 0;
-		_enum_FMTVER fmt_ver = _enum_FMTVER._enum_FMTVER_unknown;
-		int event_num = 0;
+	void read(ref PxtnDescriptor pDoc) @safe {
+		ushort exeVer = 0;
+		FMTVER fmtVer = FMTVER.unknown;
+		int eventNum = 0;
 
 		clear();
 
@@ -77,43 +77,43 @@ struct PxToneSong {
 			clear();
 		}
 
-		_pre_count_event(p_doc, event_num);
-		p_doc.seek(pxtnSEEK.set, 0);
+		preCountEvent(pDoc, eventNum);
+		pDoc.seek(PxtnSeek.set, 0);
 
-		evels.Allocate(event_num);
+		evels.allocate(eventNum);
 
-		_ReadVersion(p_doc, fmt_ver, exe_ver);
+		readVersion(pDoc, fmtVer, exeVer);
 
-		if (fmt_ver >= _enum_FMTVER._enum_FMTVER_v5) {
-			evels.Linear_Start();
+		if (fmtVer >= FMTVER.v5) {
+			evels.linearStart();
 		} else {
-			evels.x4x_Read_Start();
+			evels.x4xReadStart();
 		}
 
-		_ReadTuneItems(p_doc);
+		readTuneItems(pDoc);
 
-		if (fmt_ver >= _enum_FMTVER._enum_FMTVER_v5) {
-			evels.Linear_End(true);
+		if (fmtVer >= FMTVER.v5) {
+			evels.linearEnd(true);
 		}
 
-		if (fmt_ver <= _enum_FMTVER._enum_FMTVER_x3x) {
-			if (!_x3x_TuningKeyEvent()) {
+		if (fmtVer <= FMTVER.x3x) {
+			if (!x3xTuningKeyEvent()) {
 				throw new PxtoneException("x3x key");
 			}
-			if (!_x3x_AddTuningEvent()) {
+			if (!x3xAddTuningEvent()) {
 				throw new PxtoneException("x3x add tuning");
 			}
-			_x3x_SetVoiceNames();
+			x3xSetVoiceNames();
 		}
 
 		{
-			int clock1 = evels.get_Max_Clock();
-			int clock2 = master.get_last_clock();
+			int clock1 = evels.getMaxClock();
+			int clock2 = master.getLastClock();
 
 			if (clock1 > clock2) {
-				master.AdjustMeasNum(clock1);
+				master.adjustMeasNum(clock1);
 			} else {
-				master.AdjustMeasNum(clock2);
+				master.adjustMeasNum(clock2);
 			}
 		}
 	}
@@ -121,90 +121,90 @@ struct PxToneSong {
 	// save               //////////////////
 	////////////////////////////////////////
 
-	void write(ref pxtnDescriptor p_doc, bool b_tune, ushort exe_ver) @safe {
-		bool b_ret = false;
-		int rough = b_tune ? 10 : 1;
+	void write(ref PxtnDescriptor pDoc, bool bTune, ushort exeVer) @safe {
+		bool bRet = false;
+		int rough = bTune ? 10 : 1;
 		ushort rrr = 0;
 
 		// format version
-		if (b_tune) {
-			p_doc.w_asfile(_code_tune_v5);
+		if (bTune) {
+			pDoc.write(identifierCodeTuneV5);
 		} else {
-			p_doc.w_asfile(_code_proj_v5);
+			pDoc.write(identifierCodeProjectV5);
 		}
 
 		// exe version
-		p_doc.w_asfile(exe_ver);
-		p_doc.w_asfile(rrr);
+		pDoc.write(exeVer);
+		pDoc.write(rrr);
 
 		// master
-		p_doc.w_asfile(_code_MasterV5);
-		master.io_w_v5(p_doc, rough);
+		pDoc.write(identifierCodeMasterV5);
+		master.ioWrite(pDoc, rough);
 
 		// event
-		p_doc.w_asfile(_code_Event_V5);
-		evels.io_Write(p_doc, rough);
+		pDoc.write(identifierCodeEventV5);
+		evels.ioWrite(pDoc, rough);
 
 		// name
-		if (text.is_name_buf()) {
-			p_doc.w_asfile(_code_textNAME);
-			_write4_tag(text.get_name_buf(), p_doc);
+		if (text.isNameBuf()) {
+			pDoc.write(identifierCodeTextNAME);
+			write4Tag(text.getNameBuf(), pDoc);
 		}
 
 		// comment
-		if (text.is_comment_buf()) {
-			p_doc.w_asfile(_code_textCOMM);
-			_write4_tag(text.get_comment_buf(), p_doc);
+		if (text.isCommentBuf()) {
+			pDoc.write(identifierCodeTextCOMM);
+			write4Tag(text.getCommentBuf(), pDoc);
 		}
 
 		// delay
-		for (int d = 0; d < _delays.length; d++) {
-			p_doc.w_asfile(_code_effeDELA);
+		for (int d = 0; d < delays.length; d++) {
+			pDoc.write(identifierCodeEffeDELA);
 
-			_DELAYSTRUCT dela;
+			Delay dela;
 			int size;
 
-			dela.unit = cast(ushort) _delays[d].unit;
-			dela.group = cast(ushort) _delays[d].group;
-			dela.rate = _delays[d].rate;
-			dela.freq = _delays[d].freq;
+			dela.unit = cast(ushort) delays[d].unit;
+			dela.group = cast(ushort) delays[d].group;
+			dela.rate = delays[d].rate;
+			dela.freq = delays[d].freq;
 
 			// dela ----------
-			size = _DELAYSTRUCT.sizeof;
-			p_doc.w_asfile(size);
-			p_doc.w_asfile(dela);
+			size = Delay.sizeof;
+			pDoc.write(size);
+			pDoc.write(dela);
 		}
 
 		// overdrive
-		for (int o = 0; o < _ovdrvs.length; o++) {
-			p_doc.w_asfile(_code_effeOVER);
-			_ovdrvs[o].Write(p_doc);
+		for (int o = 0; o < overdrives.length; o++) {
+			pDoc.write(identifierCodeEffeOVER);
+			overdrives[o].write(pDoc);
 		}
 
 		// woice
-		for (int w = 0; w < _woices.length; w++) {
-			pxtnWoice* p_w = _woices[w];
+		for (int w = 0; w < woices.length; w++) {
+			pxtnWoice* woice = woices[w];
 
-			switch (p_w.get_type()) {
-			case pxtnWOICETYPE.PCM:
-				p_doc.w_asfile(_code_matePCM);
-				p_w.io_matePCM_w(p_doc);
+			switch (woice.getType()) {
+			case PxtnWoiceType.pcm:
+				pDoc.write(identifierCodeMatePCM);
+				woice.ioMatePCMWrite(pDoc);
 				break;
-			case pxtnWOICETYPE.PTV:
-				p_doc.w_asfile(_code_matePTV);
-				if (!p_w.io_matePTV_w(p_doc)) {
+			case PxtnWoiceType.ptv:
+				pDoc.write(identifierCodeMatePTV);
+				if (!woice.ioMatePTVWrite(pDoc)) {
 					throw new PxtoneException("desc w");
 				}
 				break;
-			case pxtnWOICETYPE.PTN:
-				p_doc.w_asfile(_code_matePTN);
-				p_w.io_matePTN_w(p_doc);
+			case PxtnWoiceType.ptn:
+				pDoc.write(identifierCodeMatePTN);
+				woice.ioMatePTNWrite(pDoc);
 				break;
-			case pxtnWOICETYPE.OGGV:
+			case PxtnWoiceType.oggVorbis:
 
-				version (pxINCLUDE_OGGVORBIS) {
-					p_doc.w_asfile(_code_mateOGGV);
-					if (!p_w.io_mateOGGV_w(p_doc)) {
+				version (WithOggVorbis) {
+					pDoc.write(identifierCodeMateOGGV);
+					if (!woice.ioMateOGGVWrite(pDoc)) {
 						throw new PxtoneException("desc w");
 					}
 					break;
@@ -215,129 +215,129 @@ struct PxToneSong {
 				throw new PxtoneException("inv data");
 			}
 
-			if (!b_tune && p_w.is_name_buf()) {
-				p_doc.w_asfile(_code_assiWOIC);
-				if (!_io_assiWOIC_w(p_doc, w)) {
+			if (!bTune && woice.isNameBuf()) {
+				pDoc.write(identifierCodeAssiWOIC);
+				if (!ioAssistWoiceWrite(pDoc, w)) {
 					throw new PxtoneException("desc w");
 				}
 			}
 		}
 
 		// unit
-		p_doc.w_asfile(_code_num_UNIT);
-		_io_UNIT_num_w(p_doc);
+		pDoc.write(identifierCodeNumUNIT);
+		ioUnitNumberWrite(pDoc);
 
-		for (int u = 0; u < _units.length; u++) {
-			if (!b_tune && _units[u].is_name_buf()) {
-				p_doc.w_asfile(_code_assiUNIT);
-				if (!_io_assiUNIT_w(p_doc, u)) {
+		for (int u = 0; u < units.length; u++) {
+			if (!bTune && units[u].isNameBuf()) {
+				pDoc.write(identifierCodeAssiUNIT);
+				if (!ioAssistUnitWrite(pDoc, u)) {
 					throw new PxtoneException("desc w");
 				}
 			}
 		}
 
 		{
-			int end_size = 0;
-			p_doc.w_asfile(_code_pxtoneND);
-			p_doc.w_asfile(end_size);
+			int endSize = 0;
+			pDoc.write(identifierCodePxtoneND);
+			pDoc.write(endSize);
 		}
 	}
 	////////////////////////////////////////
 	// Read Project //////////////
 	////////////////////////////////////////
 
-	void _ReadTuneItems(ref pxtnDescriptor p_doc) @safe {
-		bool b_end = false;
-		char[_CODESIZE + 1] code = '\0';
+	private void readTuneItems(ref PxtnDescriptor pDoc) @safe {
+		bool bEnd = false;
+		char[identifierCodeSize + 1] code = '\0';
 
 		/// must the unit before the voice.
-		while (!b_end) {
-			p_doc.r(code[0 .._CODESIZE]);
+		while (!bEnd) {
+			pDoc.read(code[0 ..identifierCodeSize]);
 
-			_enum_Tag tag = _CheckTagCode(code);
+			Tag tag = checkTagCode(code);
 			switch (tag) {
-			case _enum_Tag.antiOPER:
+			case Tag.antiOPER:
 				throw new PxtoneException("AntiOPER tag detected");
 
 				// new -------
-			case _enum_Tag.num_UNIT: {
+			case Tag.numUnit: {
 					int num = 0;
-					_io_UNIT_num_r(p_doc, num);
-					_units.length = num;
+					ioUnitNumberRead(pDoc, num);
+					units.length = num;
 					break;
 				}
-			case _enum_Tag.MasterV5:
-				master.io_r_v5(p_doc);
+			case Tag.MasterV5:
+				master.ioRead(pDoc);
 				break;
-			case _enum_Tag.Event_V5:
-				evels.io_Read(p_doc);
-				break;
-
-			case _enum_Tag.matePCM:
-				_io_Read_Woice(p_doc, pxtnWOICETYPE.PCM);
-				break;
-			case _enum_Tag.matePTV:
-				_io_Read_Woice(p_doc, pxtnWOICETYPE.PTV);
-				break;
-			case _enum_Tag.matePTN:
-				_io_Read_Woice(p_doc, pxtnWOICETYPE.PTN);
+			case Tag.EventV5:
+				evels.ioRead(pDoc);
 				break;
 
-			case _enum_Tag.mateOGGV:
+			case Tag.matePCM:
+				ioReadWoice(pDoc, PxtnWoiceType.pcm);
+				break;
+			case Tag.matePTV:
+				ioReadWoice(pDoc, PxtnWoiceType.ptv);
+				break;
+			case Tag.matePTN:
+				ioReadWoice(pDoc, PxtnWoiceType.ptn);
+				break;
 
-				version (pxINCLUDE_OGGVORBIS) {
-					_io_Read_Woice(p_doc, pxtnWOICETYPE.OGGV);
+			case Tag.mateOGGV:
+
+				version (WithOggVorbis) {
+					ioReadWoice(pDoc, PxtnWoiceType.oggVorbis);
 					break;
 				} else {
 					throw new PxtoneException("Ogg Vorbis support is required");
 				}
 
-			case _enum_Tag.effeDELA:
-				_io_Read_Delay(p_doc);
+			case Tag.effeDELA:
+				ioReadDelay(pDoc);
 				break;
-			case _enum_Tag.effeOVER:
-				_io_Read_OverDrive(p_doc);
+			case Tag.effeOVER:
+				ioReadOverDrive(pDoc);
 				break;
-			case _enum_Tag.textNAME:
-				text.set_name_buf(_read4_tag(p_doc));
+			case Tag.textNAME:
+				text.setNameBuf(read4Tag(pDoc));
 				break;
-			case _enum_Tag.textCOMM:
-				text.set_comment_buf(_read4_tag(p_doc));
+			case Tag.textCOMM:
+				text.setCommentBuf(read4Tag(pDoc));
 				break;
-			case _enum_Tag.assiWOIC:
-				_io_assiWOIC_r(p_doc);
+			case Tag.assiWOIC:
+				ioAssistWoiceRead(pDoc);
 				break;
-			case _enum_Tag.assiUNIT:
-				_io_assiUNIT_r(p_doc);
+			case Tag.assiUNIT:
+				ioAssistUnitRead(pDoc);
 				break;
-			case _enum_Tag.pxtoneND:
-				b_end = true;
+			case Tag.pxtoneND:
+				bEnd = true;
 				break;
 
 				// old -------
-			case _enum_Tag.x4x_evenMAST:
-				master.io_r_x4x(p_doc);
+			case Tag.x4xEvenMAST:
+				master.ioReadOld(pDoc);
 				break;
-			case _enum_Tag.x4x_evenUNIT:
-				evels.io_Unit_Read_x4x_EVENT(p_doc, false, true);
+			case Tag.x4xEvenUNIT:
+				evels.ioUnitReadX4xEvent(pDoc, false, true);
 				break;
-			case _enum_Tag.x3x_pxtnUNIT:
-				_io_Read_OldUnit(p_doc, 3);
+			case Tag.x3xPxtnUNIT:
+				ioReadOldUnit(pDoc, 3);
 				break;
-			case _enum_Tag.x1x_PROJ:
-				_x1x_Project_Read(p_doc);
+			case Tag.x1xPROJ:
+				x1xProjectRead(pDoc);
 				break;
-			case _enum_Tag.x1x_UNIT:
-				_io_Read_OldUnit(p_doc, 1);
+			case Tag.x1xUNIT:
+				ioReadOldUnit(pDoc, 1);
 				break;
-			case _enum_Tag.x1x_PCM:
-				_io_Read_Woice(p_doc, pxtnWOICETYPE.PCM);
+			case Tag.x1xPCM:
+				ioReadWoice(pDoc, PxtnWoiceType.pcm);
 				break;
-			case _enum_Tag.x1x_EVEN:
-				evels.io_Unit_Read_x4x_EVENT(p_doc, true, false);
+			case Tag.x1xEVEN:
+				evels.ioUnitReadX4xEvent(pDoc, true, false);
 				break;
-			case _enum_Tag.x1x_END:
-				b_end = true;
+			case Tag.x1xEND:
+				bEnd = true;
 				break;
 
 			default:
@@ -346,121 +346,121 @@ struct PxToneSong {
 		}
 
 	}
-	void _ReadVersion(ref pxtnDescriptor p_doc, out _enum_FMTVER p_fmt_ver, out ushort p_exe_ver) @safe {
-		char[_VERSIONSIZE] version_ = '\0';
+	void readVersion(ref PxtnDescriptor pDoc, out FMTVER pFmtVer, out ushort pExeVer) @safe {
+		char[versionSize] gotVersion = '\0';
 		ushort dummy;
 
-		p_doc.r(version_[]);
+		pDoc.read(gotVersion[]);
 
 		// fmt version
-		if (version_[0 .. _VERSIONSIZE] == _code_proj_x1x) {
-			p_fmt_ver = _enum_FMTVER._enum_FMTVER_x1x;
-			p_exe_ver = 0;
+		if (gotVersion[] == identifierCodeProjectX1x) {
+			pFmtVer = FMTVER.x1x;
+			pExeVer = 0;
 			return;
-		} else if (version_[0 .. _VERSIONSIZE] == _code_proj_x2x) {
-			p_fmt_ver = _enum_FMTVER._enum_FMTVER_x2x;
-			p_exe_ver = 0;
+		} else if (gotVersion[] == identifierCodeProjectX2x) {
+			pFmtVer = FMTVER.x2x;
+			pExeVer = 0;
 			return;
-		} else if (version_[0 .. _VERSIONSIZE] == _code_proj_x3x) {
-			p_fmt_ver = _enum_FMTVER._enum_FMTVER_x3x;
-		} else if (version_[0 .. _VERSIONSIZE] == _code_proj_x4x) {
-			p_fmt_ver = _enum_FMTVER._enum_FMTVER_x4x;
-		} else if (version_[0 .. _VERSIONSIZE] == _code_proj_v5) {
-			p_fmt_ver = _enum_FMTVER._enum_FMTVER_v5;
-		} else if (version_[0 .. _VERSIONSIZE] == _code_tune_x2x) {
-			p_fmt_ver = _enum_FMTVER._enum_FMTVER_x2x;
-			p_exe_ver = 0;
+		} else if (gotVersion[] == identifierCodeProjectX3x) {
+			pFmtVer = FMTVER.x3x;
+		} else if (gotVersion[] == identifierCodeProjectX4x) {
+			pFmtVer = FMTVER.x4x;
+		} else if (gotVersion[] == identifierCodeProjectV5) {
+			pFmtVer = FMTVER.v5;
+		} else if (gotVersion[] == identifierCodeTuneX2x) {
+			pFmtVer = FMTVER.x2x;
+			pExeVer = 0;
 			return;
-		} else if (version_[0 .. _VERSIONSIZE] == _code_tune_x3x) {
-			p_fmt_ver = _enum_FMTVER._enum_FMTVER_x3x;
-		} else if (version_[0 .. _VERSIONSIZE] == _code_tune_x4x) {
-			p_fmt_ver = _enum_FMTVER._enum_FMTVER_x4x;
-		} else if (version_[0 .. _VERSIONSIZE] == _code_tune_v5) {
-			p_fmt_ver = _enum_FMTVER._enum_FMTVER_v5;
+		} else if (gotVersion[] == identifierCodeTuneX3x) {
+			pFmtVer = FMTVER.x3x;
+		} else if (gotVersion[] == identifierCodeTuneX4x) {
+			pFmtVer = FMTVER.x4x;
+		} else if (gotVersion[] == identifierCodeTuneV5) {
+			pFmtVer = FMTVER.v5;
 		} else {
 			throw new PxtoneException("fmt unknown");
 		}
 
 		// exe version
-		p_doc.r(p_exe_ver);
-		p_doc.r(dummy);
+		pDoc.read(pExeVer);
+		pDoc.read(dummy);
 	}
 
-	void _x1x_Project_Read(ref pxtnDescriptor p_doc) @safe {
-		_x1x_PROJECT prjc;
-		int beat_num, beat_clock;
+	private void x1xProjectRead(ref PxtnDescriptor pDoc) @safe {
+		Project prjc;
+		int beatNum, beatClock;
 		int size;
-		float beat_tempo;
+		float beatTempo;
 
-		p_doc.r(size);
-		p_doc.r(prjc);
+		pDoc.read(size);
+		pDoc.read(prjc);
 
-		beat_num = prjc.x1x_beat_num;
-		beat_tempo = prjc.x1x_beat_tempo;
-		beat_clock = prjc.x1x_beat_clock;
+		beatNum = prjc.x1xBeatNum;
+		beatTempo = prjc.x1xBeatTempo;
+		beatClock = prjc.x1xBeatClock;
 
 		int ns = 0;
-		for ( /+ns+/ ; ns < _MAX_PROJECTNAME_x1x; ns++) {
-			if (!prjc.x1x_name[ns]) {
+		for ( /+ns+/ ; ns < prjc.x1xName.length; ns++) {
+			if (!prjc.x1xName[ns]) {
 				break;
 			}
 		}
 
-		text.set_name_buf(prjc.x1x_name[0 .. ns].dup);
-		master.Set(beat_num, beat_tempo, beat_clock);
+		text.setNameBuf(prjc.x1xName[0 .. ns].dup);
+		master.set(beatNum, beatTempo, beatClock);
 	}
 
-	void _io_Read_Delay(ref pxtnDescriptor p_doc) @safe {
-		if (pxtnMAX_TUNEDELAYSTRUCT < _delays.length) {
+	private void ioReadDelay(ref PxtnDescriptor pDoc) @safe {
+		if (pxtnMaxTuneDelayStruct < delays.length) {
 			throw new PxtoneException("fmt unknown");
 		}
 
-		_DELAYSTRUCT delay;
+		Delay delay;
 		int size = 0;
 
-		p_doc.r(size);
-		p_doc.r(delay);
-		if (delay.unit >= DELAYUNIT.num) {
+		pDoc.read(size);
+		pDoc.read(delay);
+		if (delay.unit >= DelayUnit.num) {
 			throw new PxtoneException("fmt unknown");
 		}
 
-		if (delay.group >= pxtnMAX_TUNEGROUPNUM) {
+		if (delay.group >= pxtnMaxTuneGroupNumber) {
 			delay.group = 0;
 		}
 
-		_delays ~= delay;
+		delays ~= delay;
 	}
 
-	void _io_Read_OverDrive(ref pxtnDescriptor p_doc) @safe {
-		if (pxtnMAX_TUNEOVERDRIVESTRUCT < _ovdrvs.length) {
+	private void ioReadOverDrive(ref PxtnDescriptor pDoc) @safe {
+		if (pxtnMaxTuneOverdriveStruct < overdrives.length) {
 			throw new PxtoneException("fmt unknown");
 		}
 
 		pxtnOverDrive* ovdrv = new pxtnOverDrive();
-		ovdrv.Read(p_doc);
-		_ovdrvs ~= ovdrv;
+		ovdrv.read(pDoc);
+		overdrives ~= ovdrv;
 	}
 
-	void _io_Read_Woice(ref pxtnDescriptor p_doc, pxtnWOICETYPE type) @safe {
-		if (pxtnMAX_TUNEWOICESTRUCT < _woices.length) {
+	private void ioReadWoice(ref PxtnDescriptor pDoc, PxtnWoiceType type) @safe {
+		if (pxtnMaxTuneWoiceStruct < woices.length) {
 			throw new PxtoneException("Too many woices");
 		}
 
 		pxtnWoice* woice = new pxtnWoice();
 
 		switch (type) {
-		case pxtnWOICETYPE.PCM:
-			woice.io_matePCM_r(p_doc);
+		case PxtnWoiceType.pcm:
+			woice.ioMatePCMRead(pDoc);
 			break;
-		case pxtnWOICETYPE.PTV:
-			woice.io_matePTV_r(p_doc);
+		case PxtnWoiceType.ptv:
+			woice.ioMatePTVRead(pDoc);
 			break;
-		case pxtnWOICETYPE.PTN:
-			woice.io_matePTN_r(p_doc);
+		case PxtnWoiceType.ptn:
+			woice.ioMatePTNRead(pDoc);
 			break;
-		case pxtnWOICETYPE.OGGV:
-			version (pxINCLUDE_OGGVORBIS) {
-				woice.io_mateOGGV_r(p_doc);
+		case PxtnWoiceType.oggVorbis:
+			version (WithOggVorbis) {
+				woice.ioMateOGGVRead(pDoc);
 				break;
 			} else {
 				throw new PxtoneException("Ogg Vorbis support is required");
@@ -469,100 +469,100 @@ struct PxToneSong {
 		default:
 			throw new PxtoneException("fmt unknown");
 		}
-		_woices ~= woice;
+		woices ~= woice;
 	}
 
-	void _io_Read_OldUnit(ref pxtnDescriptor p_doc, int ver) @safe {
-		if (pxtnMAX_TUNEUNITSTRUCT < _units.length) {
+	private void ioReadOldUnit(ref PxtnDescriptor pDoc, int ver) @safe {
+		if (pxtnMaxTuneUnitStruct < units.length) {
 			throw new PxtoneException("fmt unknown");
 		}
 
-		pxtnUnit* unit = new pxtnUnit();
+		PxtnUnit* unit = new PxtnUnit();
 		int group = 0;
 		switch (ver) {
 		case 1:
-			unit.Read_v1x(p_doc, group);
+			unit.readOld(pDoc, group);
 			break;
 		case 3:
-			unit.Read_v3x(p_doc, group);
+			unit.read(pDoc, group);
 			break;
 		default:
 			throw new PxtoneException("fmt unknown");
 		}
 
-		if (group >= pxtnMAX_TUNEGROUPNUM) {
-			group = pxtnMAX_TUNEGROUPNUM - 1;
+		if (group >= pxtnMaxTuneGroupNumber) {
+			group = pxtnMaxTuneGroupNumber - 1;
 		}
 
-		evels.x4x_Read_Add(0, cast(ubyte) _units.length, EVENTKIND.GROUPNO, cast(int) group);
-		evels.x4x_Read_NewKind();
-		evels.x4x_Read_Add(0, cast(ubyte) _units.length, EVENTKIND.VOICENO, cast(int) _units.length);
-		evels.x4x_Read_NewKind();
+		evels.x4xReadAdd(0, cast(ubyte) units.length, EventKind.groupNumber, cast(int) group);
+		evels.x4xReadNewKind();
+		evels.x4xReadAdd(0, cast(ubyte) units.length, EventKind.voiceNumber, cast(int) units.length);
+		evels.x4xReadNewKind();
 
-		_units ~= *unit;
+		units ~= *unit;
 	}
 
 	/////////////
 	// comments
 	/////////////
 
-	const(char)[] _read4_tag(ref pxtnDescriptor p_doc) @safe {
+	const(char)[] read4Tag(ref PxtnDescriptor pDoc) @safe {
 		char[] result;
-		int p_buf_size;
-		p_doc.r(p_buf_size);
-		enforce(p_buf_size >= 0, "Invalid string size");
+		int pBufferSize;
+		pDoc.read(pBufferSize);
+		enforce(pBufferSize >= 0, "Invalid string size");
 
-		if (p_buf_size) {
-			result = new char[](p_buf_size);
-			p_doc.r(result[0 .. p_buf_size]);
+		if (pBufferSize) {
+			result = new char[](pBufferSize);
+			pDoc.read(result[0 .. pBufferSize]);
 		}
 		return result;
 	}
-	private void _write4_tag(const char[] p, ref pxtnDescriptor p_doc) @safe {
-		p_doc.w_asfile(cast(int)p.length);
-		p_doc.w_asfile(p);
+	private void write4Tag(const char[] p, ref PxtnDescriptor pDoc) @safe {
+		pDoc.write(cast(int)p.length);
+		pDoc.write(p);
 	}
 
 	/////////////
 	// assi woice
 	/////////////
 
-	bool _io_assiWOIC_w(ref pxtnDescriptor p_doc, int idx) const @safe {
-		_ASSIST_WOICE assi;
+	private bool ioAssistWoiceWrite(ref PxtnDescriptor pDoc, int idx) const @safe {
+		AssistWoice assi;
 		int size;
-		const char[] p_name = _woices[idx].get_name_buf();
+		const char[] pName = woices[idx].getNameBuf();
 
-		if (p_name.length > pxtnMAX_TUNEWOICENAME) {
+		if (pName.length > pxtnMaxTuneWoiceName) {
 			return false;
 		}
 
-		assi.name[0 .. p_name.length] = p_name;
-		assi.woice_index = cast(ushort) idx;
+		assi.name[0 .. pName.length] = pName;
+		assi.woiceIndex = cast(ushort) idx;
 
-		size = _ASSIST_WOICE.sizeof;
-		p_doc.w_asfile(size);
-		p_doc.w_asfile(assi);
+		size = AssistWoice.sizeof;
+		pDoc.write(size);
+		pDoc.write(assi);
 
 		return true;
 	}
 
-	void _io_assiWOIC_r(ref pxtnDescriptor p_doc) @safe {
-		_ASSIST_WOICE assi;
+	void ioAssistWoiceRead(ref PxtnDescriptor pDoc) @safe {
+		AssistWoice assi;
 		int size = 0;
 
-		p_doc.r(size);
+		pDoc.read(size);
 		if (size != assi.sizeof) {
 			throw new PxtoneException("fmt unknown");
 		}
-		p_doc.r(assi);
+		pDoc.read(assi);
 		if (assi.rrr) {
 			throw new PxtoneException("fmt unknown");
 		}
-		if (assi.woice_index >= _woices.length) {
+		if (assi.woiceIndex >= woices.length) {
 			throw new PxtoneException("fmt unknown");
 		}
 
-		if (!_woices[assi.woice_index].set_name_buf(assi.name.dup)) {
+		if (!woices[assi.woiceIndex].setNameBuf(assi.name.dup)) {
 			throw new PxtoneException("FATAL");
 		}
 	}
@@ -570,38 +570,38 @@ struct PxToneSong {
 	// assi unit.
 	// -----
 
-	bool _io_assiUNIT_w(ref pxtnDescriptor p_doc, int idx) const @safe {
-		_ASSIST_UNIT assi;
+	private bool ioAssistUnitWrite(ref PxtnDescriptor pDoc, int idx) const @safe {
+		AssistUnit assi;
 		int size;
-		const(char)[] p_name = _units[idx].get_name_buf();
+		const(char)[] pName = units[idx].getNameBuf();
 
-		assi.name[0 .. p_name.length] = p_name[];
-		assi.unit_index = cast(ushort) idx;
+		assi.name[0 .. pName.length] = pName[];
+		assi.unitIndex = cast(ushort) idx;
 
 		size = assi.sizeof;
-		p_doc.w_asfile(size);
-		p_doc.w_asfile(assi);
+		pDoc.write(size);
+		pDoc.write(assi);
 
 		return true;
 	}
 
-	void _io_assiUNIT_r(ref pxtnDescriptor p_doc) @safe {
-		_ASSIST_UNIT assi;
+	private void ioAssistUnitRead(ref PxtnDescriptor pDoc) @safe {
+		AssistUnit assi;
 		int size;
 
-		p_doc.r(size);
+		pDoc.read(size);
 		if (size != assi.sizeof) {
 			throw new PxtoneException("fmt unknown");
 		}
-		p_doc.r(assi);
+		pDoc.read(assi);
 		if (assi.rrr) {
 			throw new PxtoneException("fmt unknown");
 		}
-		if (assi.unit_index >= _units.length) {
+		if (assi.unitIndex >= units.length) {
 			throw new PxtoneException("fmt unknown");
 		}
 
-		if (!_units[assi.unit_index].setNameBuf(assi.name[])) {
+		if (!units[assi.unitIndex].setNameBuf(assi.name[])) {
 			throw new PxtoneException("FATAL");
 		}
 	}
@@ -609,197 +609,197 @@ struct PxToneSong {
 	// unit num
 	// -----
 
-	void _io_UNIT_num_w(ref pxtnDescriptor p_doc) const @safe {
-		_NUM_UNIT data;
+	private void ioUnitNumberWrite(ref PxtnDescriptor pDoc) const @safe {
+		NumUnit data;
 		int size;
 
-		data.num = cast(short) _units.length;
+		data.num = cast(short) units.length;
 
-		size = _NUM_UNIT.sizeof;
-		p_doc.w_asfile(size);
-		p_doc.w_asfile(data);
+		size = NumUnit.sizeof;
+		pDoc.write(size);
+		pDoc.write(data);
 	}
 
-	void _io_UNIT_num_r(ref pxtnDescriptor p_doc, out int p_num) @safe {
-		_NUM_UNIT data;
+	private void ioUnitNumberRead(ref PxtnDescriptor pDoc, out int pNum) @safe {
+		NumUnit data;
 		int size = 0;
 
-		p_doc.r(size);
-		if (size != _NUM_UNIT.sizeof) {
+		pDoc.read(size);
+		if (size != NumUnit.sizeof) {
 			throw new PxtoneException("fmt unknown");
 		}
-		p_doc.r(data);
+		pDoc.read(data);
 		if (data.rrr) {
 			throw new PxtoneException("fmt unknown");
 		}
-		if (data.num > pxtnMAX_TUNEUNITSTRUCT) {
+		if (data.num > pxtnMaxTuneUnitStruct) {
 			throw new PxtoneException("fmt new");
 		}
 		if (data.num < 0) {
 			throw new PxtoneException("fmt unknown");
 		}
-		p_num = data.num;
+		pNum = data.num;
 	}
 
 	// fix old key event
-	bool _x3x_TuningKeyEvent() nothrow @safe {
-		if (_units.length > _woices.length) {
+	private bool x3xTuningKeyEvent() nothrow @safe {
+		if (units.length > woices.length) {
 			return false;
 		}
 
-		for (int u = 0; u < _units.length; u++) {
-			if (u >= _woices.length) {
+		for (int u = 0; u < units.length; u++) {
+			if (u >= woices.length) {
 				return false;
 			}
 
-			int change_value = _woices[u].get_x3x_basic_key() - EVENTDEFAULT_BASICKEY;
+			int changeValue = woices[u].getX3xBasicKey() - EventDefault.basicKey;
 
-			if (!evels.get_Count(cast(ubyte) u, cast(ubyte) EVENTKIND.KEY)) {
-				evels.Record_Add_i(0, cast(ubyte) u, EVENTKIND.KEY, cast(int) 0x6000);
+			if (!evels.getCount(cast(ubyte) u, cast(ubyte) EventKind.key)) {
+				evels.recordAdd(0, cast(ubyte) u, EventKind.key, cast(int) 0x6000);
 			}
-			evels.Record_Value_Change(0, -1, cast(ubyte) u, EVENTKIND.KEY, change_value);
+			evels.recordValueChange(0, -1, cast(ubyte) u, EventKind.key, changeValue);
 		}
 		return true;
 	}
 
 	// fix old tuning (1.0)
-	bool _x3x_AddTuningEvent() nothrow @safe {
-		if (_units.length > _woices.length) {
+	private bool x3xAddTuningEvent() nothrow @safe {
+		if (units.length > woices.length) {
 			return false;
 		}
 
-		for (int u = 0; u < _units.length; u++) {
-			float tuning = _woices[u].get_x3x_tuning();
+		for (int u = 0; u < units.length; u++) {
+			float tuning = woices[u].getX3xTuning();
 			if (tuning) {
-				evels.Record_Add_f(0, cast(ubyte) u, EVENTKIND.TUNING, tuning);
+				evels.recordAdd(0, cast(ubyte) u, EventKind.tuning, tuning);
 			}
 		}
 
 		return true;
 	}
 
-	bool _x3x_SetVoiceNames() nothrow @safe {
-		for (int i = 0; i < _woices.length; i++) {
-			char[pxtnMAX_TUNEWOICENAME + 1] name = 0;
+	private bool x3xSetVoiceNames() nothrow @safe {
+		for (int i = 0; i < woices.length; i++) {
+			char[pxtnMaxTuneWoiceName + 1] name = 0;
 			try {
 				sformat(name[], "voice_%02d", i);
 			} catch (Exception) { //This will never actually happen...
 				return false;
 			}
-			_woices[i].set_name_buf(name.dup);
+			woices[i].setNameBuf(name.dup);
 		}
 		return true;
 	}
-	void _pre_count_event(ref pxtnDescriptor p_doc, out int p_count) @safe {
-		bool b_end = false;
+	private void preCountEvent(ref PxtnDescriptor pDoc, out int pCount) @safe {
+		bool bEnd = false;
 
 		int count = 0;
 		int c = 0;
 		int size = 0;
-		char[_CODESIZE + 1] code = '\0';
+		char[identifierCodeSize + 1] code = '\0';
 
-		ushort exe_ver = 0;
-		_enum_FMTVER fmt_ver = _enum_FMTVER._enum_FMTVER_unknown;
+		ushort exeVer = 0;
+		FMTVER fmtVer = FMTVER.unknown;
 
 		scope(failure) {
-			p_count = 0;
+			pCount = 0;
 		}
 
-		_ReadVersion(p_doc, fmt_ver, exe_ver);
+		readVersion(pDoc, fmtVer, exeVer);
 
-		if (fmt_ver == _enum_FMTVER._enum_FMTVER_x1x) {
-			count = _MAX_FMTVER_x1x_EVENTNUM;
+		if (fmtVer == FMTVER.x1x) {
+			count = 10000;
 			goto term;
 		}
 
-		while (!b_end) {
-			p_doc.r(code[0 .. _CODESIZE]);
+		while (!bEnd) {
+			pDoc.read(code[0 .. identifierCodeSize]);
 
-			switch (_CheckTagCode(code)) {
-			case _enum_Tag.Event_V5:
-				count += evels.io_Read_EventNum(p_doc);
+			switch (checkTagCode(code)) {
+			case Tag.EventV5:
+				count += evels.ioReadEventNum(pDoc);
 				break;
-			case _enum_Tag.MasterV5:
-				count += master.io_r_v5_EventNum(p_doc);
+			case Tag.MasterV5:
+				count += master.ioReadEventNumber(pDoc);
 				break;
-			case _enum_Tag.x4x_evenMAST:
-				count += master.io_r_x4x_EventNum(p_doc);
+			case Tag.x4xEvenMAST:
+				count += master.ioReadOldEventNumber(pDoc);
 				break;
-			case _enum_Tag.x4x_evenUNIT:
-				evels.io_Read_x4x_EventNum(p_doc, c);
+			case Tag.x4xEvenUNIT:
+				evels.ioReadX4xEventNum(pDoc, c);
 				count += c;
 				break;
-			case _enum_Tag.pxtoneND:
-				b_end = true;
+			case Tag.pxtoneND:
+				bEnd = true;
 				break;
 
 				// skip
-			case _enum_Tag.antiOPER:
-			case _enum_Tag.num_UNIT:
-			case _enum_Tag.x3x_pxtnUNIT:
-			case _enum_Tag.matePCM:
-			case _enum_Tag.matePTV:
-			case _enum_Tag.matePTN:
-			case _enum_Tag.mateOGGV:
-			case _enum_Tag.effeDELA:
-			case _enum_Tag.effeOVER:
-			case _enum_Tag.textNAME:
-			case _enum_Tag.textCOMM:
-			case _enum_Tag.assiUNIT:
-			case _enum_Tag.assiWOIC:
+			case Tag.antiOPER:
+			case Tag.numUnit:
+			case Tag.x3xPxtnUNIT:
+			case Tag.matePCM:
+			case Tag.matePTV:
+			case Tag.matePTN:
+			case Tag.mateOGGV:
+			case Tag.effeDELA:
+			case Tag.effeOVER:
+			case Tag.textNAME:
+			case Tag.textCOMM:
+			case Tag.assiUNIT:
+			case Tag.assiWOIC:
 
-				p_doc.r(size);
-				p_doc.seek(pxtnSEEK.cur, size);
+				pDoc.read(size);
+				pDoc.seek(PxtnSeek.cur, size);
 				break;
 
 				// ignore
-			case _enum_Tag.x1x_PROJ:
-			case _enum_Tag.x1x_UNIT:
-			case _enum_Tag.x1x_PCM:
-			case _enum_Tag.x1x_EVEN:
-			case _enum_Tag.x1x_END:
+			case Tag.x1xPROJ:
+			case Tag.x1xUNIT:
+			case Tag.x1xPCM:
+			case Tag.x1xEVEN:
+			case Tag.x1xEND:
 				throw new PxtoneException("x1x ignore");
 			default:
 				throw new PxtoneException("FATAL");
 			}
 		}
 
-		if (fmt_ver <= _enum_FMTVER._enum_FMTVER_x3x) {
-			count += pxtnMAX_TUNEUNITSTRUCT * 4; // voice_no, group_no, key tuning, key event x3x
+		if (fmtVer <= FMTVER.x3x) {
+			count += pxtnMaxTuneUnitStruct * 4; // voice number, group number, key tuning, key event x3x
 		}
 
 	term:
 
-		p_count = count;
+		pCount = count;
 	}
 }
 
 
-private _enum_Tag _CheckTagCode(scope const char[] p_code) nothrow @safe {
-	switch(p_code[0 .. _CODESIZE]) {
-		case _code_antiOPER: return _enum_Tag.antiOPER;
-		case _code_x1x_PROJ: return _enum_Tag.x1x_PROJ;
-		case _code_x1x_UNIT: return _enum_Tag.x1x_UNIT;
-		case _code_x1x_PCM: return _enum_Tag.x1x_PCM;
-		case _code_x1x_EVEN: return _enum_Tag.x1x_EVEN;
-		case _code_x1x_END: return _enum_Tag.x1x_END;
-		case _code_x3x_pxtnUNIT: return _enum_Tag.x3x_pxtnUNIT;
-		case _code_x4x_evenMAST: return _enum_Tag.x4x_evenMAST;
-		case _code_x4x_evenUNIT: return _enum_Tag.x4x_evenUNIT;
-		case _code_num_UNIT: return _enum_Tag.num_UNIT;
-		case _code_Event_V5: return _enum_Tag.Event_V5;
-		case _code_MasterV5: return _enum_Tag.MasterV5;
-		case _code_matePCM: return _enum_Tag.matePCM;
-		case _code_matePTV: return _enum_Tag.matePTV;
-		case _code_matePTN: return _enum_Tag.matePTN;
-		case _code_mateOGGV: return _enum_Tag.mateOGGV;
-		case _code_effeDELA: return _enum_Tag.effeDELA;
-		case _code_effeOVER: return _enum_Tag.effeOVER;
-		case _code_textNAME: return _enum_Tag.textNAME;
-		case _code_textCOMM: return _enum_Tag.textCOMM;
-		case _code_assiUNIT: return _enum_Tag.assiUNIT;
-		case _code_assiWOIC: return _enum_Tag.assiWOIC;
-		case _code_pxtoneND: return _enum_Tag.pxtoneND;
-		default: return _enum_Tag.Unknown;
+private Tag checkTagCode(scope const char[] pCode) nothrow @safe {
+	switch(pCode[0 .. identifierCodeSize]) {
+		case identifierCodeAntiOPER: return Tag.antiOPER;
+		case identifierCodeX1xPROJ: return Tag.x1xPROJ;
+		case identifierCodeX1xUNIT: return Tag.x1xUNIT;
+		case identifierCodeX1xPCM: return Tag.x1xPCM;
+		case identifierCodeX1xEVEN: return Tag.x1xEVEN;
+		case identifierCodeX1xEND: return Tag.x1xEND;
+		case identifierCodeX3xPxtnUNIT: return Tag.x3xPxtnUNIT;
+		case identifierCodeX4xEvenMAST: return Tag.x4xEvenMAST;
+		case identifierCodeX4xEvenUNIT: return Tag.x4xEvenUNIT;
+		case identifierCodeNumUNIT: return Tag.numUnit;
+		case identifierCodeEventV5: return Tag.EventV5;
+		case identifierCodeMasterV5: return Tag.MasterV5;
+		case identifierCodeMatePCM: return Tag.matePCM;
+		case identifierCodeMatePTV: return Tag.matePTV;
+		case identifierCodeMatePTN: return Tag.matePTN;
+		case identifierCodeMateOGGV: return Tag.mateOGGV;
+		case identifierCodeEffeDELA: return Tag.effeDELA;
+		case identifierCodeEffeOVER: return Tag.effeOVER;
+		case identifierCodeTextNAME: return Tag.textNAME;
+		case identifierCodeTextCOMM: return Tag.textCOMM;
+		case identifierCodeAssiUNIT: return Tag.assiUNIT;
+		case identifierCodeAssiWOIC: return Tag.assiWOIC;
+		case identifierCodePxtoneND: return Tag.pxtoneND;
+		default: return Tag.Unknown;
 	}
 }

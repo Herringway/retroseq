@@ -1,44 +1,44 @@
 ﻿module pxtone.pulse.frequency;
 
-enum _OCTAVE_NUM = 16; // octave num.
-enum _KEY_PER_OCTAVE = 12; // key per octave
-enum _FREQUENCY_PER_KEY = 0x10; // sample per key
+private enum octaveNum = 16; // octave num.
+private enum keyPerOctave = 12; // key per octave
+private enum frequencyPerKey = 0x10; // sample per key
 
-enum _BASIC_FREQUENCY_INDEX = ((_OCTAVE_NUM / 2) * _KEY_PER_OCTAVE * _FREQUENCY_PER_KEY);
-enum _TABLE_SIZE = (_OCTAVE_NUM * _KEY_PER_OCTAVE * _FREQUENCY_PER_KEY);
+private enum basicFrequencyIndex = ((octaveNum / 2) * keyPerOctave * frequencyPerKey);
+private enum tableSize = (octaveNum * keyPerOctave * frequencyPerKey);
 
-struct pxtnPulse_Frequency {
-	static immutable float[] _freq_table = genTables();
+struct PxtnPulseFrequency {
+	static immutable float[] freqTable = genTables();
 
-	float Get(int key) const nothrow @safe {
+	float get(int key) const nothrow @safe {
 		int i;
 
-		i = (key + 0x6000) * _FREQUENCY_PER_KEY / 0x100;
+		i = (key + 0x6000) * frequencyPerKey / 0x100;
 		if (i < 0) {
 			i = 0;
-		} else if (i >= _TABLE_SIZE) {
-			i = _TABLE_SIZE - 1;
+		} else if (i >= tableSize) {
+			i = tableSize - 1;
 		}
-		return _freq_table[i];
+		return freqTable[i];
 	}
 
-	float Get2(int key) nothrow @safe {
+	float get2(int key) nothrow @safe {
 		int i = key >> 4;
 		if (i < 0) {
 			i = 0;
-		} else if (i >= _TABLE_SIZE) {
-			i = _TABLE_SIZE - 1;
+		} else if (i >= tableSize) {
+			i = tableSize - 1;
 		}
-		return _freq_table[i];
+		return freqTable[i];
 	}
 
-	const(float)[] GetDirect(int* p_size) nothrow @safe {
-		*p_size = _TABLE_SIZE;
-		return _freq_table;
+	const(float)[] getDirect(int* pSize) nothrow @safe {
+		*pSize = tableSize;
+		return freqTable;
 	}
 }
 
-private double _GetDivideOctaveRate(int divi) nothrow @safe {
+private double getDivideOctaveRate(int divi) nothrow @safe {
 	double parameter = 1.0;
 	double work;
 	double result;
@@ -78,8 +78,8 @@ private double _GetDivideOctaveRate(int divi) nothrow @safe {
 	return parameter;
 }
 private float[] genTables() @safe {
-	float[] _freq_table;
-	static immutable double[_OCTAVE_NUM] oct_table = [0.00390625, //0  -8
+	float[] freqTable;
+	static immutable double[octaveNum] octTable = [0.00390625, //0  -8
 		0.0078125, //1  -7
 		0.015625, //2  -6
 		0.03125, //3  -5
@@ -99,22 +99,22 @@ private float[] genTables() @safe {
 
 	int key;
 	int f;
-	double oct_x24;
+	double octX24;
 	double work;
 
-	_freq_table = new float[_TABLE_SIZE];
-	//if (!(_freq_table)) {
+	freqTable = new float[tableSize];
+	//if (!(freqTable)) {
 	//	goto End;
 	//}
 
-	oct_x24 = _GetDivideOctaveRate(_KEY_PER_OCTAVE * _FREQUENCY_PER_KEY);
+	octX24 = getDivideOctaveRate(keyPerOctave * frequencyPerKey);
 
-	for (f = 0; f < _OCTAVE_NUM * (_KEY_PER_OCTAVE * _FREQUENCY_PER_KEY); f++) {
-		work = oct_table[f / (_KEY_PER_OCTAVE * _FREQUENCY_PER_KEY)];
-		for (key = 0; key < f % (_KEY_PER_OCTAVE * _FREQUENCY_PER_KEY); key++) {
-			work *= oct_x24;
+	for (f = 0; f < octaveNum * (keyPerOctave * frequencyPerKey); f++) {
+		work = octTable[f / (keyPerOctave * frequencyPerKey)];
+		for (key = 0; key < f % (keyPerOctave * frequencyPerKey); key++) {
+			work *= octX24;
 		}
-		_freq_table[f] = cast(float) work;
+		freqTable[f] = cast(float)work;
 	}
-	return _freq_table;
+	return freqTable;
 }

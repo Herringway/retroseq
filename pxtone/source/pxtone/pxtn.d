@@ -4,7 +4,7 @@
 // '16/12/03 pxtnRESULT.
 // '16/12/15 pxtnRESULT -> pxtnERR/pxtnOK.
 
-struct pxtnPOINT {
+struct PxtnPoint {
 	int x;
 	int y;
 }

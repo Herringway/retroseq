@@ -5,37 +5,37 @@ import std.exception;
 
 import pxtone.descriptor;
 
-struct pxtnText {
-	private const(char)[] _p_comment_buf;
-	private const(char)[] _p_name_buf;
+struct PxtnText {
+	private const(char)[] pCommentBuf;
+	private const(char)[] pNameBuf;
 
-	public void set_comment_buf(const(char)[] comment) nothrow @safe {
+	public void setCommentBuf(const(char)[] comment) nothrow @safe {
 		if (comment.length == 0) {
-			_p_comment_buf = null;
+			pCommentBuf = null;
 		}
-		_p_comment_buf = comment;
+		pCommentBuf = comment;
 	}
 
-	public const(char)[] get_comment_buf() const nothrow @safe {
-		return _p_comment_buf;
+	public const(char)[] getCommentBuf() const nothrow @safe {
+		return pCommentBuf;
 	}
 
-	public bool is_comment_buf() const nothrow @safe {
-		return _p_comment_buf != null;
+	public bool isCommentBuf() const nothrow @safe {
+		return pCommentBuf != null;
 	}
 
-	public void set_name_buf(const(char)[] name) nothrow @safe {
+	public void setNameBuf(const(char)[] name) nothrow @safe {
 		if (name.length == 0) {
-			_p_name_buf = null;
+			pNameBuf = null;
 		}
-		_p_name_buf = name;
+		pNameBuf = name;
 	}
 
-	public const(char)[] get_name_buf() const nothrow @safe {
-		return _p_name_buf;
+	public const(char)[] getNameBuf() const nothrow @safe {
+		return pNameBuf;
 	}
 
-	public bool is_name_buf() const nothrow @safe {
-		return _p_name_buf != null;
+	public bool isNameBuf() const nothrow @safe {
+		return pNameBuf != null;
 	}
 }

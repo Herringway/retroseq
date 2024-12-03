@@ -11,30 +11,30 @@ import std.exception;
 import std.stdio;
 import std.traits;
 
-enum pxSCE = false;
+enum PxSCE = false;
 
-enum pxtnSEEK {
+enum PxtnSeek {
 	set = 0,
 	cur,
 	end,
 	num
 }
 
-struct pxtnDescriptor {
+struct PxtnDescriptor {
 private:
-	ubyte[] _p_desc;
+	ubyte[] buffer;
 	File file;
-	bool _b_file;
-	bool _b_read;
-	int _size;
-	int _cur;
+	bool isFile;
+	bool readOnly;
+	int size;
+	int currentPosition;
 
 	bool isOpen() nothrow @safe {
-		return (_p_desc != null) || file.isOpen;
+		return (buffer != null) || file.isOpen;
 	}
 public:
 
-	void set_file_r(ref File fd) @safe {
+	void setFileReadOnly(ref File fd) @safe {
 		enforce(fd.isOpen, new PxtoneException("File must be opened for reading"));
 
 		fd.seek(0, SEEK_END);
@@ -42,49 +42,49 @@ public:
 		fd.seek(0, SEEK_SET);
 		file = fd;
 
-		_size = cast(int) sz;
+		size = cast(int) sz;
 
-		_b_file = true;
-		_b_read = true;
-		_cur = 0;
+		isFile = true;
+		readOnly = true;
+		currentPosition = 0;
 	}
 
-	void set_file_w(ref File fd) @safe {
+	void setFileWritable(ref File fd) @safe {
 		file = fd;
-		_size = 0;
-		_b_file = true;
-		_b_read = false;
-		_cur = 0;
+		size = 0;
+		isFile = true;
+		readOnly = false;
+		currentPosition = 0;
 	}
 
-	void set_memory_r(ubyte[] buf) @safe {
+	void setMemoryReadOnly(ubyte[] buf) @safe {
 		enforce(buf.length >= 1, new PxtoneException("No data to read in buffer"));
-		_p_desc = buf;
-		_b_file = false;
-		_b_read = true;
-		_cur = 0;
+		buffer = buf;
+		isFile = false;
+		readOnly = true;
+		currentPosition = 0;
 	}
 
-	void seek(pxtnSEEK mode, int val) @safe {
-		if (_b_file) {
-			int[pxtnSEEK.num] seek_tbl = [SEEK_SET, SEEK_CUR, SEEK_END];
-			file.seek(val, seek_tbl[mode]);
+	void seek(PxtnSeek mode, int val) @safe {
+		if (isFile) {
+			static immutable int[PxtnSeek.num] seekMapping = [SEEK_SET, SEEK_CUR, SEEK_END];
+			file.seek(val, seekMapping[mode]);
 		} else {
 			switch (mode) {
-			case pxtnSEEK.set:
-				enforce(val < _p_desc.length, "Unexpected end of data");
+			case PxtnSeek.set:
+				enforce(val < buffer.length, "Unexpected end of data");
 				enforce(val >= 0, "Cannot seek to negative position");
-				_cur = val;
+				currentPosition = val;
 				break;
-			case pxtnSEEK.cur:
-				enforce(_cur + val < _p_desc.length, "Unexpected end of data");
-				enforce(_cur + val >= 0, "Cannot seek to negative position");
-				_cur += val;
+			case PxtnSeek.cur:
+				enforce(currentPosition + val < buffer.length, "Unexpected end of data");
+				enforce(currentPosition + val >= 0, "Cannot seek to negative position");
+				currentPosition += val;
 				break;
-			case pxtnSEEK.end:
-				enforce(_p_desc.length + val < _p_desc.length, "Unexpected end of data");
-				enforce(_p_desc.length + val >= 0, "Cannot seek to negative position");
-				_cur = cast(int)_p_desc.length + val;
+			case PxtnSeek.end:
+				enforce(buffer.length + val < buffer.length, "Unexpected end of data");
+				enforce(buffer.length + val >= 0, "Cannot seek to negative position");
+				currentPosition = cast(int)buffer.length + val;
 				break;
 			default:
 				break;
@@ -92,54 +92,54 @@ public:
 		}
 	}
 
-	void w_asfile(T)(const T p) @safe if (!is(T : U[], U)) {
+	void write(T)(const T p) @safe if (!is(T : U[], U)) {
 		union RawAccess {
 			T t;
 			ubyte[T.sizeof] bytes;
 		}
-		w_asfile(RawAccess(p).bytes);
+		write(RawAccess(p).bytes);
 	}
-	void w_asfile(T)(scope const(T)[] p) @safe {
-		enforce(isOpen && _b_file && !_b_read, new PxtoneException("File must be opened for writing"));
+	void write(T)(scope const(T)[] p) @safe {
+		enforce(isOpen && isFile && !readOnly, new PxtoneException("File must be opened for writing"));
 
 		file.trustedWrite(p);
-		_size += p.length * T.sizeof;
+		size += p.length * T.sizeof;
 	}
 
-	void r(T)(T[] p) @safe {
+	void read(T)(T[] p) @safe {
 		enforce(isOpen, new PxtoneException("File must be opened for reading"));
-		enforce(_b_read, new PxtoneException("File must be opened for reading"));
+		enforce(readOnly, new PxtoneException("File must be opened for reading"));
 
-		if (_b_file) {
+		if (isFile) {
 			file.trustedRead(p);
 		} else {
 			for (int i = 0; i < p.length; i++) {
-				enforce(_cur + T.sizeof < _p_desc.length, new PxtoneException("Unexpected end of buffer"));
-				p[i] = (cast(T[])_p_desc[_cur .. _cur + T.sizeof])[0];
-				_cur += T.sizeof;
+				enforce(currentPosition + T.sizeof < buffer.length, new PxtoneException("Unexpected end of buffer"));
+				p[i] = (cast(T[])buffer[currentPosition .. currentPosition + T.sizeof])[0];
+				currentPosition += T.sizeof;
 			}
 		}
 	}
-	void r(T)(ref T p) @safe if (!is(T : U[], U)) {
+	void read(T)(ref T p) @safe if (!is(T : U[], U)) {
 		enforce(isOpen, new PxtoneException("File must be opened for reading"));
-		enforce(_b_read, new PxtoneException("File must be opened for reading"));
+		enforce(readOnly, new PxtoneException("File must be opened for reading"));
 
-		if (_b_file) {
+		if (isFile) {
 			p = file.trustedRead!T();
 		} else {
-			enforce(_cur + T.sizeof < _p_desc.length, new PxtoneException("Unexpected end of buffer"));
-			p = (cast(T[])_p_desc[_cur .. _cur + T.sizeof])[0];
-			_cur += T.sizeof;
+			enforce(currentPosition + T.sizeof < buffer.length, new PxtoneException("Unexpected end of buffer"));
+			p = (cast(T[])buffer[currentPosition .. currentPosition + T.sizeof])[0];
+			currentPosition += T.sizeof;
 		}
 	}
 
 	// ..uint
-	void v_w_asfile(int val) @safe {
+	void writeVarInt(int val) @safe {
 		int dummy;
-		v_w_asfile(val, dummy);
+		writeVarInt(val, dummy);
 	}
-	void v_w_asfile(int val, ref int p_add) @safe {
-		enforce(isOpen && _b_file && !_b_read, new PxtoneException("File must be opened for writing"));
+	void writeVarInt(int val, ref int pAdd) @safe {
+		enforce(isOpen && isFile && !readOnly, new PxtoneException("File must be opened for writing"));
 
 		ubyte[5] a = 0;
 		ubyte[5] b = 0;
@@ -181,19 +181,19 @@ public:
 			b[4] = (a[3] >> 4) | ((a[4] << 4) & 0x7F);
 		}
 		file.trustedWrite(b[0 .. bytes]);
-		p_add += bytes;
-		_size += bytes;
+		pAdd += bytes;
+		size += bytes;
 	}
 	// 可変長読み込み（int  までを保証）
-	void v_r(T)(ref T p) {
-		enforce(isOpen && _b_read, new PxtoneException("File must be opened for reading"));
+	void readVarInt(T)(ref T p) {
+		enforce(isOpen && readOnly, new PxtoneException("File must be opened for reading"));
 
 		int i;
 		ubyte[5] a = 0;
 		ubyte[5] b = 0;
 
 		for (i = 0; i < 5; i++) {
-			r(a[i]);
+			read(a[i]);
 			if (!(a[i] & 0x80)) {
 				break;
 			}
@@ -233,12 +233,12 @@ public:
 		p = (cast(int[]) b[0 .. 4])[0];
 	}
 
-	int get_size_bytes() const nothrow @safe {
-		return _b_file ? _size : cast(int)_p_desc.length;
+	int getByteSize() const nothrow @safe {
+		return isFile ? size : cast(int)buffer.length;
 	}
 }
 
-int pxtnDescriptor_v_chk(int val) nothrow @safe {
+int getVarIntSize(int val) nothrow @safe {
 	uint us;
 
 	us = cast(uint) val;
@@ -262,21 +262,21 @@ int pxtnDescriptor_v_chk(int val) nothrow @safe {
 	return 6;
 }
 
-T trustedRead(T)(File file) @safe if (!hasIndirections!T) {
+private T trustedRead(T)(File file) @safe if (!hasIndirections!T) {
 	T[1] p;
 	file.trustedRead(p);
 	return p[0];
 }
 
-void trustedRead(T)(File file, T[] arr) @trusted if (!hasIndirections!T) {
+private void trustedRead(T)(File file, T[] arr) @trusted if (!hasIndirections!T) {
 	file.rawRead(arr);
 }
 
-void trustedWrite(T)(File file, T val) @safe if (!hasIndirections!T) {
+private void trustedWrite(T)(File file, T val) @safe if (!hasIndirections!T) {
 	T[1] p = [val];
 	file.trustedWrite(p);
 }
 
-void trustedWrite(T)(File file, T[] arr) @trusted if (!hasIndirections!T) {
+private void trustedWrite(T)(File file, T[] arr) @trusted if (!hasIndirections!T) {
 	file.rawWrite(arr);
 }

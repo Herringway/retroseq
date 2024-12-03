@@ -8,7 +8,7 @@ import pxtone.pulse.frequency;
 import pxtone.pulse.oscillator;
 import pxtone.pulse.pcm;
 
-enum pxWAVETYPE {
+enum PxWaveType {
 	None = 0,
 	Sine,
 	Saw,
@@ -31,401 +31,401 @@ enum pxWAVETYPE {
 	num,
 }
 
-struct pxNOISEDESIGN_OSCILLATOR {
-	pxWAVETYPE type;
+struct PxNoiseDesignOscillator {
+	PxWaveType type;
 	float freq = 0.0;
 	float volume = 0.0;
 	float offset = 0.0;
-	bool b_rev;
+	bool bRev;
 }
 
-struct pxNOISEDESIGN_UNIT {
+struct PxNoiseDesignUnit {
 	bool bEnable;
-	int enve_num;
-	pxtnPOINT[] enves;
+	int enveNum;
+	PxtnPoint[] enves;
 	int pan;
-	pxNOISEDESIGN_OSCILLATOR main;
-	pxNOISEDESIGN_OSCILLATOR freq;
-	pxNOISEDESIGN_OSCILLATOR volu;
+	PxNoiseDesignOscillator main;
+	PxNoiseDesignOscillator freq;
+	PxNoiseDesignOscillator volu;
 }
 
-enum NOISEDESIGNLIMIT_SMPNUM = (48000 * 10);
-enum NOISEDESIGNLIMIT_ENVE_X = (1000 * 10);
-enum NOISEDESIGNLIMIT_ENVE_Y = (100);
-enum NOISEDESIGNLIMIT_OSC_FREQUENCY = 44100.0f;
-enum NOISEDESIGNLIMIT_OSC_VOLUME = 200.0f;
-enum NOISEDESIGNLIMIT_OSC_OFFSET = 100.0f;
+private enum noiseDesignLimitSmpnum = (48000 * 10);
+private enum noiseDesignLimitEnveX = (1000 * 10);
+private enum noiseDesignLimitEnveY = (100);
+private enum noiseDesignLimitOscillatorFrequency = 44100.0f;
+private enum noiseDesignLimitOscillatorVolume = 200.0f;
+private enum noiseDesignLimitOscillatorOffset = 100.0f;
 
-void _FixUnit(pxNOISEDESIGN_OSCILLATOR* p_osc) nothrow @safe {
-	if (p_osc.type >= pxWAVETYPE.num) {
-		p_osc.type = pxWAVETYPE.None;
+private void fixUnit(PxNoiseDesignOscillator* pOsc) nothrow @safe {
+	if (pOsc.type >= PxWaveType.num) {
+		pOsc.type = PxWaveType.None;
 	}
-	if (p_osc.freq > NOISEDESIGNLIMIT_OSC_FREQUENCY) {
-		p_osc.freq = NOISEDESIGNLIMIT_OSC_FREQUENCY;
+	if (pOsc.freq > noiseDesignLimitOscillatorFrequency) {
+		pOsc.freq = noiseDesignLimitOscillatorFrequency;
 	}
-	if (p_osc.freq <= 0) {
-		p_osc.freq = 0;
+	if (pOsc.freq <= 0) {
+		pOsc.freq = 0;
 	}
-	if (p_osc.volume > NOISEDESIGNLIMIT_OSC_VOLUME) {
-		p_osc.volume = NOISEDESIGNLIMIT_OSC_VOLUME;
+	if (pOsc.volume > noiseDesignLimitOscillatorVolume) {
+		pOsc.volume = noiseDesignLimitOscillatorVolume;
 	}
-	if (p_osc.volume <= 0) {
-		p_osc.volume = 0;
+	if (pOsc.volume <= 0) {
+		pOsc.volume = 0;
 	}
-	if (p_osc.offset > NOISEDESIGNLIMIT_OSC_OFFSET) {
-		p_osc.offset = NOISEDESIGNLIMIT_OSC_OFFSET;
+	if (pOsc.offset > noiseDesignLimitOscillatorOffset) {
+		pOsc.offset = noiseDesignLimitOscillatorOffset;
 	}
-	if (p_osc.offset <= 0) {
-		p_osc.offset = 0;
+	if (pOsc.offset <= 0) {
+		pOsc.offset = 0;
 	}
 }
 
-enum MAX_NOISEEDITUNITNUM = 4;
-enum MAX_NOISEEDITENVELOPENUM = 3;
+private enum maxNoiseEditUnitNum = 4;
+private enum maxNoiseEditEnvelopeNum = 3;
 
-enum NOISEEDITFLAG_XX1 = 0x0001;
-enum NOISEEDITFLAG_XX2 = 0x0002;
-enum NOISEEDITFLAG_ENVELOPE = 0x0004;
-enum NOISEEDITFLAG_PAN = 0x0008;
-enum NOISEEDITFLAG_OSC_MAIN = 0x0010;
-enum NOISEEDITFLAG_OSC_FREQ = 0x0020;
-enum NOISEEDITFLAG_OSC_VOLU = 0x0040;
-enum NOISEEDITFLAG_OSC_PAN = 0x0080;
+private enum noiseEditFlag {
+	envelope = 0x0004,
+	pan = 0x0008,
+	oscillatorMain = 0x0010,
+	oscillatorFreq = 0x0020,
+	oscillatorVolume = 0x0040,
+	//oscillatorPan = 0x0080, // not used
+	uncovered = 0xffffff83,
+}
 
-enum NOISEEDITFLAG_UNCOVERED = 0xffffff83;
 
-immutable _code = "PTNOISE-";
-//_ver =  20051028 ; -v.0.9.2.3
-__gshared const uint _ver = 20120418; // 16 wave types.
+private immutable identifierCode = "PTNOISE-";
+//currentVersion =  20051028 ; -v.0.9.2.3
+private __gshared const uint currentVersion = 20120418; // 16 wave types.
 
-void _WriteOscillator(const(pxNOISEDESIGN_OSCILLATOR)* p_osc, ref pxtnDescriptor p_doc, ref int p_add) @safe {
+private void writeOscillator(const(PxNoiseDesignOscillator)* pOsc, ref PxtnDescriptor pDoc, ref int pAdd) @safe {
 	int work;
-	work = cast(int) p_osc.type;
-	p_doc.v_w_asfile(work, p_add);
-	work = cast(int) p_osc.b_rev;
-	p_doc.v_w_asfile(work, p_add);
-	work = cast(int)(p_osc.freq * 10);
-	p_doc.v_w_asfile(work, p_add);
-	work = cast(int)(p_osc.volume * 10);
-	p_doc.v_w_asfile(work, p_add);
-	work = cast(int)(p_osc.offset * 10);
-	p_doc.v_w_asfile(work, p_add);
+	work = cast(int) pOsc.type;
+	pDoc.writeVarInt(work, pAdd);
+	work = cast(int) pOsc.bRev;
+	pDoc.writeVarInt(work, pAdd);
+	work = cast(int)(pOsc.freq * 10);
+	pDoc.writeVarInt(work, pAdd);
+	work = cast(int)(pOsc.volume * 10);
+	pDoc.writeVarInt(work, pAdd);
+	work = cast(int)(pOsc.offset * 10);
+	pDoc.writeVarInt(work, pAdd);
 }
 
-void _ReadOscillator(pxNOISEDESIGN_OSCILLATOR* p_osc, ref pxtnDescriptor p_doc) @safe {
+private void readOscillator(PxNoiseDesignOscillator* pOsc, ref PxtnDescriptor pDoc) @safe {
 	int work;
-	p_doc.v_r(work);
-	p_osc.type = cast(pxWAVETYPE) work;
-	if (p_osc.type >= pxWAVETYPE.num) {
+	pDoc.readVarInt(work);
+	pOsc.type = cast(PxWaveType) work;
+	if (pOsc.type >= PxWaveType.num) {
 		throw new PxtoneException("fmt unknown");
 	}
-	p_doc.v_r(work);
-	p_osc.b_rev = work ? true : false;
-	p_doc.v_r(work);
-	p_osc.freq = cast(float) work / 10;
-	p_doc.v_r(work);
-	p_osc.volume = cast(float) work / 10;
-	p_doc.v_r(work);
-	p_osc.offset = cast(float) work / 10;
+	pDoc.readVarInt(work);
+	pOsc.bRev = work ? true : false;
+	pDoc.readVarInt(work);
+	pOsc.freq = cast(float) work / 10;
+	pDoc.readVarInt(work);
+	pOsc.volume = cast(float) work / 10;
+	pDoc.readVarInt(work);
+	pOsc.offset = cast(float) work / 10;
 }
 
-uint _MakeFlags(const(pxNOISEDESIGN_UNIT)* pU) nothrow @safe {
+private uint makeFlags(const(PxNoiseDesignUnit)* pU) nothrow @safe {
 	uint flags = 0;
-	flags |= NOISEEDITFLAG_ENVELOPE;
+	flags |= noiseEditFlag.envelope;
 	if (pU.pan) {
-		flags |= NOISEEDITFLAG_PAN;
+		flags |= noiseEditFlag.pan;
 	}
-	if (pU.main.type != pxWAVETYPE.None) {
-		flags |= NOISEEDITFLAG_OSC_MAIN;
+	if (pU.main.type != PxWaveType.None) {
+		flags |= noiseEditFlag.oscillatorMain;
 	}
-	if (pU.freq.type != pxWAVETYPE.None) {
-		flags |= NOISEEDITFLAG_OSC_FREQ;
+	if (pU.freq.type != PxWaveType.None) {
+		flags |= noiseEditFlag.oscillatorFreq;
 	}
-	if (pU.volu.type != pxWAVETYPE.None) {
-		flags |= NOISEEDITFLAG_OSC_VOLU;
+	if (pU.volu.type != PxWaveType.None) {
+		flags |= noiseEditFlag.oscillatorVolume;
 	}
 	return flags;
 }
 
-int _CompareOsci(const(pxNOISEDESIGN_OSCILLATOR)* p_osc1, const(pxNOISEDESIGN_OSCILLATOR)* p_osc2) nothrow @safe {
-	if (p_osc1.type != p_osc2.type) {
+private int compareOscillator(const(PxNoiseDesignOscillator)* pOsc1, const(PxNoiseDesignOscillator)* pOsc2) nothrow @safe {
+	if (pOsc1.type != pOsc2.type) {
 		return 1;
 	}
-	if (p_osc1.freq != p_osc2.freq) {
+	if (pOsc1.freq != pOsc2.freq) {
 		return 1;
 	}
-	if (p_osc1.volume != p_osc2.volume) {
+	if (pOsc1.volume != pOsc2.volume) {
 		return 1;
 	}
-	if (p_osc1.offset != p_osc2.offset) {
+	if (pOsc1.offset != pOsc2.offset) {
 		return 1;
 	}
-	if (p_osc1.b_rev != p_osc2.b_rev) {
+	if (pOsc1.bRev != pOsc2.bRev) {
 		return 1;
 	}
 	return 0;
 }
 
-struct pxtnPulse_Noise {
+struct PxtnPulseNoise {
 private:
-	int _smp_num_44k;
-	int _unit_num;
-	pxNOISEDESIGN_UNIT[] _units;
+	int smpNum44k;
+	int unitNum;
+	PxNoiseDesignUnit[] units;
 
 public:
 	 ~this() nothrow @safe {
-		Release();
+		release();
 	}
 
-	void write(ref pxtnDescriptor p_doc, ref int p_add) const @safe {
-		bool b_ret = false;
-		int u, e, seek, num_seek, flags;
+	void write(ref PxtnDescriptor pDoc, ref int pAdd) const @safe {
+		bool bRet = false;
+		int u, e, seek, numSeek, flags;
 		char _byte;
-		char unit_num = 0;
-		const(pxNOISEDESIGN_UNIT)* pU;
+		char unitNum = 0;
+		const(PxNoiseDesignUnit)* pU;
 
 		//	Fix();
 
-		seek = p_add;
+		seek = pAdd;
 
-		p_doc.w_asfile(_code);
-		p_doc.w_asfile(_ver);
+		pDoc.write(identifierCode);
+		pDoc.write(currentVersion);
 		seek += 12;
-		p_doc.v_w_asfile(_smp_num_44k, seek);
+		pDoc.writeVarInt(smpNum44k, seek);
 
-		p_doc.w_asfile(unit_num);
-		num_seek = seek;
+		pDoc.write(unitNum);
+		numSeek = seek;
 		seek += 1;
 
-		for (u = 0; u < _unit_num; u++) {
-			pU = &_units[u];
+		for (u = 0; u < unitNum; u++) {
+			pU = &units[u];
 			if (pU.bEnable) {
 				// フラグ
-				flags = _MakeFlags(pU);
-				p_doc.v_w_asfile(flags, seek);
-				if (flags & NOISEEDITFLAG_ENVELOPE) {
-					p_doc.v_w_asfile(pU.enve_num, seek);
-					for (e = 0; e < pU.enve_num; e++) {
-						p_doc.v_w_asfile(pU.enves[e].x, seek);
-						p_doc.v_w_asfile(pU.enves[e].y, seek);
+				flags = makeFlags(pU);
+				pDoc.writeVarInt(flags, seek);
+				if (flags & noiseEditFlag.envelope) {
+					pDoc.writeVarInt(pU.enveNum, seek);
+					for (e = 0; e < pU.enveNum; e++) {
+						pDoc.writeVarInt(pU.enves[e].x, seek);
+						pDoc.writeVarInt(pU.enves[e].y, seek);
 					}
 				}
-				if (flags & NOISEEDITFLAG_PAN) {
+				if (flags & noiseEditFlag.pan) {
 					_byte = cast(char) pU.pan;
-					p_doc.w_asfile(_byte);
+					pDoc.write(_byte);
 					seek++;
 				}
-				if (flags & NOISEEDITFLAG_OSC_MAIN) {
-					_WriteOscillator(&pU.main, p_doc, seek);
+				if (flags & noiseEditFlag.oscillatorMain) {
+					writeOscillator(&pU.main, pDoc, seek);
 				}
-				if (flags & NOISEEDITFLAG_OSC_FREQ) {
-					_WriteOscillator(&pU.freq, p_doc, seek);
+				if (flags & noiseEditFlag.oscillatorFreq) {
+					writeOscillator(&pU.freq, pDoc, seek);
 				}
-				if (flags & NOISEEDITFLAG_OSC_VOLU) {
-					_WriteOscillator(&pU.volu, p_doc, seek);
+				if (flags & noiseEditFlag.oscillatorVolume) {
+					writeOscillator(&pU.volu, pDoc, seek);
 				}
-				unit_num++;
+				unitNum++;
 			}
 		}
 
-		// update unit_num.
-		p_doc.seek(pxtnSEEK.cur, num_seek - seek);
-		p_doc.w_asfile(unit_num);
-		p_doc.seek(pxtnSEEK.cur, seek - num_seek - 1);
-		p_add = seek;
+		// update unitNum.
+		pDoc.seek(PxtnSeek.cur, numSeek - seek);
+		pDoc.write(unitNum);
+		pDoc.seek(PxtnSeek.cur, seek - numSeek - 1);
+		pAdd = seek;
 
-		b_ret = true;
-	End:
+		bRet = true;
+	end:
 
-		if (!b_ret) {
+		if (!bRet) {
 			throw new PxtoneException("");
 		}
 	}
 
-	void read(ref pxtnDescriptor p_doc) @safe {
+	void read(ref PxtnDescriptor pDoc) @safe {
 		uint flags = 0;
-		char unit_num = 0;
+		char unitNum = 0;
 		char _byte = 0;
 		uint ver = 0;
 
-		pxNOISEDESIGN_UNIT* pU = null;
+		PxNoiseDesignUnit* pU = null;
 
 		char[8] code = 0;
 
-		Release();
+		release();
 
 		scope(failure) {
-			Release();
+			release();
 		}
-		p_doc.r(code[]);
-		if (code != _code[0 .. 8]) {
+		pDoc.read(code[]);
+		if (code != identifierCode[0 .. 8]) {
 			throw new PxtoneException("inv code");
 		}
-		p_doc.r(ver);
-		if (ver > _ver) {
+		pDoc.read(ver);
+		if (ver > currentVersion) {
 			throw new PxtoneException("fmt new");
 		}
-		p_doc.v_r(_smp_num_44k);
-		p_doc.r(unit_num);
-		if (unit_num < 0) {
+		pDoc.readVarInt(smpNum44k);
+		pDoc.read(unitNum);
+		if (unitNum < 0) {
 			throw new PxtoneException("inv data");
 		}
-		if (unit_num > MAX_NOISEEDITUNITNUM) {
+		if (unitNum > maxNoiseEditUnitNum) {
 			throw new PxtoneException("fmt unknown");
 		}
-		_unit_num = unit_num;
+		this.unitNum = unitNum;
 
-		_units = new pxNOISEDESIGN_UNIT[](_unit_num);
+		units = new PxNoiseDesignUnit[](unitNum);
 
-		for (int u = 0; u < _unit_num; u++) {
-			pU = &_units[u];
+		for (int u = 0; u < unitNum; u++) {
+			pU = &units[u];
 			pU.bEnable = true;
 
-			p_doc.v_r(flags);
-			if (flags & NOISEEDITFLAG_UNCOVERED) {
+			pDoc.readVarInt(flags);
+			if (flags & noiseEditFlag.uncovered) {
 				throw new PxtoneException("fmt unknown");
 			}
 
 			// envelope
-			if (flags & NOISEEDITFLAG_ENVELOPE) {
-				p_doc.v_r(pU.enve_num);
-				if (pU.enve_num > MAX_NOISEEDITENVELOPENUM) {
+			if (flags & noiseEditFlag.envelope) {
+				pDoc.readVarInt(pU.enveNum);
+				if (pU.enveNum > maxNoiseEditEnvelopeNum) {
 					throw new PxtoneException("fmt unknown");
 				}
-				pU.enves = new pxtnPOINT[](pU.enve_num);
-				for (int e = 0; e < pU.enve_num; e++) {
-					p_doc.v_r(pU.enves[e].x);
-					p_doc.v_r(pU.enves[e].y);
+				pU.enves = new PxtnPoint[](pU.enveNum);
+				for (int e = 0; e < pU.enveNum; e++) {
+					pDoc.readVarInt(pU.enves[e].x);
+					pDoc.readVarInt(pU.enves[e].y);
 				}
 			}
 			// pan
-			if (flags & NOISEEDITFLAG_PAN) {
-				p_doc.r(_byte);
+			if (flags & noiseEditFlag.pan) {
+				pDoc.read(_byte);
 				pU.pan = _byte;
 			}
 
-			if (flags & NOISEEDITFLAG_OSC_MAIN) {
-				_ReadOscillator(&pU.main, p_doc);
+			if (flags & noiseEditFlag.oscillatorMain) {
+				readOscillator(&pU.main, pDoc);
 			}
-			if (flags & NOISEEDITFLAG_OSC_FREQ) {
-				_ReadOscillator(&pU.freq, p_doc);
+			if (flags & noiseEditFlag.oscillatorFreq) {
+				readOscillator(&pU.freq, pDoc);
 			}
-			if (flags & NOISEEDITFLAG_OSC_VOLU) {
-				_ReadOscillator(&pU.volu, p_doc);
+			if (flags & noiseEditFlag.oscillatorVolume) {
+				readOscillator(&pU.volu, pDoc);
 			}
 		}
 	}
 
-	void Release() nothrow @safe {
-		if (_units) {
-			_units = null;
-			_unit_num = 0;
+	void release() nothrow @safe {
+		if (units) {
+			units = null;
+			unitNum = 0;
 		}
 	}
 
-	bool Allocate(int unit_num, int envelope_num) nothrow @safe {
-		bool b_ret = false;
+	bool allocate(int unitNum, int envelopeNum) nothrow @safe {
+		bool bRet = false;
 
-		Release();
+		release();
 
-		_unit_num = unit_num;
-		_units = new pxNOISEDESIGN_UNIT[](unit_num);
-		if (!_units) {
-			goto End;
+		this.unitNum = unitNum;
+		units = new PxNoiseDesignUnit[](unitNum);
+		if (!units) {
+			goto end;
 		}
 
-		for (int u = 0; u < unit_num; u++) {
-			pxNOISEDESIGN_UNIT* p_unit = &_units[u];
-			p_unit.enve_num = envelope_num;
-			p_unit.enves = new pxtnPOINT[](p_unit.enve_num);
-			if (!p_unit.enves) {
-				goto End;
+		for (int u = 0; u < unitNum; u++) {
+			PxNoiseDesignUnit* pUnit = &units[u];
+			pUnit.enveNum = envelopeNum;
+			pUnit.enves = new PxtnPoint[](pUnit.enveNum);
+			if (!pUnit.enves) {
+				goto end;
 			}
 		}
 
-		b_ret = true;
-	End:
-		if (!b_ret) {
-			Release();
+		bRet = true;
+	end:
+		if (!bRet) {
+			release();
 		}
 
-		return b_ret;
+		return bRet;
 	}
 
-	bool Copy(ref pxtnPulse_Noise p_dst) const nothrow @safe {
-		bool b_ret = false;
+	bool copy(ref PxtnPulseNoise pDst) const nothrow @safe {
+		bool bRet = false;
 
-		p_dst.Release();
-		p_dst._smp_num_44k = _smp_num_44k;
+		pDst.release();
+		pDst.smpNum44k = smpNum44k;
 
-		if (_unit_num) {
-			int enve_num = _units[0].enve_num;
-			if (!p_dst.Allocate(_unit_num, enve_num)) {
-				goto End;
+		if (unitNum) {
+			int enveNum = units[0].enveNum;
+			if (!pDst.allocate(unitNum, enveNum)) {
+				goto end;
 			}
-			for (int u = 0; u < _unit_num; u++) {
-				p_dst._units[u].bEnable = _units[u].bEnable;
-				p_dst._units[u].enve_num = _units[u].enve_num;
-				p_dst._units[u].freq = _units[u].freq;
-				p_dst._units[u].main = _units[u].main;
-				p_dst._units[u].pan = _units[u].pan;
-				p_dst._units[u].volu = _units[u].volu;
-				p_dst._units[u].enves = new pxtnPOINT[](enve_num);
-				if (!p_dst._units[u].enves) {
-					goto End;
+			for (int u = 0; u < unitNum; u++) {
+				pDst.units[u].bEnable = units[u].bEnable;
+				pDst.units[u].enveNum = units[u].enveNum;
+				pDst.units[u].freq = units[u].freq;
+				pDst.units[u].main = units[u].main;
+				pDst.units[u].pan = units[u].pan;
+				pDst.units[u].volu = units[u].volu;
+				pDst.units[u].enves = new PxtnPoint[](enveNum);
+				if (!pDst.units[u].enves) {
+					goto end;
 				}
-				for (int e = 0; e < enve_num; e++) {
-					p_dst._units[u].enves[e] = _units[u].enves[e];
+				for (int e = 0; e < enveNum; e++) {
+					pDst.units[u].enves[e] = units[u].enves[e];
 				}
 			}
 		}
 
-		b_ret = true;
-	End:
-		if (!b_ret) {
-			p_dst.Release();
+		bRet = true;
+	end:
+		if (!bRet) {
+			pDst.release();
 		}
 
-		return b_ret;
+		return bRet;
 	}
 
-	int Compare(const(pxtnPulse_Noise)* p_src) const nothrow @safe {
-		if (!p_src) {
+	int compare(const(PxtnPulseNoise)* pSrc) const nothrow @safe {
+		if (!pSrc) {
 			return -1;
 		}
 
-		if (p_src._smp_num_44k != _smp_num_44k) {
+		if (pSrc.smpNum44k != smpNum44k) {
 			return 1;
 		}
-		if (p_src._unit_num != _unit_num) {
+		if (pSrc.unitNum != unitNum) {
 			return 1;
 		}
 
-		for (int u = 0; u < _unit_num; u++) {
-			if (p_src._units[u].bEnable != _units[u].bEnable) {
+		for (int u = 0; u < unitNum; u++) {
+			if (pSrc.units[u].bEnable != units[u].bEnable) {
 				return 1;
 			}
-			if (p_src._units[u].enve_num != _units[u].enve_num) {
+			if (pSrc.units[u].enveNum != units[u].enveNum) {
 				return 1;
 			}
-			if (p_src._units[u].pan != _units[u].pan) {
+			if (pSrc.units[u].pan != units[u].pan) {
 				return 1;
 			}
-			if (_CompareOsci(&p_src._units[u].main, &_units[u].main)) {
+			if (compareOscillator(&pSrc.units[u].main, &units[u].main)) {
 				return 1;
 			}
-			if (_CompareOsci(&p_src._units[u].freq, &_units[u].freq)) {
+			if (compareOscillator(&pSrc.units[u].freq, &units[u].freq)) {
 				return 1;
 			}
-			if (_CompareOsci(&p_src._units[u].volu, &_units[u].volu)) {
+			if (compareOscillator(&pSrc.units[u].volu, &units[u].volu)) {
 				return 1;
 			}
 
-			for (int e = 0; e < _units[u].enve_num; e++) {
-				if (_units[u].enves[e].x != _units[u].enves[e].x) {
+			for (int e = 0; e < units[u].enveNum; e++) {
+				if (units[u].enves[e].x != units[u].enves[e].x) {
 					return 1;
 				}
-				if (_units[u].enves[e].y != _units[u].enves[e].y) {
+				if (units[u].enves[e].y != units[u].enves[e].y) {
 					return 1;
 				}
 			}
@@ -433,64 +433,64 @@ public:
 		return 0;
 	}
 
-	void Fix() nothrow @safe {
-		pxNOISEDESIGN_UNIT* p_unit;
+	void fix() nothrow @safe {
+		PxNoiseDesignUnit* pUnit;
 		int i, e;
 
-		if (_smp_num_44k > NOISEDESIGNLIMIT_SMPNUM) {
-			_smp_num_44k = NOISEDESIGNLIMIT_SMPNUM;
+		if (smpNum44k > noiseDesignLimitSmpnum) {
+			smpNum44k = noiseDesignLimitSmpnum;
 		}
 
-		for (i = 0; i < _unit_num; i++) {
-			p_unit = &_units[i];
-			if (p_unit.bEnable) {
-				for (e = 0; e < p_unit.enve_num; e++) {
-					if (p_unit.enves[e].x > NOISEDESIGNLIMIT_ENVE_X) {
-						p_unit.enves[e].x = NOISEDESIGNLIMIT_ENVE_X;
+		for (i = 0; i < unitNum; i++) {
+			pUnit = &units[i];
+			if (pUnit.bEnable) {
+				for (e = 0; e < pUnit.enveNum; e++) {
+					if (pUnit.enves[e].x > noiseDesignLimitEnveX) {
+						pUnit.enves[e].x = noiseDesignLimitEnveX;
 					}
-					if (p_unit.enves[e].x < 0) {
-						p_unit.enves[e].x = 0;
+					if (pUnit.enves[e].x < 0) {
+						pUnit.enves[e].x = 0;
 					}
-					if (p_unit.enves[e].y > NOISEDESIGNLIMIT_ENVE_Y) {
-						p_unit.enves[e].y = NOISEDESIGNLIMIT_ENVE_Y;
+					if (pUnit.enves[e].y > noiseDesignLimitEnveY) {
+						pUnit.enves[e].y = noiseDesignLimitEnveY;
 					}
-					if (p_unit.enves[e].y < 0) {
-						p_unit.enves[e].y = 0;
+					if (pUnit.enves[e].y < 0) {
+						pUnit.enves[e].y = 0;
 					}
 				}
-				if (p_unit.pan < -100) {
-					p_unit.pan = -100;
+				if (pUnit.pan < -100) {
+					pUnit.pan = -100;
 				}
-				if (p_unit.pan > 100) {
-					p_unit.pan = 100;
+				if (pUnit.pan > 100) {
+					pUnit.pan = 100;
 				}
-				_FixUnit(&p_unit.main);
-				_FixUnit(&p_unit.freq);
-				_FixUnit(&p_unit.volu);
+				fixUnit(&pUnit.main);
+				fixUnit(&pUnit.freq);
+				fixUnit(&pUnit.volu);
 			}
 		}
 	}
 
-	void set_smp_num_44k(int num) nothrow @safe {
-		_smp_num_44k = num;
+	void setSmpNum44k(int num) nothrow @safe {
+		smpNum44k = num;
 	}
 
-	int get_unit_num() const nothrow @safe {
-		return _unit_num;
+	int getUnitNum() const nothrow @safe {
+		return unitNum;
 	}
 
-	int get_smp_num_44k() const nothrow @safe {
-		return _smp_num_44k;
+	int getSmpNum44k() const nothrow @safe {
+		return smpNum44k;
 	}
 
-	float get_sec() const nothrow @safe {
-		return cast(float) _smp_num_44k / 44100;
+	float getSec() const nothrow @safe {
+		return cast(float) smpNum44k / 44100;
 	}
 
-	pxNOISEDESIGN_UNIT* get_unit(int u) nothrow @safe {
-		if (!_units || u < 0 || u >= _unit_num) {
+	PxNoiseDesignUnit* getUnit(int u) nothrow @safe {
+		if (!units || u < 0 || u >= unitNum) {
 			return null;
 		}
-		return &_units[u];
+		return &units[u];
 	}
 }

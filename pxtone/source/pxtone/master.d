@@ -13,192 +13,191 @@ import pxtone.util;
 /////////////////////////////////
 
 // master info(8byte) ================
-struct _x4x_MASTER {
-	ushort data_num; // data-num is 3 ( clock / status / volume ）
+struct Master {
+	ushort dataNumber; // data-num is 3 ( clock / status / volume ）
 	ushort rrr;
-	uint event_num;
+	uint eventNumber;
 }
 
-struct pxtnMaster {
+struct PxtnMaster {
 private:
-	int _beat_num = EVENTDEFAULT_BEATNUM;
-	float _beat_tempo = EVENTDEFAULT_BEATTEMPO;
-	int _beat_clock = EVENTDEFAULT_BEATCLOCK;
-	int _meas_num = 1;
-	int _repeat_meas;
-	int _last_meas;
-	int _volume_;
+	int beatNum = EventDefault.beatNumber;
+	float beatTempo = EventDefault.beatTempo;
+	int beatClock = EventDefault.beatClock;
+	int measNum = 1;
+	int repeatMeas;
+	int lastMeas;
+	int volume;
 
 public:
-	void Reset() nothrow @safe {
-		_beat_num = EVENTDEFAULT_BEATNUM;
-		_beat_tempo = EVENTDEFAULT_BEATTEMPO;
-		_beat_clock = EVENTDEFAULT_BEATCLOCK;
-		_meas_num = 1;
-		_repeat_meas = 0;
-		_last_meas = 0;
+	void reset() nothrow @safe {
+		beatNum = EventDefault.beatNumber;
+		beatTempo = EventDefault.beatTempo;
+		beatClock = EventDefault.beatClock;
+		measNum = 1;
+		repeatMeas = 0;
+		lastMeas = 0;
 	}
 
-	void Set(int beat_num, float beat_tempo, int beat_clock) nothrow @safe {
-		_beat_num = beat_num;
-		_beat_tempo = beat_tempo;
-		_beat_clock = beat_clock;
+	void set(int beatNum, float beatTempo, int beatClock) nothrow @safe {
+		this.beatNum = beatNum;
+		this.beatTempo = beatTempo;
+		this.beatClock = beatClock;
 	}
 
-	void Get(out int p_beat_num, out float p_beat_tempo, out int p_beat_clock, out int p_meas_num) const nothrow @safe {
-		p_beat_num = _beat_num;
-		p_beat_tempo = _beat_tempo;
-		p_beat_clock = _beat_clock;
-		p_meas_num = _meas_num;
+	void get(out int pBeatNum, out float pBeatTempo, out int pBeatClock, out int pMeasNum) const nothrow @safe {
+		pBeatNum = this.beatNum;
+		pBeatTempo = this.beatTempo;
+		pBeatClock = this.beatClock;
+		pMeasNum = this.measNum;
 	}
 
-	int get_beat_num() const nothrow @safe {
-		return _beat_num;
+	int getBeatNum() const nothrow @safe {
+		return beatNum;
 	}
 
-	float get_beat_tempo() const nothrow @safe {
-		return _beat_tempo;
+	float getBeatTempo() const nothrow @safe {
+		return beatTempo;
 	}
 
-	int get_beat_clock() const nothrow @safe {
-		return _beat_clock;
+	int getBeatClock() const nothrow @safe {
+		return beatClock;
 	}
 
-	int get_meas_num() const nothrow @safe {
-		return _meas_num;
+	int getMeasNum() const nothrow @safe {
+		return measNum;
 	}
 
-	int get_repeat_meas() const nothrow @safe {
-		return _repeat_meas;
+	int getRepeatMeas() const nothrow @safe {
+		return repeatMeas;
 	}
 
-	int get_last_meas() const nothrow @safe {
-		return _last_meas;
+	int getLastMeas() const nothrow @safe {
+		return lastMeas;
 	}
 
-	int get_last_clock() const nothrow @safe {
-		return _last_meas * _beat_clock * _beat_num;
+	int getLastClock() const nothrow @safe {
+		return lastMeas * beatClock * beatNum;
 	}
 
-	int get_play_meas() const nothrow @safe {
-		if (_last_meas) {
-			return _last_meas;
+	int getPlayMeas() const nothrow @safe {
+		if (lastMeas) {
+			return lastMeas;
 		}
-		return _meas_num;
+		return measNum;
 	}
 
-	void set_meas_num(int meas_num) nothrow @safe {
-		if (meas_num < 1) {
-			meas_num = 1;
+	void setMeasNum(int measNum) nothrow @safe {
+		if (measNum < 1) {
+			measNum = 1;
 		}
-		if (meas_num <= _repeat_meas) {
-			meas_num = _repeat_meas + 1;
+		if (measNum <= repeatMeas) {
+			measNum = repeatMeas + 1;
 		}
-		if (meas_num < _last_meas) {
-			meas_num = _last_meas;
+		if (measNum < lastMeas) {
+			measNum = lastMeas;
 		}
-		_meas_num = meas_num;
+		this.measNum = measNum;
 	}
 
-	void set_repeat_meas(int meas) nothrow @safe {
+	void setRepeatMeas(int meas) nothrow @safe {
 		if (meas < 0) {
 			meas = 0;
 		}
-		_repeat_meas = meas;
+		repeatMeas = meas;
 	}
 
-	void set_last_meas(int meas) nothrow @safe {
+	void setLastMeas(int meas) nothrow @safe {
 		if (meas < 0) {
 			meas = 0;
 		}
-		_last_meas = meas;
+		lastMeas = meas;
 	}
 
-	void set_beat_clock(int beat_clock) nothrow @safe {
-		if (beat_clock < 0) {
-			beat_clock = 0;
+	void setBeatClock(int beatClock) nothrow @safe {
+		if (beatClock < 0) {
+			beatClock = 0;
 		}
-		_beat_clock = beat_clock;
+		this.beatClock = beatClock;
 	}
 
-	void AdjustMeasNum(int clock) nothrow @safe {
-		int m_num;
-		int b_num;
+	void adjustMeasNum(int clock) nothrow @safe {
+		int mNum;
+		int bNum;
 
-		b_num = (clock + _beat_clock - 1) / _beat_clock;
-		m_num = (b_num + _beat_num - 1) / _beat_num;
-		if (_meas_num <= m_num) {
-			_meas_num = m_num;
+		bNum = (clock + beatClock - 1) / beatClock;
+		mNum = (bNum + beatNum - 1) / beatNum;
+		if (measNum <= mNum) {
+			measNum = mNum;
 		}
-		if (_repeat_meas >= _meas_num) {
-			_repeat_meas = 0;
+		if (repeatMeas >= measNum) {
+			repeatMeas = 0;
 		}
-		if (_last_meas > _meas_num) {
-			_last_meas = _meas_num;
+		if (lastMeas > measNum) {
+			lastMeas = measNum;
 		}
 	}
 
-	int get_this_clock(int meas, int beat, int clock) const nothrow @safe {
-		return _beat_num * _beat_clock * meas + _beat_clock * beat + clock;
+	int getThisClock(int meas, int beat, int clock) const nothrow @safe {
+		return beatNum * beatClock * meas + beatClock * beat + clock;
 	}
 
-	void io_w_v5(ref pxtnDescriptor p_doc, int rough) const @safe {
-
+	void ioWrite(ref PxtnDescriptor pDoc, int rough) const @safe {
 		uint size = 15;
-		short bclock = cast(short)(_beat_clock / rough);
-		int clock_repeat = bclock * _beat_num * get_repeat_meas();
-		int clock_last = bclock * _beat_num * get_last_meas();
-		byte bnum = cast(byte) _beat_num;
-		float btempo = _beat_tempo;
-		p_doc.w_asfile(size);
-		p_doc.w_asfile(bclock);
-		p_doc.w_asfile(bnum);
-		p_doc.w_asfile(btempo);
-		p_doc.w_asfile(clock_repeat);
-		p_doc.w_asfile(clock_last);
+		short bclock = cast(short)(beatClock / rough);
+		int clockRepeat = bclock * beatNum * getRepeatMeas();
+		int clockLast = bclock * beatNum * getLastMeas();
+		byte bnum = cast(byte) beatNum;
+		float btempo = beatTempo;
+		pDoc.write(size);
+		pDoc.write(bclock);
+		pDoc.write(bnum);
+		pDoc.write(btempo);
+		pDoc.write(clockRepeat);
+		pDoc.write(clockLast);
 	}
 
-	void io_r_v5(ref pxtnDescriptor p_doc) @safe {
-		short beat_clock = 0;
-		byte beat_num = 0;
-		float beat_tempo = 0;
-		int clock_repeat = 0;
-		int clock_last = 0;
+	void ioRead(ref PxtnDescriptor pDoc) @safe {
+		short beatClock = 0;
+		byte beatNum = 0;
+		float beatTempo = 0;
+		int clockRepeat = 0;
+		int clockLast = 0;
 
 		uint size = 0;
 
-		p_doc.r(size);
+		pDoc.read(size);
 		if (size != 15) {
 			throw new PxtoneException("fmt unknown");
 		}
 
-		p_doc.r(beat_clock);
-		p_doc.r(beat_num);
-		p_doc.r(beat_tempo);
-		p_doc.r(clock_repeat);
-		p_doc.r(clock_last);
+		pDoc.read(beatClock);
+		pDoc.read(beatNum);
+		pDoc.read(beatTempo);
+		pDoc.read(clockRepeat);
+		pDoc.read(clockLast);
 
-		_beat_clock = beat_clock;
-		_beat_num = beat_num;
-		_beat_tempo = beat_tempo;
+		this.beatClock = beatClock;
+		this.beatNum = beatNum;
+		this.beatTempo = beatTempo;
 
-		set_repeat_meas(clock_repeat / (beat_num * beat_clock));
-		set_last_meas(clock_last / (beat_num * beat_clock));
+		setRepeatMeas(clockRepeat / (beatNum * beatClock));
+		setLastMeas(clockLast / (beatNum * beatClock));
 	}
 
-	int io_r_v5_EventNum(ref pxtnDescriptor p_doc) @safe {
+	int ioReadEventNumber(ref PxtnDescriptor pDoc) @safe {
 		uint size;
-		p_doc.r(size);
+		pDoc.read(size);
 		if (size != 15) {
 			return 0;
 		}
 		byte[15] buf;
-		p_doc.r(buf[]);
+		pDoc.read(buf[]);
 		return 5;
 	}
 
-	void io_r_x4x(ref pxtnDescriptor p_doc) @safe {
-		_x4x_MASTER mast;
+	void ioReadOld(ref PxtnDescriptor pDoc) @safe {
+		Master mast;
 		int size = 0;
 		int e = 0;
 		int status = 0;
@@ -206,62 +205,62 @@ public:
 		int volume = 0;
 		int absolute = 0;
 
-		int beat_clock, beat_num, repeat_clock, last_clock;
-		float beat_tempo = 0;
+		int beatClock, beatNum, repeatClock, lastClock;
+		float beatTempo = 0;
 
-		p_doc.r(size);
-		p_doc.r(mast);
+		pDoc.read(size);
+		pDoc.read(mast);
 
 		// unknown format
-		if (mast.data_num != 3) {
+		if (mast.dataNumber != 3) {
 			throw new PxtoneException("fmt unknown");
 		}
 		if (mast.rrr) {
 			throw new PxtoneException("fmt unknown");
 		}
 
-		beat_clock = EVENTDEFAULT_BEATCLOCK;
-		beat_num = EVENTDEFAULT_BEATNUM;
-		beat_tempo = EVENTDEFAULT_BEATTEMPO;
-		repeat_clock = 0;
-		last_clock = 0;
+		beatClock = EventDefault.beatClock;
+		beatNum = EventDefault.beatNumber;
+		beatTempo = EventDefault.beatTempo;
+		repeatClock = 0;
+		lastClock = 0;
 
 		absolute = 0;
 
-		for (e = 0; e < cast(int) mast.event_num; e++) {
-			p_doc.v_r(status);
-			p_doc.v_r(clock);
-			p_doc.v_r(volume);
+		for (e = 0; e < cast(int) mast.eventNumber; e++) {
+			pDoc.readVarInt(status);
+			pDoc.readVarInt(clock);
+			pDoc.readVarInt(volume);
 			absolute += clock;
 			clock = absolute;
 
 			switch (status) {
-			case EVENTKIND.BEATCLOCK:
-				beat_clock = volume;
+			case EventKind.beatClock:
+				beatClock = volume;
 				if (clock) {
 					throw new PxtoneException("desc broken");
 				}
 				break;
-			case EVENTKIND.BEATTEMPO:
-				beat_tempo = reinterpretInt(volume);
+			case EventKind.beatTempo:
+				beatTempo = reinterpretInt(volume);
 				if (clock) {
 					throw new PxtoneException("desc broken");
 				}
 				break;
-			case EVENTKIND.BEATNUM:
-				beat_num = volume;
+			case EventKind.beatNumber:
+				beatNum = volume;
 				if (clock) {
 					throw new PxtoneException("desc broken");
 				}
 				break;
-			case EVENTKIND.REPEAT:
-				repeat_clock = clock;
+			case EventKind.repeat:
+				repeatClock = clock;
 				if (volume) {
 					throw new PxtoneException("desc broken");
 				}
 				break;
-			case EVENTKIND.LAST:
-				last_clock = clock;
+			case EventKind.last:
+				lastClock = clock;
 				if (volume) {
 					throw new PxtoneException("desc broken");
 				}
@@ -271,37 +270,37 @@ public:
 			}
 		}
 
-		if (e != mast.event_num) {
+		if (e != mast.eventNumber) {
 			throw new PxtoneException("desc broken");
 		}
 
-		_beat_num = beat_num;
-		_beat_tempo = beat_tempo;
-		_beat_clock = beat_clock;
+		this.beatNum = beatNum;
+		this.beatTempo = beatTempo;
+		this.beatClock = beatClock;
 
-		set_repeat_meas(repeat_clock / (beat_num * beat_clock));
-		set_last_meas(last_clock / (beat_num * beat_clock));
+		setRepeatMeas(repeatClock / (beatNum * beatClock));
+		setLastMeas(lastClock / (beatNum * beatClock));
 	}
 
-	int io_r_x4x_EventNum(ref pxtnDescriptor p_doc) @safe {
-		_x4x_MASTER mast;
+	int ioReadOldEventNumber(ref PxtnDescriptor pDoc) @safe {
+		Master mast;
 		int size;
 		int work;
 		int e;
 
-		p_doc.r(size);
-		p_doc.r(mast);
+		pDoc.read(size);
+		pDoc.read(mast);
 
-		if (mast.data_num != 3) {
+		if (mast.dataNumber != 3) {
 			return 0;
 		}
 
-		for (e = 0; e < cast(int) mast.event_num; e++) {
-			p_doc.v_r(work);
-			p_doc.v_r(work);
-			p_doc.v_r(work);
+		for (e = 0; e < cast(int) mast.eventNumber; e++) {
+			pDoc.readVarInt(work);
+			pDoc.readVarInt(work);
+			pDoc.readVarInt(work);
 		}
 
-		return mast.event_num;
+		return mast.eventNumber;
 	}
 }

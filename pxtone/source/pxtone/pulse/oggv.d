@@ -1,6 +1,6 @@
 ﻿module pxtone.pulse.oggv;
 
-version (pxINCLUDE_OGGVORBIS):
+version (WithOggVorbis):
 import core.stdc.config;
 import derelict.vorbis.codec;
 import derelict.vorbis.file;
@@ -13,17 +13,17 @@ import std.exception;
 import std.stdio;
 
 struct OVMEM {
-	const(ubyte)[] p_buf; // ogg vorbis-data on memory.s
+	const(ubyte)[] pBuf; // ogg vorbis-data on memory.s
 	int size; //
 	int pos; // reading position.
 }
 
 // 4 callbacks below:
 
-private extern (C) size_t _mread(void* p, size_t size, size_t nmemb, void* p_void) nothrow @trusted {
-	return _mread((cast(ubyte*)p)[0 .. size * nmemb], size, nmemb, cast(OVMEM*)p_void);
+private extern (C) size_t vorbisReadCallback(void* p, size_t size, size_t nmemb, void* user) nothrow @trusted {
+	return vorbisReadCallback((cast(ubyte*)p)[0 .. size * nmemb], size, nmemb, cast(OVMEM*)user);
 }
-private size_t _mread(ubyte[] p, size_t size, size_t nmemb, OVMEM* pom) nothrow @safe {
+private size_t vorbisReadCallback(ubyte[] p, size_t size, size_t nmemb, OVMEM* pom) nothrow @safe {
 	if (!pom) {
 		return -1;
 	}
@@ -37,21 +37,21 @@ private size_t _mread(ubyte[] p, size_t size, size_t nmemb, OVMEM* pom) nothrow 
 	int left = pom.size - pom.pos;
 
 	if (cast(int)(size * nmemb) >= left) {
-		p[0 .. pom.size - pom.pos] = pom.p_buf[pom.pos .. pom.size];
+		p[0 .. pom.size - pom.pos] = pom.pBuf[pom.pos .. pom.size];
 		pom.pos = pom.size;
 		return left / size;
 	}
 
-	p[] = pom.p_buf[pom.pos .. pom.pos + nmemb * size];
+	p[] = pom.pBuf[pom.pos .. pom.pos + nmemb * size];
 	pom.pos += cast(int)(nmemb * size);
 
 	return nmemb;
 }
 
-private extern (C) int _mseek(void* pom, long offset, int mode) nothrow @trusted {
-	return _mseek(cast(OVMEM*)pom, offset, mode);
+private extern (C) int vorbisSeekCallback(void* pom, long offset, int mode) nothrow @trusted {
+	return vorbisSeekCallback(cast(OVMEM*)pom, offset, mode);
 }
-private int _mseek(OVMEM* pom, long offset, int mode) nothrow @safe {
+private int vorbisSeekCallback(OVMEM* pom, long offset, int mode) nothrow @safe {
 	int newpos;
 
 	if (!pom || pom.pos < 0) {
@@ -84,20 +84,20 @@ private int _mseek(OVMEM* pom, long offset, int mode) nothrow @safe {
 	return 0;
 }
 
-private extern (C) c_long _mtell(void* p_void) nothrow @trusted {
-	return _mtell(cast(OVMEM*)p_void);
+private extern (C) c_long vorbisTellCallback(void* user) nothrow @trusted {
+	return vorbisTellCallback(cast(OVMEM*)user);
 }
-private c_long _mtell(OVMEM* pom) nothrow @safe {
+private c_long vorbisTellCallback(OVMEM* pom) nothrow @safe {
 	if (!pom) {
 		return -1;
 	}
 	return pom.pos;
 }
 
-private extern (C) int _mclose_dummy(void* p_void) nothrow @trusted {
-	return _mclose_dummy(cast(OVMEM*)p_void);
+private extern (C) int vorbisCloseCallback(void* user) nothrow @trusted {
+	return vorbisCloseCallback(cast(OVMEM*)user);
 }
-private int _mclose_dummy(OVMEM* pom) nothrow @safe {
+private int vorbisCloseCallback(OVMEM* pom) nothrow @safe {
 	if (!pom) {
 		return -1;
 	}
@@ -108,28 +108,28 @@ private int _mclose_dummy(OVMEM* pom) nothrow @safe {
 // global
 /////////////////
 
-struct pxtnPulse_Oggv {
+struct PxtnPulseOggv {
 private:
-	int _ch;
-	int _sps2;
-	int _smp_num;
-	int _size;
-	ubyte[] _p_data;
+	int ch;
+	int sps2;
+	int smpNum;
+	int size;
+	ubyte[] pData;
 
-	bool _SetInformation() @safe {
-		bool b_ret = false;
+	private bool setInformation() @safe {
+		bool bRet = false;
 
 		OVMEM ovmem;
-		ovmem.p_buf = _p_data;
+		ovmem.pBuf = pData;
 		ovmem.pos = 0;
-		ovmem.size = _size;
+		ovmem.size = size;
 
 		// set callback func.
 		ov_callbacks oc;
-		oc.read_func = &_mread;
-		oc.seek_func = &_mseek;
-		oc.close_func = &_mclose_dummy;
-		oc.tell_func = &_mtell;
+		oc.read_func = &vorbisReadCallback;
+		oc.seek_func = &vorbisSeekCallback;
+		oc.close_func = &vorbisCloseCallback;
+		oc.tell_func = &vorbisTellCallback;
 
 		OggVorbis_File vf;
 
@@ -139,62 +139,62 @@ private:
 
 		vi = trustedOvInfo(vf, -1);
 
-		_ch = vi.channels;
-		_sps2 = vi.rate;
-		_smp_num = cast(int) trustedOvPCMTotal(vf, -1);
+		ch = vi.channels;
+		sps2 = vi.rate;
+		smpNum = cast(int) trustedOvPCMTotal(vf, -1);
 
 		// end.
 		trustedOvClear(vf);
 
-		b_ret = true;
+		bRet = true;
 
 	End:
-		return b_ret;
+		return bRet;
 
 	}
 
 public:
 	 ~this() nothrow @safe {
-		Release();
+		release();
 	}
 
-	void Decode(out pxtnPulse_PCM p_pcm) const @safe {
+	void decode(out PxtnPulsePCM pPCM) const @safe {
 		OggVorbis_File vf;
 		vorbis_info* vi;
 		ov_callbacks oc;
 
 		OVMEM ovmem;
-		int current_section;
+		int currentSection;
 		byte[4096] pcmout = 0; //take 4k out of the data segment, not the stack
 
-		ovmem.p_buf = _p_data;
+		ovmem.pBuf = pData;
 		ovmem.pos = 0;
-		ovmem.size = _size;
+		ovmem.size = size;
 
 		// set callback func.
-		oc.read_func = &_mread;
-		oc.seek_func = &_mseek;
-		oc.close_func = &_mclose_dummy;
-		oc.tell_func = &_mtell;
+		oc.read_func = &vorbisReadCallback;
+		oc.seek_func = &vorbisSeekCallback;
+		oc.close_func = &vorbisCloseCallback;
+		oc.tell_func = &vorbisTellCallback;
 
 		trustedOvOpenCallbacks(ovmem, vf, null, oc);
 
 		vi = trustedOvInfo(vf, -1);
 
 		{
-			int smp_num = cast(int) trustedOvPCMTotal(vf, -1);
+			int tmpSmpNum = cast(int) trustedOvPCMTotal(vf, -1);
 			uint bytes;
 
-			bytes = vi.channels * 2 * smp_num;
+			bytes = vi.channels * 2 * tmpSmpNum;
 
-			p_pcm.Create(vi.channels, vi.rate, 16, smp_num);
+			pPCM.create(vi.channels, vi.rate, 16, tmpSmpNum);
 		}
 		// decode..
 		{
 			int ret = 0;
-			ubyte[] p = p_pcm.get_p_buf();
+			ubyte[] p = pPCM.getPCMBuffer();
 			do {
-				ret = cast(int)trustedOvRead(vf, pcmout[], 0, 2, 1, current_section);
+				ret = cast(int)trustedOvRead(vf, pcmout[], 0, 2, 1, currentSection);
 				if (ret > 0) {
 					p[0 .. ret] = cast(ubyte[])(pcmout[0 .. ret]);
 				}
@@ -207,105 +207,105 @@ public:
 		trustedOvClear(vf);
 	}
 
-	void Release() nothrow @safe {
-		_p_data = null;
-		_ch = 0;
-		_sps2 = 0;
-		_smp_num = 0;
-		_size = 0;
+	void release() nothrow @safe {
+		pData = null;
+		ch = 0;
+		sps2 = 0;
+		smpNum = 0;
+		size = 0;
 	}
 
-	bool GetInfo(int* p_ch, int* p_sps, int* p_smp_num) nothrow @safe {
-		if (!_p_data) {
+	bool getInfo(int* pCh, int* pSPS, int* pSmpNum) nothrow @safe {
+		if (!pData) {
 			return false;
 		}
 
-		if (p_ch) {
-			*p_ch = _ch;
+		if (pCh) {
+			*pCh = ch;
 		}
-		if (p_sps) {
-			*p_sps = _sps2;
+		if (pSPS) {
+			*pSPS = sps2;
 		}
-		if (p_smp_num) {
-			*p_smp_num = _smp_num;
+		if (pSmpNum) {
+			*pSmpNum = smpNum;
 		}
 
 		return true;
 	}
 
-	int GetSize() const nothrow @safe {
-		if (!_p_data) {
+	int getSize() const nothrow @safe {
+		if (!pData) {
 			return 0;
 		}
-		return cast(int)(int.sizeof * 4 + _size);
+		return cast(int)(int.sizeof * 4 + size);
 	}
 
-	void ogg_write(ref pxtnDescriptor desc) const @safe {
-		desc.w_asfile(_p_data);
+	void oggWrite(ref PxtnDescriptor desc) const @safe {
+		desc.write(pData);
 	}
 
-	void ogg_read(ref pxtnDescriptor desc) @safe {
-		_size = desc.get_size_bytes();
-		if (!(_size)) {
+	void oggRead(ref PxtnDescriptor desc) @safe {
+		size = desc.getByteSize();
+		if (!(size)) {
 			throw new PxtoneException("desc r");
 		}
-		_p_data = new ubyte[](_size);
+		pData = new ubyte[](size);
 		scope(failure) {
-			_p_data = null;
-			_size = 0;
+			pData = null;
+			size = 0;
 		}
-		desc.r(_p_data);
-		if (!_SetInformation()) {
-			throw new PxtoneException("_SetInformation");
+		desc.read(pData);
+		if (!setInformation()) {
+			throw new PxtoneException("setInformation");
 		}
 	}
 
-	void pxtn_write(ref pxtnDescriptor p_doc) const @safe {
-		if (!_p_data) {
+	void pxtnWrite(ref PxtnDescriptor pDoc) const @safe {
+		if (!pData) {
 			throw new PxtoneException("No data");
 		}
 
-		p_doc.w_asfile(_ch);
-		p_doc.w_asfile(_sps2);
-		p_doc.w_asfile(_smp_num);
-		p_doc.w_asfile(_size);
-		p_doc.w_asfile(_p_data);
+		pDoc.write(ch);
+		pDoc.write(sps2);
+		pDoc.write(smpNum);
+		pDoc.write(size);
+		pDoc.write(pData);
 	}
 
-	void pxtn_read(ref pxtnDescriptor p_doc) @safe {
-		p_doc.r(_ch);
-		p_doc.r(_sps2);
-		p_doc.r(_smp_num);
-		p_doc.r(_size);
+	void pxtnRead(ref PxtnDescriptor pDoc) @safe {
+		pDoc.read(ch);
+		pDoc.read(sps2);
+		pDoc.read(smpNum);
+		pDoc.read(size);
 
-		if (!_size) {
+		if (!size) {
 			throw new PxtoneException("Invalid size read");
 		}
 
-		_p_data = new ubyte[](_size);
+		pData = new ubyte[](size);
 		scope(failure) {
-			_p_data = null;
-			_size = 0;
+			pData = null;
+			size = 0;
 		}
-		p_doc.r(_p_data);
+		pDoc.read(pData);
 	}
 
-	bool Copy(ref pxtnPulse_Oggv p_dst) const nothrow @safe {
-		p_dst.Release();
-		if (!_p_data) {
+	bool copy(ref PxtnPulseOggv pDst) const nothrow @safe {
+		pDst.release();
+		if (!pData) {
 			return true;
 		}
 
-		p_dst._p_data = new ubyte[](_size);
-		if (!(p_dst._p_data)) {
+		pDst.pData = new ubyte[](size);
+		if (!(pDst.pData)) {
 			return false;
 		}
-		p_dst._p_data[0 .. _size] = _p_data[0 .. _size];
+		pDst.pData[0 .. size] = pData[0 .. size];
 
-		p_dst._ch = _ch;
-		p_dst._sps2 = _sps2;
-		p_dst._size = _size;
-		p_dst._smp_num = _smp_num;
+		pDst.ch = ch;
+		pDst.sps2 = sps2;
+		pDst.size = size;
+		pDst.smpNum = smpNum;
 
 		return true;
 	}

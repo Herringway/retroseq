@@ -6,7 +6,7 @@ import pxtone.descriptor;
 import pxtone.error;
 import pxtone.max;
 
-enum DELAYUNIT {
+enum DelayUnit {
 	Beat = 0,
 	Meas,
 	Second,
@@ -14,130 +14,130 @@ enum DELAYUNIT {
 }
 
 // (12byte) =================
-struct _DELAYSTRUCT {
+struct Delay {
 	ushort unit;
 	ushort group;
 	float rate = 0.0;
 	float freq = 0.0;
 }
 
-struct pxtnDelay {
+struct PxtnDelay {
 private:
-	bool _b_played = true;
-	DELAYUNIT _unit = DELAYUNIT.Beat;
-	int _group = 0;
-	float _rate = 33.0;
-	float _freq = 3.0f;
+	bool bPlayed = true;
+	DelayUnit unit = DelayUnit.Beat;
+	int group = 0;
+	float rate = 33.0;
+	float freq = 3.0f;
 
-	int _smp_num = 0;
-	int _offset = 0;
-	int[][pxtnMAX_CHANNEL] _bufs = null;
-	int _rate_s32 = 0;
+	int sampleNum = 0;
+	int offset = 0;
+	int[][pxtnMaxChannel] bufs = null;
+	int rateS32 = 0;
 
 public:
 
 	 ~this() nothrow @safe {
-		Tone_Release();
+		toneRelease();
 	}
 
-	DELAYUNIT get_unit() const nothrow @safe {
-		return _unit;
+	DelayUnit getUnit() const nothrow @safe {
+		return unit;
 	}
 
-	int get_group() const nothrow @safe {
-		return _group;
+	int getGroup() const nothrow @safe {
+		return group;
 	}
 
-	float get_rate() const nothrow @safe {
-		return _rate;
+	float getRate() const nothrow @safe {
+		return rate;
 	}
 
-	float get_freq() const nothrow @safe {
-		return _freq;
+	float getFreq() const nothrow @safe {
+		return freq;
 	}
 
-	void Set(DELAYUNIT unit, float freq, float rate, int group) nothrow @safe {
-		_unit = unit;
-		_group = group;
-		_rate = rate;
-		_freq = freq;
+	void set(DelayUnit unit, float freq, float rate, int group) nothrow @safe {
+		this.unit = unit;
+		this.group = group;
+		this.rate = rate;
+		this.freq = freq;
 	}
 
-	bool get_played() const nothrow @safe {
-		return _b_played;
+	bool getPlayed() const nothrow @safe {
+		return bPlayed;
 	}
 
-	void set_played(bool b) nothrow @safe {
-		_b_played = b;
+	void setPlayed(bool b) nothrow @safe {
+		bPlayed = b;
 	}
 
-	bool switch_played() nothrow @safe {
-		_b_played = !_b_played;
-		return _b_played;
+	bool switchPlayed() nothrow @safe {
+		bPlayed = !bPlayed;
+		return bPlayed;
 	}
 
-	void Tone_Release() nothrow @safe {
-		_bufs = null;
-		_smp_num = 0;
+	void toneRelease() nothrow @safe {
+		bufs = null;
+		sampleNum = 0;
 	}
 
-	void Tone_Ready(int beat_num, float beat_tempo, int sps) @safe {
-		Tone_Release();
+	void toneReady(int beatNum, float beatTempo, int sps) @safe {
+		toneRelease();
 
 		scope(failure) {
-			Tone_Release();
+			toneRelease();
 		}
-		if (_freq && _rate) {
-			_offset = 0;
-			_rate_s32 = cast(int) _rate; // /100;
+		if (freq && rate) {
+			offset = 0;
+			rateS32 = cast(int) rate; // /100;
 
-			switch (_unit) {
-			case DELAYUNIT.Beat:
-				_smp_num = cast(int)(sps * 60 / beat_tempo / _freq);
+			switch (unit) {
+			case DelayUnit.Beat:
+				sampleNum = cast(int)(sps * 60 / beatTempo / freq);
 				break;
-			case DELAYUNIT.Meas:
-				_smp_num = cast(int)(sps * 60 * beat_num / beat_tempo / _freq);
+			case DelayUnit.Meas:
+				sampleNum = cast(int)(sps * 60 * beatNum / beatTempo / freq);
 				break;
-			case DELAYUNIT.Second:
-				_smp_num = cast(int)(sps / _freq);
+			case DelayUnit.Second:
+				sampleNum = cast(int)(sps / freq);
 				break;
 			default:
 				break;
 			}
 
-			for (int c = 0; c < pxtnMAX_CHANNEL; c++) {
-				_bufs[c] = new int[](_smp_num);
+			for (int c = 0; c < pxtnMaxChannel; c++) {
+				bufs[c] = new int[](sampleNum);
 			}
 		}
 	}
 
-	void Tone_Supple(int ch, int[] group_smps) nothrow @safe {
-		if (!_smp_num) {
+	void toneSupple(int ch, int[] groupSamples) nothrow @safe {
+		if (!sampleNum) {
 			return;
 		}
-		int a = _bufs[ch][_offset] * _rate_s32 / 100;
-		if (_b_played) {
-			group_smps[_group] += a;
+		int a = bufs[ch][offset] * rateS32 / 100;
+		if (bPlayed) {
+			groupSamples[group] += a;
 		}
-		_bufs[ch][_offset] = group_smps[_group];
+		bufs[ch][offset] = groupSamples[group];
 	}
 
-	void Tone_Increment() nothrow @safe {
-		if (!_smp_num) {
+	void toneIncrement() nothrow @safe {
+		if (!sampleNum) {
 			return;
 		}
-		if (++_offset >= _smp_num) {
-			_offset = 0;
+		if (++offset >= sampleNum) {
+			offset = 0;
 		}
 	}
 
-	void Tone_Clear() nothrow @safe {
-		if (!_smp_num) {
+	void toneClear() nothrow @safe {
+		if (!sampleNum) {
 			return;
 		}
 		int def = 0; // ..
-		for (int i = 0; i < pxtnMAX_CHANNEL; i++) {
-			_bufs[i][0 .. _smp_num] = def;
+		for (int i = 0; i < pxtnMaxChannel; i++) {
+			bufs[i][0 .. sampleNum] = def;
 		}
 	}
 }

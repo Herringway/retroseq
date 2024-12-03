@@ -12,7 +12,7 @@
 			"dependencies": {
 				"derelict-vorbis": "~>2.0.0-beta.2"
 			},
-			"versions": ["pxINCLUDE_OGGVORBIS"]
+			"versions": ["WithOggVorbis"]
 		}
 	]
 }

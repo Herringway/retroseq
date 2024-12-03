@@ -12,8 +12,8 @@ import pxtone.woice;
 import std.exception;
 
 // v1x (20byte) =================
-struct _x1x_UNIT {
-	char[pxtnMAX_TUNEUNITNAME] name;
+struct UnitVersion1 {
+	char[pxtnMaxTuneUnitName] name;
 	ushort type;
 	ushort group;
 }
@@ -22,353 +22,353 @@ struct _x1x_UNIT {
 // pxtnUNIT x3x
 ///////////////////
 
-struct _x3x_UNIT {
+struct Unit {
 	ushort type;
 	ushort group;
 }
 
-struct pxtnUnit {
+struct PxtnUnit {
 private:
-	bool _bOperated = true;
-	bool _bPlayed = true;
-	char[pxtnMAX_TUNEUNITNAME + 1] _name_buf = "no name";
-	int _name_size = "no name".length;
+	bool bOperated = true;
+	bool bPlayed = true;
+	char[pxtnMaxTuneUnitName + 1] nameBuf = "no name";
+	int nameSize = "no name".length;
 
 	//	TUNEUNITTONESTRUCT
-	int _key_now;
-	int _key_start;
-	int _key_margin;
-	int _portament_sample_pos;
-	int _portament_sample_num;
-	int[pxtnMAX_CHANNEL] _pan_vols;
-	int[pxtnMAX_CHANNEL] _pan_times;
-	int[pxtnBUFSIZE_TIMEPAN][pxtnMAX_CHANNEL] _pan_time_bufs;
-	int _v_VOLUME;
-	int _v_VELOCITY;
-	int _v_GROUPNO;
-	float _v_TUNING = 0.0;
+	int keyNow;
+	int keyStart;
+	int keyMargin;
+	int portamentSamplePos;
+	int portamentSampleNum;
+	int[pxtnMaxChannel] panVols;
+	int[pxtnMaxChannel] panTimes;
+	int[pxtnBufferSizeTimePan][pxtnMaxChannel] panTimeBufs;
+	int volume;
+	int velocity;
+	int groupNumber;
+	float tuning = 0.0;
 
-	const(pxtnWoice)* _p_woice;
+	const(pxtnWoice)* woice;
 
-	pxtnVOICETONE[pxtnMAX_UNITCONTROLVOICE] _vts;
+	PxtnVoiceTone[pxtnMaxUnitControlVoice] vts;
 
 public:
 
-	void Tone_Init() nothrow @safe {
-		_v_GROUPNO = EVENTDEFAULT_GROUPNO;
-		_v_VELOCITY = EVENTDEFAULT_VELOCITY;
-		_v_VOLUME = EVENTDEFAULT_VOLUME;
-		_v_TUNING = EVENTDEFAULT_TUNING;
-		_portament_sample_num = 0;
-		_portament_sample_pos = 0;
+	void toneInit() nothrow @safe {
+		groupNumber = EventDefault.groupNumber;
+		velocity = EventDefault.velocity;
+		volume = EventDefault.volume;
+		tuning = EventDefault.tuning;
+		portamentSampleNum = 0;
+		portamentSamplePos = 0;
 
-		for (int i = 0; i < pxtnMAX_CHANNEL; i++) {
-			_pan_vols[i] = 64;
-			_pan_times[i] = 0;
+		for (int i = 0; i < pxtnMaxChannel; i++) {
+			panVols[i] = 64;
+			panTimes[i] = 0;
 		}
 	}
 
-	void Tone_Clear() nothrow @safe {
-		for (int i = 0; i < pxtnMAX_CHANNEL; i++) {
-			_pan_time_bufs[i][0 .. pxtnBUFSIZE_TIMEPAN] = 0;
+	void toneClear() nothrow @safe {
+		for (int i = 0; i < pxtnMaxChannel; i++) {
+			panTimeBufs[i][0 .. pxtnBufferSizeTimePan] = 0;
 		}
 	}
 
-	void Tone_Reset_and_2prm(int voice_idx, int env_rls_clock, float offset_freq) nothrow @safe {
-		pxtnVOICETONE* p_tone = &_vts[voice_idx];
-		p_tone.life_count = 0;
-		p_tone.on_count = 0;
-		p_tone.smp_pos = 0;
-		p_tone.smooth_volume = 0;
-		p_tone.env_release_clock = env_rls_clock;
-		p_tone.offset_freq = offset_freq;
+	void toneResetAnd2prm(int voiceIndex, int envRlsClock, float offsetFreq) nothrow @safe {
+		PxtnVoiceTone* pTone = &vts[voiceIndex];
+		pTone.lifeCount = 0;
+		pTone.onCount = 0;
+		pTone.samplePosition = 0;
+		pTone.smoothVolume = 0;
+		pTone.envelopeReleaseClock = envRlsClock;
+		pTone.offsetFreq = offsetFreq;
 	}
 
-	void Tone_Envelope() nothrow @safe {
-		if (!_p_woice) {
+	void toneEnvelope() nothrow @safe {
+		if (!woice) {
 			return;
 		}
 
-		for (int v = 0; v < _p_woice.get_voice_num(); v++) {
-			const pxtnVOICEINSTANCE* p_vi = _p_woice.get_instance(v);
-			pxtnVOICETONE* p_vt = &_vts[v];
+		for (int v = 0; v < woice.getVoiceNum(); v++) {
+			const PxtnVoiceInstance* pVi = woice.getInstance(v);
+			PxtnVoiceTone* pVt = &vts[v];
 
-			if (p_vt.life_count > 0 && p_vi.env_size) {
-				if (p_vt.on_count > 0) {
-					if (p_vt.env_pos < p_vi.env_size) {
-						p_vt.env_volume = p_vi.p_env[p_vt.env_pos];
-						p_vt.env_pos++;
+			if (pVt.lifeCount > 0 && pVi.envelopeSize) {
+				if (pVt.onCount > 0) {
+					if (pVt.envelopePosition < pVi.envelopeSize) {
+						pVt.envelopeVolume = pVi.envelope[pVt.envelopePosition];
+						pVt.envelopePosition++;
 					}
 				}  // release.
 				else {
-					p_vt.env_volume = p_vt.env_start + (0 - p_vt.env_start) * p_vt.env_pos / p_vi.env_release;
-					p_vt.env_pos++;
+					pVt.envelopeVolume = pVt.envelopeStart + (0 - pVt.envelopeStart) * pVt.envelopePosition / pVi.envelopeRelease;
+					pVt.envelopePosition++;
 				}
 			}
 		}
 	}
 
-	void Tone_KeyOn() nothrow @safe {
-		_key_now = _key_start + _key_margin;
-		_key_start = _key_now;
-		_key_margin = 0;
+	void toneKeyOn() nothrow @safe {
+		keyNow = keyStart + keyMargin;
+		keyStart = keyNow;
+		keyMargin = 0;
 	}
 
-	void Tone_ZeroLives() nothrow @safe {
-		for (int i = 0; i < pxtnMAX_CHANNEL; i++) {
-			_vts[i].life_count = 0;
+	void toneZeroLives() nothrow @safe {
+		for (int i = 0; i < pxtnMaxChannel; i++) {
+			vts[i].lifeCount = 0;
 		}
 	}
 
-	void Tone_Key(int key) nothrow @safe {
-		_key_start = _key_now;
-		_key_margin = key - _key_start;
-		_portament_sample_pos = 0;
+	void toneKey(int key) nothrow @safe {
+		keyStart = keyNow;
+		keyMargin = key - keyStart;
+		portamentSamplePos = 0;
 	}
 
-	void Tone_Pan_Volume(int ch, int pan) nothrow @safe {
-		_pan_vols[0] = 64;
-		_pan_vols[1] = 64;
+	void tonePanVolume(int ch, int pan) nothrow @safe {
+		panVols[0] = 64;
+		panVols[1] = 64;
 		if (ch == 2) {
 			if (pan >= 64) {
-				_pan_vols[0] = 128 - pan;
+				panVols[0] = 128 - pan;
 			} else {
-				_pan_vols[1] = pan;
+				panVols[1] = pan;
 			}
 		}
 	}
 
-	void Tone_Pan_Time(int ch, int pan, int sps) nothrow @safe {
-		_pan_times[0] = 0;
-		_pan_times[1] = 0;
+	void tonePanTime(int ch, int pan, int sps) nothrow @safe {
+		panTimes[0] = 0;
+		panTimes[1] = 0;
 
 		if (ch == 2) {
 			if (pan >= 64) {
-				_pan_times[0] = pan - 64;
-				if (_pan_times[0] > 63) {
-					_pan_times[0] = 63;
+				panTimes[0] = pan - 64;
+				if (panTimes[0] > 63) {
+					panTimes[0] = 63;
 				}
-				_pan_times[0] = (_pan_times[0] * 44100) / sps;
+				panTimes[0] = (panTimes[0] * 44100) / sps;
 			} else {
-				_pan_times[1] = 64 - pan;
-				if (_pan_times[1] > 63) {
-					_pan_times[1] = 63;
+				panTimes[1] = 64 - pan;
+				if (panTimes[1] > 63) {
+					panTimes[1] = 63;
 				}
-				_pan_times[1] = (_pan_times[1] * 44100) / sps;
+				panTimes[1] = (panTimes[1] * 44100) / sps;
 			}
 		}
 	}
 
-	void Tone_Velocity(int val) nothrow @safe {
-		_v_VELOCITY = val;
+	void toneVelocity(int val) nothrow @safe {
+		velocity = val;
 	}
 
-	void Tone_Volume(int val) nothrow @safe {
-		_v_VOLUME = val;
+	void toneVolume(int val) nothrow @safe {
+		volume = val;
 	}
 
-	void Tone_Portament(int val) nothrow @safe {
-		_portament_sample_num = val;
+	void tonePortament(int val) nothrow @safe {
+		portamentSampleNum = val;
 	}
 
-	void Tone_GroupNo(int val) nothrow @safe {
-		_v_GROUPNO = val;
+	void toneGroupNumber(int val) nothrow @safe {
+		groupNumber = val;
 	}
 
-	void Tone_Tuning(float val) nothrow @safe {
-		_v_TUNING = val;
+	void toneTuning(float val) nothrow @safe {
+		tuning = val;
 	}
 
-	void Tone_Sample(bool b_mute_by_unit, int ch_num, int time_pan_index, int smooth_smp) nothrow @safe {
-		if (!_p_woice) {
+	void toneSample(bool bMuteByUnit, int channels, int timePanIndex, int smoothSample) nothrow @safe {
+		if (!woice) {
 			return;
 		}
 
-		if (b_mute_by_unit && !_bPlayed) {
-			for (int ch = 0; ch < ch_num; ch++) {
-				_pan_time_bufs[ch][time_pan_index] = 0;
+		if (bMuteByUnit && !bPlayed) {
+			for (int ch = 0; ch < channels; ch++) {
+				panTimeBufs[ch][timePanIndex] = 0;
 			}
 			return;
 		}
 
-		for (int ch = 0; ch < pxtnMAX_CHANNEL; ch++) {
-			int time_pan_buf = 0;
+		for (int ch = 0; ch < pxtnMaxChannel; ch++) {
+			int timePanBuffer = 0;
 
-			for (int v = 0; v < _p_woice.get_voice_num(); v++) {
-				pxtnVOICETONE* p_vt = &_vts[v];
-				const pxtnVOICEINSTANCE* p_vi = _p_woice.get_instance(v);
+			for (int v = 0; v < woice.getVoiceNum(); v++) {
+				PxtnVoiceTone* pVt = &vts[v];
+				const PxtnVoiceInstance* pVi = woice.getInstance(v);
 
 				int work = 0;
 
-				if (p_vt.life_count > 0) {
-					int pos = cast(int) p_vt.smp_pos * 2 + ch;
-					work += (cast(const(short)[])p_vi.p_smp_w)[pos];
+				if (pVt.lifeCount > 0) {
+					int pos = cast(int) pVt.samplePosition * 2 + ch;
+					work += (cast(const(short)[])pVi.sample)[pos];
 
-					if (ch_num == 1) {
-						work += (cast(const(short)[])p_vi.p_smp_w)[pos + 1];
+					if (channels == 1) {
+						work += (cast(const(short)[])pVi.sample)[pos + 1];
 						work = work / 2;
 					}
 
-					work = (work * _v_VELOCITY) / 128;
-					work = (work * _v_VOLUME) / 128;
-					work = work * _pan_vols[ch] / 64;
+					work = (work * velocity) / 128;
+					work = (work * volume) / 128;
+					work = work * panVols[ch] / 64;
 
-					if (p_vi.env_size) {
-						work = work * p_vt.env_volume / 128;
+					if (pVi.envelopeSize) {
+						work = work * pVt.envelopeVolume / 128;
 					}
 
 					// smooth tail
-					if (_p_woice.get_voice(v).voice_flags & PTV_VOICEFLAG_SMOOTH && p_vt.life_count < smooth_smp) {
-						work = work * p_vt.life_count / smooth_smp;
+					if (woice.getVoice(v).voiceFlags & PTVVoiceFlag.smooth && pVt.lifeCount < smoothSample) {
+						work = work * pVt.lifeCount / smoothSample;
 					}
 				}
-				time_pan_buf += work;
+				timePanBuffer += work;
 			}
-			_pan_time_bufs[ch][time_pan_index] = time_pan_buf;
+			panTimeBufs[ch][timePanIndex] = timePanBuffer;
 		}
 	}
 
-	void Tone_Supple(int[] group_smps, int ch, int time_pan_index) const nothrow @safe {
-		int idx = (time_pan_index - _pan_times[ch]) & (pxtnBUFSIZE_TIMEPAN - 1);
-		group_smps[_v_GROUPNO] += _pan_time_bufs[ch][idx];
+	void toneSupple(int[] groupSamples, int ch, int timePanIndex) const nothrow @safe {
+		int idx = (timePanIndex - panTimes[ch]) & (pxtnBufferSizeTimePan - 1);
+		groupSamples[groupNumber] += panTimeBufs[ch][idx];
 	}
 
-	int Tone_Increment_Key() nothrow @safe {
+	int toneIncrementKey() nothrow @safe {
 		// prtament..
-		if (_portament_sample_num && _key_margin) {
-			if (_portament_sample_pos < _portament_sample_num) {
-				_portament_sample_pos++;
-				_key_now = cast(int)(_key_start + cast(double) _key_margin * _portament_sample_pos / _portament_sample_num);
+		if (portamentSampleNum && keyMargin) {
+			if (portamentSamplePos < portamentSampleNum) {
+				portamentSamplePos++;
+				keyNow = cast(int)(keyStart + cast(double) keyMargin * portamentSamplePos / portamentSampleNum);
 			} else {
-				_key_now = _key_start + _key_margin;
-				_key_start = _key_now;
-				_key_margin = 0;
+				keyNow = keyStart + keyMargin;
+				keyStart = keyNow;
+				keyMargin = 0;
 			}
 		} else {
-			_key_now = _key_start + _key_margin;
+			keyNow = keyStart + keyMargin;
 		}
-		return _key_now;
+		return keyNow;
 	}
 
-	void Tone_Increment_Sample(float freq) nothrow @safe {
-		if (!_p_woice) {
+	void toneIncrementSample(float freq) nothrow @safe {
+		if (!woice) {
 			return;
 		}
 
-		for (int v = 0; v < _p_woice.get_voice_num(); v++) {
-			const pxtnVOICEINSTANCE* p_vi = _p_woice.get_instance(v);
-			pxtnVOICETONE* p_vt = &_vts[v];
+		for (int v = 0; v < woice.getVoiceNum(); v++) {
+			const PxtnVoiceInstance* pVi = woice.getInstance(v);
+			PxtnVoiceTone* pVt = &vts[v];
 
-			if (p_vt.life_count > 0) {
-				p_vt.life_count--;
+			if (pVt.lifeCount > 0) {
+				pVt.lifeCount--;
 			}
-			if (p_vt.life_count > 0) {
-				p_vt.on_count--;
+			if (pVt.lifeCount > 0) {
+				pVt.onCount--;
 
-				p_vt.smp_pos += p_vt.offset_freq * _v_TUNING * freq;
+				pVt.samplePosition += pVt.offsetFreq * tuning * freq;
 
-				if (p_vt.smp_pos >= p_vi.smp_body_w) {
-					if (_p_woice.get_voice(v).voice_flags & PTV_VOICEFLAG_WAVELOOP) {
-						if (p_vt.smp_pos >= p_vi.smp_body_w) {
-							p_vt.smp_pos -= p_vi.smp_body_w;
+				if (pVt.samplePosition >= pVi.sampleBody) {
+					if (woice.getVoice(v).voiceFlags & PTVVoiceFlag.waveLoop) {
+						if (pVt.samplePosition >= pVi.sampleBody) {
+							pVt.samplePosition -= pVi.sampleBody;
 						}
-						if (p_vt.smp_pos >= p_vi.smp_body_w) {
-							p_vt.smp_pos = 0;
+						if (pVt.samplePosition >= pVi.sampleBody) {
+							pVt.samplePosition = 0;
 						}
 					} else {
-						p_vt.life_count = 0;
+						pVt.lifeCount = 0;
 					}
 				}
 
 				// OFF
-				if (p_vt.on_count == 0 && p_vi.env_size) {
-					p_vt.env_start = p_vt.env_volume;
-					p_vt.env_pos = 0;
+				if (pVt.onCount == 0 && pVi.envelopeSize) {
+					pVt.envelopeStart = pVt.envelopeVolume;
+					pVt.envelopePosition = 0;
 				}
 			}
 		}
 	}
 
-	bool set_woice(const(pxtnWoice)* p_woice) nothrow @safe {
-		if (!p_woice) {
+	bool setWoice(const(pxtnWoice)* woice) nothrow @safe {
+		if (!woice) {
 			return false;
 		}
-		_p_woice = p_woice;
-		_key_now = EVENTDEFAULT_KEY;
-		_key_margin = 0;
-		_key_start = EVENTDEFAULT_KEY;
+		this.woice = woice;
+		keyNow = EventDefault.key;
+		keyMargin = 0;
+		keyStart = EventDefault.key;
 		return true;
 	}
 
-	const(pxtnWoice)* get_woice() const nothrow @safe {
-		return _p_woice;
+	const(pxtnWoice)* getWoice() const nothrow @safe {
+		return woice;
 	}
 
 	bool setNameBuf(scope const char[] name) nothrow @safe {
-		if (!name || name.length > pxtnMAX_TUNEUNITNAME) {
+		if (!name || name.length > pxtnMaxTuneUnitName) {
 			return false;
 		}
-		_name_buf[0 .. $] = 0;
+		nameBuf[0 .. $] = 0;
 		if (name.length) {
-			_name_buf[0 .. name.length] = name;
+			nameBuf[0 .. name.length] = name;
 		}
-		_name_size = cast(int)name.length;
+		nameSize = cast(int)name.length;
 		return true;
 	}
 
-	const(char)[] get_name_buf() const return nothrow @safe {
-		return _name_buf[0 .. _name_size];
+	const(char)[] getNameBuf() const return nothrow @safe {
+		return nameBuf[0 .. nameSize];
 	}
 
-	bool is_name_buf() const nothrow @safe {
-		if (_name_size > 0) {
+	bool isNameBuf() const nothrow @safe {
+		if (nameSize > 0) {
 			return true;
 		}
 		return false;
 	}
 
-	pxtnVOICETONE* get_tone(int voice_idx) return nothrow @safe {
-		return &_vts[voice_idx];
+	PxtnVoiceTone* getTone(int voiceIndex) return nothrow @safe {
+		return &vts[voiceIndex];
 	}
 
-	void set_operated(bool b) nothrow @safe {
-		_bOperated = b;
+	void setOperated(bool b) nothrow @safe {
+		bOperated = b;
 	}
 
-	void set_played(bool b) nothrow @safe {
-		_bPlayed = b;
+	void setPlayed(bool b) nothrow @safe {
+		bPlayed = b;
 	}
 
-	bool get_operated() const nothrow @safe {
-		return _bOperated;
+	bool getOperated() const nothrow @safe {
+		return bOperated;
 	}
 
-	bool get_played() const nothrow @safe {
-		return _bPlayed;
+	bool getPlayed() const nothrow @safe {
+		return bPlayed;
 	}
 
-	void Read_v3x(ref pxtnDescriptor p_doc, out int p_group) @safe {
-		_x3x_UNIT unit;
+	void read(ref PxtnDescriptor pDoc, out int pGroup) @safe {
+		Unit unit;
 		int size = 0;
 
-		p_doc.r(size);
-		p_doc.r(unit);
-		if (cast(pxtnWOICETYPE) unit.type != pxtnWOICETYPE.PCM && cast(pxtnWOICETYPE) unit.type != pxtnWOICETYPE.PTV && cast(pxtnWOICETYPE) unit.type != pxtnWOICETYPE.PTN) {
+		pDoc.read(size);
+		pDoc.read(unit);
+		if (cast(PxtnWoiceType) unit.type != PxtnWoiceType.pcm && cast(PxtnWoiceType) unit.type != PxtnWoiceType.ptv && cast(PxtnWoiceType) unit.type != PxtnWoiceType.ptn) {
 			throw new PxtoneException("fmt unknown");
 		}
-		p_group = unit.group;
+		pGroup = unit.group;
 	}
 
-	void Read_v1x(ref pxtnDescriptor p_doc, out int p_group) @safe {
-		_x1x_UNIT unit;
+	void readOld(ref PxtnDescriptor pDoc, out int pGroup) @safe {
+		UnitVersion1 unit;
 		int size;
 
-		p_doc.r(size);
-		p_doc.r(unit);
-		enforce(cast(pxtnWOICETYPE) unit.type == pxtnWOICETYPE.PCM, new PxtoneException("Expecting a PCM unit"));
+		pDoc.read(size);
+		pDoc.read(unit);
+		enforce(cast(PxtnWoiceType) unit.type == PxtnWoiceType.pcm, new PxtoneException("Expecting a PCM unit"));
 
-		_name_buf[0 .. pxtnMAX_TUNEUNITNAME] = unit.name[0 .. pxtnMAX_TUNEUNITNAME];
-		_name_buf[pxtnMAX_TUNEUNITNAME] = '\0';
-		p_group = unit.group;
+		nameBuf[0 .. pxtnMaxTuneUnitName] = unit.name[0 .. pxtnMaxTuneUnitName];
+		nameBuf[pxtnMaxTuneUnitName] = '\0';
+		pGroup = unit.group;
 	}
 }

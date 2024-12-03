@@ -16,10 +16,10 @@ enum _BUFFER_PER_SEC = (0.3f);
 
 __gshared SDL_AudioDeviceID dev;
 
-void _write_ptcop(ref pxtnService pxtn, ref File file) {
-	auto desc = pxtnDescriptor();
+void _write_ptcop(ref PxtnService pxtn, ref File file) {
+	auto desc = PxtnDescriptor();
 
-	desc.set_file_w(file);
+	desc.setFileWritable(file);
 
 	pxtn.write(desc, false, 0);
 }
@@ -49,8 +49,8 @@ bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* use
 }
 
 extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
-	pxtnService* pxtn = cast(pxtnService*) user;
-	pxtn.Moo(cast(short[])(buf[0 .. bufSize]));
+	PxtnService* pxtn = cast(PxtnService*) user;
+	pxtn.moo(cast(short[])(buf[0 .. bufSize]));
 }
 
 int main(string[] args) {
@@ -63,11 +63,11 @@ int main(string[] args) {
 	const file = PxToneSong(cast(ubyte[])read(args[1]));
 
 	// pxtone initialization
-	auto pxtn = pxtnService();
+	auto pxtn = PxtnService();
 	trace("Initializing pxtone");
 	pxtn.initialize();
 	trace("Setting quality");
-	pxtn.set_destination_quality(_CHANNEL_NUM, _SAMPLE_PER_SECOND);
+	pxtn.setDestinationQuality(_CHANNEL_NUM, _SAMPLE_PER_SECOND);
 
 	trace("Loading ptcop");
 	// Load file
@@ -78,10 +78,10 @@ int main(string[] args) {
 	{
 		pxtnVOMITPREPARATION prep;
 		prep.flags.loop = true;
-		prep.start_pos_float = 0;
-		prep.master_volume = 0.80f;
+		prep.startPosFloat = 0;
+		prep.masterVolume = 0.80f;
 
-		pxtn.moo_preparation(prep);
+		pxtn.mooPreparation(prep);
 	}
 	if (!initAudio(&_sampling_func, _CHANNEL_NUM, _SAMPLE_PER_SECOND, &pxtn)) {
 		return 1;
@@ -89,14 +89,14 @@ int main(string[] args) {
 	trace("SDL audio init success");
 
 	writefln!"file: %s"(filePath.baseName);
-	writefln!"name: %s"(file.text.get_name_buf());
-	writefln!"comment: %s"(file.text.get_comment_buf());
+	writefln!"name: %s"(file.text.getNameBuf());
+	writefln!"comment: %s"(file.text.getCommentBuf());
 
-	debug foreach (voice; 0 .. pxtn.Woice_Num()) {
+	debug foreach (voice; 0 .. pxtn.woiceNum()) {
 		import std.algorithm : map;
 		import std.range : iota;
-		auto woice = pxtn.Woice_Get(voice);
-		writefln!"Voice %d \"%s\": %s - %s"(voice, woice.get_name_buf(), woice.get_type(), iota(woice.get_voice_num()).map!(x => woice.get_voice(x).type));
+		auto woice = pxtn.woiceGet(voice);
+		writefln!"Voice %d \"%s\": %s - %s"(voice, woice.getNameBuf(), woice.getType(), iota(woice.getVoiceNum()).map!(x => woice.getVoice(x).type));
 	}
 
 	writeln("Press enter to exit");

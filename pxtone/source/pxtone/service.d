@@ -24,71 +24,69 @@ import std.math;
 import std.stdio;
 import std.typecons;
 
-enum PXTONEERRORSIZE = 64;
-
-enum pxtnFlags {
+enum PxtnFlags {
 	loop = 1 << 0,
 	unitMute = 1 << 1
 }
 
-enum _VERSIONSIZE = 16;
-enum _CODESIZE = 8;
+enum versionSize = 16;
+enum identifierCodeSize = 8;
 
 //                                       0123456789012345
-immutable _code_tune_x2x = "PTTUNE--20050608";
-immutable _code_tune_x3x = "PTTUNE--20060115";
-immutable _code_tune_x4x = "PTTUNE--20060930";
-immutable _code_tune_v5 = "PTTUNE--20071119";
+immutable identifierCodeTuneX2x = "PTTUNE--20050608";
+immutable identifierCodeTuneX3x = "PTTUNE--20060115";
+immutable identifierCodeTuneX4x = "PTTUNE--20060930";
+immutable identifierCodeTuneV5 = "PTTUNE--20071119";
 
-immutable _code_proj_x1x = "PTCOLLAGE-050227";
-immutable _code_proj_x2x = "PTCOLLAGE-050608";
-immutable _code_proj_x3x = "PTCOLLAGE-060115";
-immutable _code_proj_x4x = "PTCOLLAGE-060930";
-immutable _code_proj_v5 = "PTCOLLAGE-071119";
+immutable identifierCodeProjectX1x = "PTCOLLAGE-050227";
+immutable identifierCodeProjectX2x = "PTCOLLAGE-050608";
+immutable identifierCodeProjectX3x = "PTCOLLAGE-060115";
+immutable identifierCodeProjectX4x = "PTCOLLAGE-060930";
+immutable identifierCodeProjectV5 = "PTCOLLAGE-071119";
 
-immutable _code_x1x_PROJ = "PROJECT=";
-immutable _code_x1x_EVEN = "EVENT===";
-immutable _code_x1x_UNIT = "UNIT====";
-immutable _code_x1x_END = "END=====";
-immutable _code_x1x_PCM = "matePCM=";
+immutable identifierCodeX1xPROJ = "PROJECT=";
+immutable identifierCodeX1xEVEN = "EVENT===";
+immutable identifierCodeX1xUNIT = "UNIT====";
+immutable identifierCodeX1xEND = "END=====";
+immutable identifierCodeX1xPCM = "matePCM=";
 
-immutable _code_x3x_pxtnUNIT = "pxtnUNIT";
-immutable _code_x4x_evenMAST = "evenMAST";
-immutable _code_x4x_evenUNIT = "evenUNIT";
+immutable identifierCodeX3xPxtnUNIT = "pxtnUNIT";
+immutable identifierCodeX4xEvenMAST = "evenMAST";
+immutable identifierCodeX4xEvenUNIT = "evenUNIT";
 
-immutable _code_antiOPER = "antiOPER"; // anti operation(edit)
+immutable identifierCodeAntiOPER = "antiOPER"; // anti operation(edit)
 
-immutable _code_num_UNIT = "num UNIT";
-immutable _code_MasterV5 = "MasterV5";
-immutable _code_Event_V5 = "Event V5";
-immutable _code_matePCM = "matePCM ";
-immutable _code_matePTV = "matePTV ";
-immutable _code_matePTN = "matePTN ";
-immutable _code_mateOGGV = "mateOGGV";
-immutable _code_effeDELA = "effeDELA";
-immutable _code_effeOVER = "effeOVER";
-immutable _code_textNAME = "textNAME";
-immutable _code_textCOMM = "textCOMM";
-immutable _code_assiUNIT = "assiUNIT";
-immutable _code_assiWOIC = "assiWOIC";
-immutable _code_pxtoneND = "pxtoneND";
+immutable identifierCodeNumUNIT = "num UNIT";
+immutable identifierCodeMasterV5 = "MasterV5";
+immutable identifierCodeEventV5 = "Event V5";
+immutable identifierCodeMatePCM = "matePCM ";
+immutable identifierCodeMatePTV = "matePTV ";
+immutable identifierCodeMatePTN = "matePTN ";
+immutable identifierCodeMateOGGV = "mateOGGV";
+immutable identifierCodeEffeDELA = "effeDELA";
+immutable identifierCodeEffeOVER = "effeOVER";
+immutable identifierCodeTextNAME = "textNAME";
+immutable identifierCodeTextCOMM = "textCOMM";
+immutable identifierCodeAssiUNIT = "assiUNIT";
+immutable identifierCodeAssiWOIC = "assiWOIC";
+immutable identifierCodePxtoneND = "pxtoneND";
 
-enum _enum_Tag {
+enum Tag {
 	Unknown = 0,
 	antiOPER,
 
-	x1x_PROJ,
-	x1x_UNIT,
-	x1x_PCM,
-	x1x_EVEN,
-	x1x_END,
-	x3x_pxtnUNIT,
-	x4x_evenMAST,
-	x4x_evenUNIT,
+	x1xPROJ,
+	x1xUNIT,
+	x1xPCM,
+	x1xEVEN,
+	x1xEND,
+	x3xPxtnUNIT,
+	x4xEvenMAST,
+	x4xEvenUNIT,
 
-	num_UNIT,
+	numUnit,
 	MasterV5,
-	Event_V5,
+	EventV5,
 	matePCM,
 	matePTV,
 	matePTN,
@@ -104,130 +102,126 @@ enum _enum_Tag {
 }
 
 
-struct _ASSIST_WOICE {
-	ushort woice_index;
+struct AssistWoice {
+	ushort woiceIndex;
 	ushort rrr;
-	char[pxtnMAX_TUNEWOICENAME] name = 0;
+	char[pxtnMaxTuneWoiceName] name = 0;
 }
 
-struct _ASSIST_UNIT {
-	ushort unit_index;
+struct AssistUnit {
+	ushort unitIndex;
 	ushort rrr;
-	char[pxtnMAX_TUNEUNITNAME] name = 0;
+	char[pxtnMaxTuneUnitName] name = 0;
 }
 
-struct _NUM_UNIT {
+struct NumUnit {
 	short num;
 	short rrr;
 }
 
-enum _MAX_FMTVER_x1x_EVENTNUM = 10000;
-
 // x1x project..------------------
 
-enum _MAX_PROJECTNAME_x1x = 16;
-
 // project (36byte) ================
-struct _x1x_PROJECT {
-	char[_MAX_PROJECTNAME_x1x] x1x_name = 0;
+struct Project {
+	char[16] x1xName = 0;
 
-	float x1x_beat_tempo = 0.0;
-	ushort x1x_beat_clock;
-	ushort x1x_beat_num;
-	ushort x1x_beat_note;
-	ushort x1x_meas_num;
-	ushort x1x_channel_num;
-	ushort x1x_bps;
-	uint x1x_sps;
+	float x1xBeatTempo = 0.0;
+	ushort x1xBeatClock;
+	ushort x1xBeatNum;
+	ushort x1xBeatNote;
+	ushort x1xMeasNum;
+	ushort x1xChannelNum;
+	ushort x1xBps;
+	uint x1xSps;
 }
 
 struct pxtnVOMITPREPARATION {
-	int start_pos_meas = 0;
-	int start_pos_sample = 0;
-	float start_pos_float = 0.0;
+	int startPosMeas = 0;
+	int startPosSample = 0;
+	float startPosFloat = 0.0;
 
-	int meas_end = 0;
-	int meas_repeat = 0;
-	float fadein_sec = 0.0;
+	int measEnd = 0;
+	int measRepeat = 0;
+	float fadeInSec = 0.0;
 
-	BitFlags!pxtnFlags flags;
-	float master_volume = 1.0;
+	BitFlags!PxtnFlags flags;
+	float masterVolume = 1.0;
 	invariant {
 		import std.math : isNaN;
-		assert(!master_volume.isNaN, "Master volume should never be NaN!");
-		assert(!fadein_sec.isNaN, "fadein_sec should never be NaN!");
-		assert(!start_pos_float.isNaN, "start_pos_float should never be NaN!");
+		assert(!masterVolume.isNaN, "Master volume should never be NaN!");
+		assert(!fadeInSec.isNaN, "fadeInSec should never be NaN!");
+		assert(!startPosFloat.isNaN, "startPosFloat should never be NaN!");
 	}
 }
 
-alias pxtnSampledCallback = bool function(void* user, scope const(pxtnService)* pxtn) @safe nothrow;
+alias pxtnSampledCallback = bool function(void* user, scope const(PxtnService)* pxtn) @safe nothrow;
 
-package enum _enum_FMTVER {
-	_enum_FMTVER_unknown = 0,
-	_enum_FMTVER_x1x, // fix event num = 10000
-	_enum_FMTVER_x2x, // no version of exe
-	_enum_FMTVER_x3x, // unit has voice / basic-key for only view
-	_enum_FMTVER_x4x, // unit has event
-	_enum_FMTVER_v5,
+package enum FMTVER {
+	unknown = 0,
+	x1x, // has fixed event num of 10000
+	x2x, // no version of exe
+	x3x, // unit has voice / basic-key for only view
+	x4x, // unit has event
+	v5,
 }
-struct pxtnService {
+struct PxtnService {
 private:
 
-	bool _b_init;
-	bool _b_edit;
-	bool _b_fix_evels_num;
+	bool isInitialized;
+	bool edit;
+	bool fixEventListNumber;
 
-	int _dst_ch_num, _dst_sps, _dst_byte_per_smp;
+	int outputChannels, outputSamplesPerSecond, outputBytesPerSample;
 
-	pxtnPulse_NoiseBuilder _ptn_bldr;
+	PxtnPulseNoiseBuilder pxtnPulseNoiseBuilder;
 
-	pxtnDelay[] _delays;
-	pxtnOverDrive*[] _ovdrvs;
-	pxtnWoice*[] _woices;
-	pxtnUnit[] _units;
+	PxtnDelay[] delays;
+	pxtnOverDrive*[] overdrives;
+	pxtnWoice*[] woices;
+	PxtnUnit[] units;
 
 	const(PxToneSong)* song;
 
 	//////////////
 	// vomit..
 	//////////////
-	bool _moo_b_valid_data;
-	bool _moo_b_end_vomit = true;
-	bool _moo_b_init;
+	bool songLoaded;
+	bool songPlaying = true;
+	bool isMooInitialized;
 
-	bool _moo_b_mute_by_unit;
-	bool _moo_b_loop = true;
+	bool mutedByUnit;
+	bool songLooping = true;
 
-	int _moo_smp_smooth;
-	float _moo_clock_rate; // as the sample
-	int _moo_smp_count;
-	int _moo_smp_start;
-	int _moo_smp_end;
-	int _moo_smp_repeat;
+	int mooSampleSmooth;
+	float mooClockRate; // as the sample
+	int mooSampleCount;
+	int mooSampleStart;
+	int mooSampleEnd;
+	int mooSampleRepeat;
 
-	int _moo_fade_count;
-	int _moo_fade_max;
-	int _moo_fade_fade;
-	float _moo_master_vol = 1.0f;
+	int mooFadeCount;
+	int mooFadeMax;
+	int mooFadeFade;
+	float masterVolume = 1.0f;
 
-	int _moo_top;
-	float _moo_smp_stride;
-	int _moo_time_pan_index;
+	int mooTop;
+	float mooSampleStride;
+	int mooTimePanIndex;
 
-	float _moo_bt_tempo;
+	float beatTempo;
 
 	// for make now-meas
-	int _moo_bt_clock;
-	int _moo_bt_num;
+	int beatClock;
+	int beatNum;
 
-	int[] _moo_group_smps;
+	int[] groupSamples;
 
-	const(EVERECORD)* _moo_p_eve;
+	const(EveRecord)* currentEventRecords;
 
-	pxtnPulse_Frequency* _moo_freq;
+	PxtnPulseFrequency* mooFrequency;
 
 	static void loadVorbis() @trusted {
-		version (pxINCLUDE_OGGVORBIS) {
+		version (WithOggVorbis) {
 			import derelict.vorbis;
 
 			try {
@@ -239,87 +233,86 @@ private:
 		}
 	}
 
-	void _init(int fix_evels_num, bool b_edit) @safe {
-		if (_b_init) {
+	private void initialize(int fixEvelsNum, bool bEdit) @safe {
+		if (isInitialized) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
 
 		scope(failure) {
-			_release();
+			release();
 		}
 
-		int byte_size = 0;
+		int byteSize = 0;
 
 		loadVorbis();
 
-		_ptn_bldr = pxtnPulse_NoiseBuilder.init;
+		pxtnPulseNoiseBuilder = PxtnPulseNoiseBuilder.init;
 
 		// delay
-		_delays.reserve(pxtnMAX_TUNEDELAYSTRUCT);
+		delays.reserve(pxtnMaxTuneDelayStruct);
 
 		// over-drive
-		_ovdrvs.reserve(pxtnMAX_TUNEOVERDRIVESTRUCT);
+		overdrives.reserve(pxtnMaxTuneOverdriveStruct);
 
 		// woice
-		_woices.reserve(pxtnMAX_TUNEWOICESTRUCT);
+		woices.reserve(pxtnMaxTuneWoiceStruct);
 
 		// unit
-		_units.reserve(pxtnMAX_TUNEUNITSTRUCT);
+		units.reserve(pxtnMaxTuneUnitStruct);
 
-		if (!_moo_init()) {
-			throw new PxtoneException("_moo_init failed");
+		if (!mooInitialize()) {
+			throw new PxtoneException("mooInitialize failed");
 		}
 
-		_b_edit = b_edit;
-		_b_init = true;
+		edit = bEdit;
+		isInitialized = true;
 
 	}
 
-	void _release() @safe {
-		_b_init = false;
+	private void release() @safe {
+		isInitialized = false;
 
-		_moo_destructer();
+		mooDestructor();
 
-		_delays = null;
-		_ovdrvs = null;
-		_woices = null;
-		_units = null;
+		delays = null;
+		overdrives = null;
+		woices = null;
+		units = null;
 	}
 
-	void _moo_destructer() nothrow @safe {
-
-		_moo_release();
+	private void mooDestructor() nothrow @safe {
+		mooRelease();
 	}
 
-	bool _moo_init() nothrow @safe {
-		bool b_ret = false;
+	private bool mooInitialize() nothrow @safe {
+		bool bRet = false;
 
-		_moo_freq = new pxtnPulse_Frequency();
-		if (!_moo_freq) {
+		mooFrequency = new PxtnPulseFrequency();
+		if (!mooFrequency) {
 			goto term;
 		}
-		_moo_group_smps = new int[](pxtnMAX_TUNEGROUPNUM);
-		if (!_moo_group_smps) {
+		groupSamples = new int[](pxtnMaxTuneGroupNumber);
+		if (!groupSamples) {
 			goto term;
 		}
 
-		_moo_b_init = true;
-		b_ret = true;
+		isMooInitialized = true;
+		bRet = true;
 	term:
-		if (!b_ret) {
-			_moo_release();
+		if (!bRet) {
+			mooRelease();
 		}
 
-		return b_ret;
+		return bRet;
 	}
 
-	bool _moo_release() nothrow @safe {
-		if (!_moo_b_init) {
+	private bool mooRelease() nothrow @safe {
+		if (!isMooInitialized) {
 			return false;
 		}
-		_moo_b_init = false;
-		_moo_freq = null;
-		_moo_group_smps = null;
+		isMooInitialized = false;
+		mooFrequency = null;
+		groupSamples = null;
 		return true;
 	}
 
@@ -327,166 +320,166 @@ private:
 	// Units   ////////////////////////////////////
 	////////////////////////////////////////////////
 
-	bool _moo_ResetVoiceOn(pxtnUnit* p_u, int w) const nothrow @safe {
-		if (!_moo_b_init) {
+	private bool mooResetVoiceOn(PxtnUnit* unit, int w) const nothrow @safe {
+		if (!isMooInitialized) {
 			return false;
 		}
 
-		const(pxtnVOICEINSTANCE)* p_inst;
-		const(pxtnVOICEUNIT)* p_vc;
-		const(pxtnWoice)* p_wc = Woice_Get(w);
+		const(PxtnVoiceInstance)* voiceInstance;
+		const(PxtnVoiceUnit)* voiceUnit;
+		const(pxtnWoice)* woice = woiceGet(w);
 
-		if (!p_wc) {
+		if (!woice) {
 			return false;
 		}
 
-		p_u.set_woice(p_wc);
+		unit.setWoice(woice);
 
-		for (int v = 0; v < p_wc.get_voice_num(); v++) {
-			p_inst = p_wc.get_instance(v);
-			p_vc = p_wc.get_voice(v);
+		for (int v = 0; v < woice.getVoiceNum(); v++) {
+			voiceInstance = woice.getInstance(v);
+			voiceUnit = woice.getVoice(v);
 
-			float ofs_freq = 0;
-			if (p_vc.voice_flags & PTV_VOICEFLAG_BEATFIT) {
-				ofs_freq = (p_inst.smp_body_w * _moo_bt_tempo) / (44100 * 60 * p_vc.tuning);
+			float ofsFreq = 0;
+			if (voiceUnit.voiceFlags & PTVVoiceFlag.beatFit) {
+				ofsFreq = (voiceInstance.sampleBody * beatTempo) / (44100 * 60 * voiceUnit.tuning);
 			} else {
-				ofs_freq = _moo_freq.Get(EVENTDEFAULT_BASICKEY - p_vc.basic_key) * p_vc.tuning;
+				ofsFreq = mooFrequency.get(EventDefault.basicKey - voiceUnit.basicKey) * voiceUnit.tuning;
 			}
-			p_u.Tone_Reset_and_2prm(v, cast(int)(p_inst.env_release / _moo_clock_rate), ofs_freq);
+			unit.toneResetAnd2prm(v, cast(int)(voiceInstance.envelopeRelease / mooClockRate), ofsFreq);
 		}
 		return true;
 	}
 
-	bool _moo_InitUnitTone() nothrow @safe {
-		if (!_moo_b_init) {
+	private bool mooInitUnitTone() nothrow @safe {
+		if (!isMooInitialized) {
 			return false;
 		}
-		for (int u = 0; u < _units.length; u++) {
-			pxtnUnit* p_u = Unit_Get(u);
-			p_u.Tone_Init();
-			_moo_ResetVoiceOn(p_u, EVENTDEFAULT_VOICENO);
+		for (int u = 0; u < units.length; u++) {
+			PxtnUnit* unit = unitGet(u);
+			unit.toneInit();
+			mooResetVoiceOn(unit, EventDefault.voiceNumber);
 		}
 		return true;
 	}
 
-	bool _moo_PXTONE_SAMPLE(scope short[] p_data) nothrow @safe {
-		if (!_moo_b_init) {
+	private bool mooPxtoneSample(scope short[] pData) nothrow @safe {
+		if (!isMooInitialized) {
 			return false;
 		}
 
 		// envelope..
-		for (int u = 0; u < _units.length; u++) {
-			_units[u].Tone_Envelope();
+		for (int u = 0; u < units.length; u++) {
+			units[u].toneEnvelope();
 		}
 
-		int clock = cast(int)(_moo_smp_count / _moo_clock_rate);
+		int clock = cast(int)(mooSampleCount / mooClockRate);
 
 		// events..
-		for (; _moo_p_eve && _moo_p_eve.clock <= clock; _moo_p_eve = _moo_p_eve.next) {
-			int u = _moo_p_eve.unit_no;
-			pxtnUnit* p_u = &_units[u];
-			pxtnVOICETONE* p_tone;
-			const(pxtnWoice)* p_wc;
-			const(pxtnVOICEINSTANCE)* p_vi;
+		for (; currentEventRecords && currentEventRecords.clock <= clock; currentEventRecords = currentEventRecords.next) {
+			int unitNumber = currentEventRecords.unitNumber;
+			PxtnUnit* unit = &units[unitNumber];
+			PxtnVoiceTone* tone;
+			const(pxtnWoice)* woice;
+			const(PxtnVoiceInstance)* voiceInstance;
 
-			switch (_moo_p_eve.kind) {
-			case EVENTKIND.ON: {
-					int on_count = cast(int)((_moo_p_eve.clock + _moo_p_eve.value - clock) * _moo_clock_rate);
-					if (on_count <= 0) {
-						p_u.Tone_ZeroLives();
+			switch (currentEventRecords.kind) {
+			case EventKind.on: {
+					int onCount = cast(int)((currentEventRecords.clock + currentEventRecords.value - clock) * mooClockRate);
+					if (onCount <= 0) {
+						unit.toneZeroLives();
 						break;
 					}
 
-					p_u.Tone_KeyOn();
+					unit.toneKeyOn();
 
-					p_wc = p_u.get_woice();
-					if (!(p_wc)) {
+					woice = unit.getWoice();
+					if (!(woice)) {
 						break;
 					}
-					for (int v = 0; v < p_wc.get_voice_num(); v++) {
-						p_tone = p_u.get_tone(v);
-						p_vi = p_wc.get_instance(v);
+					for (int v = 0; v < woice.getVoiceNum(); v++) {
+						tone = unit.getTone(v);
+						voiceInstance = woice.getInstance(v);
 
 						// release..
-						if (p_vi.env_release) {
-							int max_life_count1 = cast(int)((_moo_p_eve.value - (clock - _moo_p_eve.clock)) * _moo_clock_rate) + p_vi.env_release;
-							int max_life_count2;
-							int c = _moo_p_eve.clock + _moo_p_eve.value + p_tone.env_release_clock;
-							const(EVERECORD)* next = null;
-							for (const(EVERECORD)* p = _moo_p_eve.next; p; p = p.next) {
+						if (voiceInstance.envelopeRelease) {
+							int maxLifeCount1 = cast(int)((currentEventRecords.value - (clock - currentEventRecords.clock)) * mooClockRate) + voiceInstance.envelopeRelease;
+							int maxLifeCount2;
+							int c = currentEventRecords.clock + currentEventRecords.value + tone.envelopeReleaseClock;
+							const(EveRecord)* next = null;
+							for (const(EveRecord)* p = currentEventRecords.next; p; p = p.next) {
 								if (p.clock > c) {
 									break;
 								}
-								if (p.unit_no == u && p.kind == EVENTKIND.ON) {
+								if (p.unitNumber == unitNumber && p.kind == EventKind.on) {
 									next = p;
 									break;
 								}
 							}
 							if (!next) {
-								max_life_count2 = _moo_smp_end - cast(int)(clock * _moo_clock_rate);
+								maxLifeCount2 = mooSampleEnd - cast(int)(clock * mooClockRate);
 							} else {
-								max_life_count2 = cast(int)((next.clock - clock) * _moo_clock_rate);
+								maxLifeCount2 = cast(int)((next.clock - clock) * mooClockRate);
 							}
-							if (max_life_count1 < max_life_count2) {
-								p_tone.life_count = max_life_count1;
+							if (maxLifeCount1 < maxLifeCount2) {
+								tone.lifeCount = maxLifeCount1;
 							} else {
-								p_tone.life_count = max_life_count2;
+								tone.lifeCount = maxLifeCount2;
 							}
 						}  // no-release..
 						else {
-							p_tone.life_count = cast(int)((_moo_p_eve.value - (clock - _moo_p_eve.clock)) * _moo_clock_rate);
+							tone.lifeCount = cast(int)((currentEventRecords.value - (clock - currentEventRecords.clock)) * mooClockRate);
 						}
 
-						if (p_tone.life_count > 0) {
-							p_tone.on_count = on_count;
-							p_tone.smp_pos = 0;
-							p_tone.env_pos = 0;
-							if (p_vi.env_size) {
-								p_tone.env_volume = p_tone.env_start = 0; // envelope
+						if (tone.lifeCount > 0) {
+							tone.onCount = onCount;
+							tone.samplePosition = 0;
+							tone.envelopePosition = 0;
+							if (voiceInstance.envelopeSize) {
+								tone.envelopeVolume = tone.envelopeStart = 0; // envelope
 							} else {
-								p_tone.env_volume = p_tone.env_start = 128; // no-envelope
+								tone.envelopeVolume = tone.envelopeStart = 128; // no-envelope
 							}
 						}
 					}
 					break;
 				}
 
-			case EVENTKIND.KEY:
-				p_u.Tone_Key(_moo_p_eve.value);
+			case EventKind.key:
+				unit.toneKey(currentEventRecords.value);
 				break;
-			case EVENTKIND.PAN_VOLUME:
-				p_u.Tone_Pan_Volume(_dst_ch_num, _moo_p_eve.value);
+			case EventKind.panVolume:
+				unit.tonePanVolume(outputChannels, currentEventRecords.value);
 				break;
-			case EVENTKIND.PAN_TIME:
-				p_u.Tone_Pan_Time(_dst_ch_num, _moo_p_eve.value, _dst_sps);
+			case EventKind.panTime:
+				unit.tonePanTime(outputChannels, currentEventRecords.value, outputSamplesPerSecond);
 				break;
-			case EVENTKIND.VELOCITY:
-				p_u.Tone_Velocity(_moo_p_eve.value);
+			case EventKind.velocity:
+				unit.toneVelocity(currentEventRecords.value);
 				break;
-			case EVENTKIND.VOLUME:
-				p_u.Tone_Volume(_moo_p_eve.value);
+			case EventKind.volume:
+				unit.toneVolume(currentEventRecords.value);
 				break;
-			case EVENTKIND.PORTAMENT:
-				p_u.Tone_Portament(cast(int)(_moo_p_eve.value * _moo_clock_rate));
+			case EventKind.portament:
+				unit.tonePortament(cast(int)(currentEventRecords.value * mooClockRate));
 				break;
-			case EVENTKIND.BEATCLOCK:
+			case EventKind.beatClock:
 				break;
-			case EVENTKIND.BEATTEMPO:
+			case EventKind.beatTempo:
 				break;
-			case EVENTKIND.BEATNUM:
+			case EventKind.beatNumber:
 				break;
-			case EVENTKIND.REPEAT:
+			case EventKind.repeat:
 				break;
-			case EVENTKIND.LAST:
+			case EventKind.last:
 				break;
-			case EVENTKIND.VOICENO:
-				_moo_ResetVoiceOn(p_u, _moo_p_eve.value);
+			case EventKind.voiceNumber:
+				mooResetVoiceOn(unit, currentEventRecords.value);
 				break;
-			case EVENTKIND.GROUPNO:
-				p_u.Tone_GroupNo(_moo_p_eve.value);
+			case EventKind.groupNumber:
+				unit.toneGroupNumber(currentEventRecords.value);
 				break;
-			case EVENTKIND.TUNING:
-				p_u.Tone_Tuning(*(cast(const(float)*)(&_moo_p_eve.value)));
+			case EventKind.tuning:
+				unit.toneTuning(*(cast(const(float)*)(&currentEventRecords.value)));
 				break;
 			default:
 				break;
@@ -494,435 +487,432 @@ private:
 		}
 
 		// sampling..
-		for (int u = 0; u < _units.length; u++) {
-			_units[u].Tone_Sample(_moo_b_mute_by_unit, _dst_ch_num, _moo_time_pan_index, _moo_smp_smooth);
+		for (int u = 0; u < units.length; u++) {
+			units[u].toneSample(mutedByUnit, outputChannels, mooTimePanIndex, mooSampleSmooth);
 		}
 
-		for (int ch = 0; ch < _dst_ch_num; ch++) {
-			for (int g = 0; g < pxtnMAX_TUNEGROUPNUM; g++) {
-				_moo_group_smps[g] = 0;
+		for (int ch = 0; ch < outputChannels; ch++) {
+			for (int g = 0; g < pxtnMaxTuneGroupNumber; g++) {
+				groupSamples[g] = 0;
 			}
-			for (int u = 0; u < _units.length; u++) {
-				_units[u].Tone_Supple(_moo_group_smps, ch, _moo_time_pan_index);
+			for (int u = 0; u < units.length; u++) {
+				units[u].toneSupple(groupSamples, ch, mooTimePanIndex);
 			}
-			for (int o = 0; o < _ovdrvs.length; o++) {
-				_ovdrvs[o].Tone_Supple(_moo_group_smps);
+			for (int o = 0; o < overdrives.length; o++) {
+				overdrives[o].toneSupple(groupSamples);
 			}
-			for (int d = 0; d < _delays.length; d++) {
-				_delays[d].Tone_Supple(ch, _moo_group_smps);
+			for (int d = 0; d < delays.length; d++) {
+				delays[d].toneSupple(ch, groupSamples);
 			}
 
 			// collect.
 			int work = 0;
-			for (int g = 0; g < pxtnMAX_TUNEGROUPNUM; g++) {
-				work += _moo_group_smps[g];
+			for (int g = 0; g < pxtnMaxTuneGroupNumber; g++) {
+				work += groupSamples[g];
 			}
 
 			// fade..
-			if (_moo_fade_fade) {
-				work = work * (_moo_fade_count >> 8) / _moo_fade_max;
+			if (mooFadeFade) {
+				work = work * (mooFadeCount >> 8) / mooFadeMax;
 			}
 
 			// master volume
-			work = cast(int)(work * _moo_master_vol);
+			work = cast(int)(work * masterVolume);
 
 			// to buffer..
-			if (work > _moo_top) {
-				work = _moo_top;
+			if (work > mooTop) {
+				work = mooTop;
 			}
-			if (work < -_moo_top) {
-				work = -_moo_top;
+			if (work < -mooTop) {
+				work = -mooTop;
 			}
-			p_data[ch] = cast(short)(work);
+			pData[ch] = cast(short)(work);
 		}
 
 		// --------------
 		// increments..
 
-		_moo_smp_count++;
-		_moo_time_pan_index = (_moo_time_pan_index + 1) & (pxtnBUFSIZE_TIMEPAN - 1);
+		mooSampleCount++;
+		mooTimePanIndex = (mooTimePanIndex + 1) & (pxtnBufferSizeTimePan - 1);
 
-		for (int u = 0; u < _units.length; u++) {
-			int key_now = _units[u].Tone_Increment_Key();
-			_units[u].Tone_Increment_Sample(_moo_freq.Get2(key_now) * _moo_smp_stride);
+		for (int u = 0; u < units.length; u++) {
+			int keyNow = units[u].toneIncrementKey();
+			units[u].toneIncrementSample(mooFrequency.get2(keyNow) * mooSampleStride);
 		}
 
 		// delay
-		for (int d = 0; d < _delays.length; d++) {
-			_delays[d].Tone_Increment();
+		for (int d = 0; d < delays.length; d++) {
+			delays[d].toneIncrement();
 		}
 
 		// fade out
-		if (_moo_fade_fade < 0) {
-			if (_moo_fade_count > 0) {
-				_moo_fade_count--;
+		if (mooFadeFade < 0) {
+			if (mooFadeCount > 0) {
+				mooFadeCount--;
 			} else {
 				return false;
 			}
 		}  // fade in
-		else if (_moo_fade_fade > 0) {
-			if (_moo_fade_count < (_moo_fade_max << 8)) {
-				_moo_fade_count++;
+		else if (mooFadeFade > 0) {
+			if (mooFadeCount < (mooFadeMax << 8)) {
+				mooFadeCount++;
 			} else {
-				_moo_fade_fade = 0;
+				mooFadeFade = 0;
 			}
 		}
 
-		if (_moo_smp_count >= _moo_smp_end) {
-			if (!_moo_b_loop) {
+		if (mooSampleCount >= mooSampleEnd) {
+			if (!songLooping) {
 				return false;
 			}
-			_moo_smp_count = _moo_smp_repeat;
-			_moo_p_eve = song.evels.get_Records();
-			_moo_InitUnitTone();
+			mooSampleCount = mooSampleRepeat;
+			currentEventRecords = song.evels.getRecords();
+			mooInitUnitTone();
 		}
 		return true;
 	}
 
-	pxtnSampledCallback _sampled_proc;
-	void* _sampled_user;
+	pxtnSampledCallback sampledCallback;
+	void* sampledCallbackUserData;
 
 public:
 
 	void load(const PxToneSong song) @safe {
 		this.song = &[song][0];
-		_delays = new pxtnDelay[](song._delays.length);
-		foreach (idx, ref delay; _delays) {
-			const dela = song._delays[idx];
-			delay.Set(cast(DELAYUNIT)dela.unit, dela.freq, dela.rate, dela.group);
+		delays = new PxtnDelay[](song.delays.length);
+		foreach (idx, ref delay; delays) {
+			const dela = song.delays[idx];
+			delay.set(cast(DelayUnit)dela.unit, dela.freq, dela.rate, dela.group);
 		}
-		_ovdrvs = new pxtnOverDrive*[](song._ovdrvs.length);
-		foreach (idx, ref overdrive; _ovdrvs) {
-			const songOverdrive = song._ovdrvs[idx];
+		overdrives = new pxtnOverDrive*[](song.overdrives.length);
+		foreach (idx, ref overdrive; overdrives) {
+			const songOverdrive = song.overdrives[idx];
 			overdrive = new pxtnOverDrive;
-			overdrive._b_played = songOverdrive._b_played;
-			overdrive._group = songOverdrive._group;
-			overdrive._cut_f = songOverdrive._cut_f;
-			overdrive._amp_f = songOverdrive._amp_f;
-			overdrive._cut_16bit_top = songOverdrive._cut_16bit_top;
+			overdrive.played = songOverdrive.played;
+			overdrive.group = songOverdrive.group;
+			overdrive.cut = songOverdrive.cut;
+			overdrive.amp = songOverdrive.amp;
+			overdrive.cut16BitTop = songOverdrive.cut16BitTop;
 		}
-		_woices = new pxtnWoice*[](song._woices.length);
-		foreach (idx, ref woice; _woices) {
-			const songWoice = song._woices[idx];
+		woices = new pxtnWoice*[](song.woices.length);
+		foreach (idx, ref woice; woices) {
+			const songWoice = song.woices[idx];
 			woice = new pxtnWoice;
-			woice._voice_num = songWoice._voice_num;
-			woice._name_buf = songWoice._name_buf;
-			woice._name_size = songWoice._name_size;
-			woice._type = songWoice._type;
-			woice._x3x_tuning = songWoice._x3x_tuning;
-			woice._x3x_basic_key = songWoice._x3x_basic_key;
-			woice._voices.length = songWoice._voices.length;
-			foreach (voiceIDX, ref voice; woice._voices) {
-				const songVoice = songWoice._voices[voiceIDX];
-				voice.basic_key = songVoice.basic_key;
+			woice.voiceNum = songWoice.voiceNum;
+			woice.nameBuffer = songWoice.nameBuffer;
+			woice.nameSize = songWoice.nameSize;
+			woice.type = songWoice.type;
+			woice.x3xTuning = songWoice.x3xTuning;
+			woice.x3xBasicKey = songWoice.x3xBasicKey;
+			woice.voices.length = songWoice.voices.length;
+			foreach (voiceIDX, ref voice; woice.voices) {
+				const songVoice = songWoice.voices[voiceIDX];
+				voice.basicKey = songVoice.basicKey;
 				voice.volume = songVoice.volume;
 				voice.pan = songVoice.pan;
 				voice.tuning = songVoice.tuning;
-				voice.voice_flags = songVoice.voice_flags;
-				voice.data_flags = songVoice.data_flags;
+				voice.voiceFlags = songVoice.voiceFlags;
+				voice.dataFlags = songVoice.dataFlags;
 				voice.type = songVoice.type;
-				songVoice.p_pcm.Copy(voice.p_pcm);
-				songVoice.p_ptn.Copy(voice.p_ptn);
-				version(pxINCLUDE_OGGVORBIS) {
-					songVoice.p_oggv.Copy(voice.p_oggv);
+				songVoice.pcm.copy(voice.pcm);
+				songVoice.ptn.copy(voice.ptn);
+				version(WithOggVorbis) {
+					songVoice.oggV.copy(voice.oggV);
 				}
 				voice.wave.num = songVoice.wave.num;
 				voice.wave.reso = songVoice.wave.reso;
 				voice.wave.points = songVoice.wave.points.dup;
 				voice.envelope.fps = songVoice.envelope.fps;
-				voice.envelope.head_num = songVoice.envelope.head_num;
-				voice.envelope.body_num = songVoice.envelope.body_num;
-				voice.envelope.tail_num = songVoice.envelope.tail_num;
+				voice.envelope.headNumber = songVoice.envelope.headNumber;
+				voice.envelope.bodyNumber = songVoice.envelope.bodyNumber;
+				voice.envelope.tailNumber = songVoice.envelope.tailNumber;
 				voice.envelope.points = songVoice.envelope.points.dup;
 			}
-			woice._voinsts.length = songWoice._voinsts.length;
+			woice.voiceInstances.length = songWoice.voiceInstances.length;
 		}
 
-		_units = song._units.dup;
-		tones_ready();
-		_moo_b_valid_data = true;
+		units = song.units.dup;
+		tonesReady();
+		songLoaded = true;
 	}
 
 	void initialize() @safe {
-		_init(0, false);
+		initialize(0, false);
 	}
 
-	void tones_ready() @safe {
-		if (!_b_init) {
+	void tonesReady() @safe {
+		if (!isInitialized) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
 
-		int beat_num = song.master.get_beat_num();
-		float beat_tempo = song.master.get_beat_tempo();
+		int beatNum = song.master.getBeatNum();
+		float beatTempo = song.master.getBeatTempo();
 
-		for (int i = 0; i < _delays.length; i++) {
-			_delays[i].Tone_Ready(beat_num, beat_tempo, _dst_sps);
+		for (int i = 0; i < delays.length; i++) {
+			delays[i].toneReady(beatNum, beatTempo, outputSamplesPerSecond);
 		}
-		for (int i = 0; i < _ovdrvs.length; i++) {
-			_ovdrvs[i].Tone_Ready();
+		for (int i = 0; i < overdrives.length; i++) {
+			overdrives[i].toneReady();
 		}
-		for (int i = 0; i < song._woices.length; i++) {
-			song._woices[i].Tone_Ready(_woices[i], _ptn_bldr, _dst_sps);
+		for (int i = 0; i < song.woices.length; i++) {
+			song.woices[i].toneReady(woices[i], pxtnPulseNoiseBuilder, outputSamplesPerSecond);
 		}
 	}
 
-	bool tones_clear() nothrow @safe {
-		if (!_b_init) {
+	bool tonesClear() nothrow @safe {
+		if (!isInitialized) {
 			return false;
 		}
-		for (int i = 0; i < _delays.length; i++) {
-			_delays[i].Tone_Clear();
+		for (int i = 0; i < delays.length; i++) {
+			delays[i].toneClear();
 		}
-		for (int i = 0; i < _units.length; i++) {
-			_units[i].Tone_Clear();
+		for (int i = 0; i < units.length; i++) {
+			units[i].toneClear();
 		}
 		return true;
 	}
 
-	int Group_Num() const nothrow @safe {
-		return _b_init ? pxtnMAX_TUNEGROUPNUM : 0;
+	int groupNum() const nothrow @safe {
+		return isInitialized ? pxtnMaxTuneGroupNumber : 0;
 	}
 
 	// ---------------------------
 	// Delay..
 	// ---------------------------
 
-	int Delay_Num() const nothrow @safe {
-		return _b_init ? cast(int)_delays.length : 0;
+	int delayNum() const nothrow @safe {
+		return isInitialized ? cast(int)delays.length : 0;
 	}
 
-	int Delay_Max() const nothrow @safe {
-		return _b_init ? cast(int)_delays.length : 0;
+	int delayMax() const nothrow @safe {
+		return isInitialized ? cast(int)delays.length : 0;
 	}
 
-	bool Delay_Set(int idx, DELAYUNIT unit, float freq, float rate, int group) nothrow @safe {
-		if (!_b_init) {
+	bool delaySet(int idx, DelayUnit unit, float freq, float rate, int group) nothrow @safe {
+		if (!isInitialized) {
 			return false;
 		}
-		if (idx >= _delays.length) {
+		if (idx >= delays.length) {
 			return false;
 		}
-		_delays[idx].Set(unit, freq, rate, group);
+		delays[idx].set(unit, freq, rate, group);
 		return true;
 	}
 
-	bool Delay_Add(DELAYUNIT unit, float freq, float rate, int group) nothrow @safe {
-		if (!_b_init) {
+	bool delayAdd(DelayUnit unit, float freq, float rate, int group) nothrow @safe {
+		if (!isInitialized) {
 			return false;
 		}
-		if (_delays.length >= pxtnMAX_TUNEDELAYSTRUCT) {
+		if (delays.length >= pxtnMaxTuneDelayStruct) {
 			return false;
 		}
-		_delays.length++;
-		_delays[$ - 1] = pxtnDelay.init;
-		_delays[$ - 1].Set(unit, freq, rate, group);
+		delays.length++;
+		delays[$ - 1] = PxtnDelay.init;
+		delays[$ - 1].set(unit, freq, rate, group);
 		return true;
 	}
 
-	bool Delay_Remove(int idx) nothrow @safe {
-		if (!_b_init) {
+	bool delayRemove(int idx) nothrow @safe {
+		if (!isInitialized) {
 			return false;
 		}
-		if (idx >= _delays.length) {
+		if (idx >= delays.length) {
 			return false;
 		}
 
-		for (int i = idx; i < _delays.length; i++) {
-			_delays[i] = _delays[i + 1];
+		for (int i = idx; i < delays.length; i++) {
+			delays[i] = delays[i + 1];
 		}
-		_delays.length--;
+		delays.length--;
 		return true;
 	}
 
-	void Delay_ReadyTone(int idx) @safe {
-		if (!_b_init) {
+	void delayReadyTone(int idx) @safe {
+		if (!isInitialized) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
-		if (idx < 0 || idx >= _delays.length) {
+		if (idx < 0 || idx >= delays.length) {
 			throw new PxtoneException("param");
 		}
-		_delays[idx].Tone_Ready(song.master.get_beat_num(), song.master.get_beat_tempo(), _dst_sps);
+		delays[idx].toneReady(song.master.getBeatNum(), song.master.getBeatTempo(), outputSamplesPerSecond);
 	}
 
-	pxtnDelay* Delay_Get(int idx) nothrow @safe {
-		if (!_b_init) {
+	PxtnDelay* delayGet(int idx) nothrow @safe {
+		if (!isInitialized) {
 			return null;
 		}
-		if (idx < 0 || idx >= _delays.length) {
+		if (idx < 0 || idx >= delays.length) {
 			return null;
 		}
-		return &_delays[idx];
+		return &delays[idx];
 	}
 
 	// ---------------------------
 	// Over Drive..
 	// ---------------------------
 
-	int OverDrive_Num() const nothrow @safe {
-		return _b_init ? cast(int)_ovdrvs.length : 0;
+	int overDriveNum() const nothrow @safe {
+		return isInitialized ? cast(int)overdrives.length : 0;
 	}
 
-	int OverDrive_Max() const nothrow @safe {
-		return _b_init ? cast(int)_ovdrvs.length : 0;
+	int overDriveMax() const nothrow @safe {
+		return isInitialized ? cast(int)overdrives.length : 0;
 	}
 
-	bool OverDrive_Set(int idx, float cut, float amp, int group) nothrow @safe {
-		if (!_b_init) {
+	bool overDriveSet(int idx, float cut, float amp, int group) nothrow @safe {
+		if (!isInitialized) {
 			return false;
 		}
-		if (idx >= _ovdrvs.length) {
+		if (idx >= overdrives.length) {
 			return false;
 		}
-		_ovdrvs[idx].Set(cut, amp, group);
+		overdrives[idx].set(cut, amp, group);
 		return true;
 	}
 
-	bool OverDrive_Add(float cut, float amp, int group) nothrow @safe {
-		if (!_b_init) {
+	bool overDriveAdd(float cut, float amp, int group) nothrow @safe {
+		if (!isInitialized) {
 			return false;
 		}
-		if (_ovdrvs.length >= _ovdrvs.length) {
+		if (overdrives.length >= overdrives.length) {
 			return false;
 		}
-		_ovdrvs ~= new pxtnOverDrive();
-		_ovdrvs[$ - 1].Set(cut, amp, group);
+		overdrives ~= new pxtnOverDrive();
+		overdrives[$ - 1].set(cut, amp, group);
 		return true;
 	}
 
-	bool OverDrive_Remove(int idx) nothrow @safe {
-		if (!_b_init) {
+	bool overDriveRemove(int idx) nothrow @safe {
+		if (!isInitialized) {
 			return false;
 		}
-		if (idx >= _ovdrvs.length) {
+		if (idx >= overdrives.length) {
 			return false;
 		}
 
-		_ovdrvs[idx] = null;
-		for (int i = idx; i < _ovdrvs.length; i++) {
-			_ovdrvs[i] = _ovdrvs[i + 1];
+		overdrives[idx] = null;
+		for (int i = idx; i < overdrives.length; i++) {
+			overdrives[i] = overdrives[i + 1];
 		}
-		_ovdrvs.length--;
+		overdrives.length--;
 		return true;
 	}
 
-	bool OverDrive_ReadyTone(int idx) nothrow @safe {
-		if (!_b_init) {
+	bool overDriveReadyTone(int idx) nothrow @safe {
+		if (!isInitialized) {
 			return false;
 		}
-		if (idx < 0 || idx >= _ovdrvs.length) {
+		if (idx < 0 || idx >= overdrives.length) {
 			return false;
 		}
-		_ovdrvs[idx].Tone_Ready();
+		overdrives[idx].toneReady();
 		return true;
 	}
 
-	pxtnOverDrive* OverDrive_Get(int idx) nothrow @safe {
-		if (!_b_init) {
+	pxtnOverDrive* overDriveGet(int idx) nothrow @safe {
+		if (!isInitialized) {
 			return null;
 		}
-		if (idx < 0 || idx >= _ovdrvs.length) {
+		if (idx < 0 || idx >= overdrives.length) {
 			return null;
 		}
-		return _ovdrvs[idx];
+		return overdrives[idx];
 	}
 
 	// ---------------------------
 	// Woice..
 	// ---------------------------
 
-	int Woice_Num() const nothrow @safe {
-		return _b_init ? cast(int)_woices.length : 0;
+	int woiceNum() const nothrow @safe {
+		return isInitialized ? cast(int)woices.length : 0;
 	}
+	alias woiceMax = woiceNum;
 
-	int Woice_Max() const nothrow @safe {
-		return _b_init ? cast(int)_woices.length : 0;
-	}
-
-	inout(pxtnWoice)* Woice_Get(int idx) inout nothrow @safe {
-		if (!_b_init) {
+	inout(pxtnWoice)* woiceGet(int idx) inout nothrow @safe {
+		if (!isInitialized) {
 			return null;
 		}
-		if (idx < 0 || idx >= _woices.length) {
+		if (idx < 0 || idx >= woices.length) {
 			return null;
 		}
-		return _woices[idx];
+		return woices[idx];
 	}
 
-	void Woice_read(int idx, ref pxtnDescriptor desc, pxtnWOICETYPE type) @safe {
-		if (!_b_init) {
+	void woiceRead(int idx, ref PxtnDescriptor desc, PxtnWoiceType type) @safe {
+		if (!isInitialized) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
-		if (idx < 0 || idx >= _woices.length) {
+		if (idx < 0 || idx >= woices.length) {
 			throw new PxtoneException("param");
 		}
-		if (idx > _woices.length) {
+		if (idx > woices.length) {
 			throw new PxtoneException("param");
 		}
-		if (idx == _woices.length) {
-			_woices ~= new pxtnWoice();
+		if (idx == woices.length) {
+			woices ~= new pxtnWoice();
 		}
 
 		scope(failure) {
-			Woice_Remove(idx);
+			woiceRemove(idx);
 		}
-		_woices[idx].read(desc, type);
+		woices[idx].read(desc, type);
 	}
 
-	void Woice_ReadyTone(int idx) @safe {
-		if (!_b_init) {
+	void woiceReadyTone(int idx) @safe {
+		if (!isInitialized) {
 			throw new PxtoneException("pxtnService not initialized");
 		}
-		if (idx < 0 || idx >= _woices.length) {
+		if (idx < 0 || idx >= woices.length) {
 			throw new PxtoneException("param");
 		}
-		song._woices[idx].Tone_Ready(_woices[idx], _ptn_bldr, _dst_sps);
+		song.woices[idx].toneReady(woices[idx], pxtnPulseNoiseBuilder, outputSamplesPerSecond);
 	}
 
-	bool Woice_Remove(int idx) nothrow @safe {
-		if (!_b_init) {
+	bool woiceRemove(int idx) nothrow @safe {
+		if (!isInitialized) {
 			return false;
 		}
-		if (idx < 0 || idx >= _woices.length) {
+		if (idx < 0 || idx >= woices.length) {
 			return false;
 		}
-		_woices[idx] = null;
-		for (int i = idx; i < _woices.length - 1; i++) {
-			_woices[i] = _woices[i + 1];
+		woices[idx] = null;
+		for (int i = idx; i < woices.length - 1; i++) {
+			woices[i] = woices[i + 1];
 		}
-		_woices.length--;
+		woices.length--;
 		return true;
 	}
 
-	bool Woice_Replace(int old_place, int new_place) nothrow @safe {
-		if (!_b_init) {
+	bool woiceReplace(int oldPlace, int newPlace) nothrow @safe {
+		if (!isInitialized) {
 			return false;
 		}
 
-		pxtnWoice* p_w = _woices[old_place];
-		int max_place = cast(int)_woices.length - 1;
+		pxtnWoice* woice = woices[oldPlace];
+		int maxPlace = cast(int)woices.length - 1;
 
-		if (new_place > max_place) {
-			new_place = max_place;
+		if (newPlace > maxPlace) {
+			newPlace = maxPlace;
 		}
-		if (new_place == old_place) {
+		if (newPlace == oldPlace) {
 			return true;
 		}
 
-		if (old_place < new_place) {
-			for (int w = old_place; w < new_place; w++) {
-				if (_woices[w]) {
-					_woices[w] = _woices[w + 1];
+		if (oldPlace < newPlace) {
+			for (int w = oldPlace; w < newPlace; w++) {
+				if (woices[w]) {
+					woices[w] = woices[w + 1];
 				}
 			}
 		} else {
-			for (int w = old_place; w > new_place; w--) {
-				if (_woices[w]) {
-					_woices[w] = _woices[w - 1];
+			for (int w = oldPlace; w > newPlace; w--) {
+				if (woices[w]) {
+					woices[w] = woices[w - 1];
 				}
 			}
 		}
 
-		_woices[new_place] = p_w;
+		woices[newPlace] = woice;
 		return true;
 	}
 
@@ -930,97 +920,97 @@ public:
 	// Unit..
 	// ---------------------------
 
-	int Unit_Num() const nothrow @safe {
-		return _b_init ? cast(int)_units.length : 0;
+	int unitNum() const nothrow @safe {
+		return isInitialized ? cast(int)units.length : 0;
 	}
 
-	int Unit_Max() const nothrow @safe {
-		return _b_init ? cast(int)_units.length : 0;
+	int unitMax() const nothrow @safe {
+		return isInitialized ? cast(int)units.length : 0;
 	}
 
-	inout(pxtnUnit)* Unit_Get(int idx) inout nothrow @safe {
-		if (!_b_init) {
+	private inout(PxtnUnit)* unitGet(int idx) inout nothrow @safe {
+		if (!isInitialized) {
 			return null;
 		}
-		if (idx < 0 || idx >= _units.length) {
+		if (idx < 0 || idx >= units.length) {
 			return null;
 		}
-		return &_units[idx];
+		return &units[idx];
 	}
 
-	bool Unit_Remove(int idx) nothrow @safe {
-		if (!_b_init) {
+	bool unitRemove(int idx) nothrow @safe {
+		if (!isInitialized) {
 			return false;
 		}
-		if (idx < 0 || idx >= _units.length) {
+		if (idx < 0 || idx >= units.length) {
 			return false;
 		}
-		for (int i = idx; i < _units.length; i++) {
-			_units[i] = _units[i + 1];
+		for (int i = idx; i < units.length; i++) {
+			units[i] = units[i + 1];
 		}
-		_units.length--;
+		units.length--;
 		return true;
 	}
 
-	bool Unit_Replace(int old_place, int new_place) nothrow @safe {
-		if (!_b_init) {
+	bool unitReplace(int oldPlace, int newPlace) nothrow @safe {
+		if (!isInitialized) {
 			return false;
 		}
 
-		pxtnUnit p_w = _units[old_place];
-		int max_place = cast(int)_units.length - 1;
+		PxtnUnit woice = units[oldPlace];
+		int maxPlace = cast(int)units.length - 1;
 
-		if (new_place > max_place) {
-			new_place = max_place;
+		if (newPlace > maxPlace) {
+			newPlace = maxPlace;
 		}
-		if (new_place == old_place) {
+		if (newPlace == oldPlace) {
 			return true;
 		}
 
-		if (old_place < new_place) {
-			for (int w = old_place; w < new_place; w++) {
-				_units[w] = _units[w + 1];
+		if (oldPlace < newPlace) {
+			for (int w = oldPlace; w < newPlace; w++) {
+				units[w] = units[w + 1];
 			}
 		} else {
-			for (int w = old_place; w > new_place; w--) {
-				_units[w] = _units[w - 1];
+			for (int w = oldPlace; w > newPlace; w--) {
+				units[w] = units[w - 1];
 			}
 		}
-		_units[new_place] = p_w;
+		units[newPlace] = woice;
 		return true;
 	}
 
-	bool Unit_AddNew() nothrow @safe {
-		if (pxtnMAX_TUNEUNITSTRUCT < _units.length) {
+	bool unitAddNew() nothrow @safe {
+		if (pxtnMaxTuneUnitStruct < units.length) {
 			return false;
 		}
-		_units.length++;
-		_units[$ - 1] = pxtnUnit.init;
+		units.length++;
+		units[$ - 1] = PxtnUnit.init;
 		return true;
 	}
 
-	bool Unit_SetOpratedAll(bool b) nothrow @safe {
-		if (!_b_init) {
+	bool unitSetOperatedAll(bool b) nothrow @safe {
+		if (!isInitialized) {
 			return false;
 		}
-		for (int u = 0; u < _units.length; u++) {
-			_units[u].set_operated(b);
+		for (int u = 0; u < units.length; u++) {
+			units[u].setOperated(b);
 			if (b) {
-				_units[u].set_played(true);
+				units[u].setPlayed(true);
 			}
 		}
 		return true;
 	}
 
-	bool Unit_Solo(int idx) nothrow @safe {
-		if (!_b_init) {
+	bool unitSolo(int idx) nothrow @safe {
+		if (!isInitialized) {
 			return false;
 		}
-		for (int u = 0; u < _units.length; u++) {
+		for (int u = 0; u < units.length; u++) {
 			if (u == idx) {
-				_units[u].set_played(true);
+				units[u].setPlayed(true);
 			} else {
-				_units[u].set_played(false);
+				units[u].setPlayed(false);
 			}
 		}
 		return false;
@@ -1030,9 +1020,9 @@ public:
 	// Quality..
 	// ---------------------------
 
-	void set_destination_quality(int ch_num, int sps) @safe {
-		enforce(_b_init, new PxtoneException("pxtnService not initialized"));
-		switch (ch_num) {
+	void setDestinationQuality(int channels, int sps) @safe {
+		enforce(isInitialized, new PxtoneException("pxtnService not initialized"));
+		switch (channels) {
 		case 1:
 			break;
 		case 2:
@@ -1041,24 +1031,24 @@ public:
 			throw new PxtoneException("Unsupported sample rate");
 		}
 
-		_dst_ch_num = ch_num;
-		_dst_sps = sps;
+		outputChannels = channels;
+		outputSamplesPerSecond = sps;
 	}
 
-	void get_destination_quality(int* p_ch_num, int* p_sps) const @safe {
-		enforce(_b_init, new PxtoneException("pxtnService not initialized"));
-		if (p_ch_num) {
-			*p_ch_num = _dst_ch_num;
+	void getDestinationQuality(int* channels, int* samplesPerSecond) const @safe {
+		enforce(isInitialized, new PxtoneException("pxtnService not initialized"));
+		if (channels) {
+			*channels = outputChannels;
 		}
-		if (p_sps) {
-			*p_sps = _dst_sps;
+		if (samplesPerSecond) {
+			*samplesPerSecond = outputSamplesPerSecond;
 		}
 	}
 
-	void set_sampled_callback(pxtnSampledCallback proc, void* user) @safe {
-		enforce(_b_init, new PxtoneException("pxtnService not initialized"));
-		_sampled_proc = proc;
-		_sampled_user = user;
+	void setSampledCallback(pxtnSampledCallback proc, void* user) @safe {
+		enforce(isInitialized, new PxtoneException("pxtnService not initialized"));
+		sampledCallback = proc;
+		sampledCallbackUserData = user;
 	}
 
 	//////////////
@@ -1069,229 +1059,229 @@ public:
 	// get / set
 	///////////////////////
 
-	bool moo_is_valid_data() const @safe {
-		enforce(_moo_b_init, new PxtoneException("pxtnService not initialized"));
-		return _moo_b_valid_data;
+	bool mooIsValidData() const @safe {
+		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		return songLoaded;
 	}
 
-	bool moo_is_end_vomit() const @safe {
-		enforce(_moo_b_init, new PxtoneException("pxtnService not initialized"));
-		return _moo_b_end_vomit;
+	bool mooIsEndVomit() const @safe {
+		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		return songPlaying;
 	}
 
-	void moo_set_mute_by_unit(bool b) @safe {
-		enforce(_moo_b_init, new PxtoneException("pxtnService not initialized"));
-		_moo_b_mute_by_unit = b;
+	void mooSetMuteByUnit(bool b) @safe {
+		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		mutedByUnit = b;
 	}
 
-	void moo_set_loop(bool b) @safe {
-		enforce(_moo_b_init, new PxtoneException("pxtnService not initialized"));
-		_moo_b_loop = b;
+	void mooSetLoop(bool b) @safe {
+		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		songLooping = b;
 	}
 
-	void moo_set_fade(int fade, float sec) @safe {
-		enforce(_moo_b_init, new PxtoneException("pxtnService not initialized"));
-		_moo_fade_max = cast(int)(cast(float) _dst_sps * sec) >> 8;
+	void mooSetFade(int fade, float sec) @safe {
+		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		mooFadeMax = cast(int)(cast(float) outputSamplesPerSecond * sec) >> 8;
 		if (fade < 0) {
-			_moo_fade_fade = -1;
-			_moo_fade_count = _moo_fade_max << 8;
+			mooFadeFade = -1;
+			mooFadeCount = mooFadeMax << 8;
 		}  // out
 		else if (fade > 0) {
-			_moo_fade_fade = 1;
-			_moo_fade_count = 0;
+			mooFadeFade = 1;
+			mooFadeCount = 0;
 		}  // in
 		else {
-			_moo_fade_fade = 0;
-			_moo_fade_count = 0;
+			mooFadeFade = 0;
+			mooFadeCount = 0;
 		} // off
 	}
 
-	void moo_set_master_volume(float v) @safe {
-		enforce(_moo_b_init, new PxtoneException("pxtnService not initialized"));
+	void mooSetMasterVolume(float v) @safe {
+		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
 		if (v < 0) {
 			v = 0;
 		}
 		if (v > 1) {
 			v = 1;
 		}
-		_moo_master_vol = v;
+		masterVolume = v;
 	}
 
-	int moo_get_total_sample() const @safe {
-		enforce(_moo_b_init, new PxtoneException("pxtnService not initialized"));
-		enforce(_moo_b_valid_data, new PxtoneException("no valid data loaded"));
+	int mooGetTotalSample() const @safe {
+		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce(songLoaded, new PxtoneException("no valid data loaded"));
 
-		int meas_num;
-		int beat_num;
+		int measNum;
+		int beatNum;
 		int _;
-		float beat_tempo;
-		song.master.Get(beat_num, beat_tempo, _, meas_num);
-		return pxtnService_moo_CalcSampleNum(meas_num, beat_num, _dst_sps, song.master.get_beat_tempo());
+		float beatTempo;
+		song.master.get(beatNum, beatTempo, _, measNum);
+		return mooCalcSampleNum(measNum, beatNum, outputSamplesPerSecond, song.master.getBeatTempo());
 	}
 
-	int moo_get_now_clock() const @safe {
-		enforce(_moo_b_init, new PxtoneException("pxtnService not initialized"));
-		enforce(_moo_clock_rate, new PxtoneException("No clock rate set"));
-		return cast(int)(_moo_smp_count / _moo_clock_rate);
+	int mooGetNowClock() const @safe {
+		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce(mooClockRate, new PxtoneException("No clock rate set"));
+		return cast(int)(mooSampleCount / mooClockRate);
 	}
 
-	int moo_get_end_clock() const @safe {
-		enforce(_moo_b_init, new PxtoneException("pxtnService not initialized"));
-		enforce(_moo_clock_rate, new PxtoneException("No clock rate set"));
-		return cast(int)(_moo_smp_end / _moo_clock_rate);
+	int mooGetEndClock() const @safe {
+		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce(mooClockRate, new PxtoneException("No clock rate set"));
+		return cast(int)(mooSampleEnd / mooClockRate);
 	}
 
-	int moo_get_sampling_offset() const @safe {
-		enforce(_moo_b_init, new PxtoneException("pxtnService not initialized"));
-		enforce(!_moo_b_end_vomit, new PxtoneException("playback has ended"));
-		return _moo_smp_count;
+	int mooGetSamplingOffset() const @safe {
+		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce(!songPlaying, new PxtoneException("playback has ended"));
+		return mooSampleCount;
 	}
 
-	int moo_get_sampling_end() const @safe {
-		enforce(_moo_b_init, new PxtoneException("pxtnService not initialized"));
-		enforce(!_moo_b_end_vomit, new PxtoneException("playback has ended"));
-		return _moo_smp_end;
+	int mooGetSamplingEnd() const @safe {
+		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce(!songPlaying, new PxtoneException("playback has ended"));
+		return mooSampleEnd;
 	}
 
 	// preparation
-	void moo_preparation() @safe {
-		return moo_preparation(pxtnVOMITPREPARATION.init);
+	void mooPreparation() @safe {
+		return mooPreparation(pxtnVOMITPREPARATION.init);
 	}
-	void moo_preparation(in pxtnVOMITPREPARATION p_prep) @safe {
+	void mooPreparation(in pxtnVOMITPREPARATION prep) @safe {
 		scope(failure) {
-			_moo_b_end_vomit = true;
+			songPlaying = true;
 		}
-		enforce(_moo_b_init, new PxtoneException("pxtnService not initialized"));
-		enforce(_moo_b_valid_data, new PxtoneException("no valid data loaded"));
-		enforce(_dst_ch_num, new PxtoneException("invalid channel number specified"));
-		enforce(_dst_sps, new PxtoneException("invalid sample rate specified"));
+		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce(songLoaded, new PxtoneException("no valid data loaded"));
+		enforce(outputChannels, new PxtoneException("invalid channel number specified"));
+		enforce(outputSamplesPerSecond, new PxtoneException("invalid sample rate specified"));
 
-		int meas_end = song.master.get_play_meas();
-		int meas_repeat = song.master.get_repeat_meas();
+		int measEnd = song.master.getPlayMeas();
+		int measRepeat = song.master.getRepeatMeas();
 
-		if (p_prep.meas_end) {
-			meas_end = p_prep.meas_end;
+		if (prep.measEnd) {
+			measEnd = prep.measEnd;
 		}
-		if (p_prep.meas_repeat) {
-			meas_repeat = p_prep.meas_repeat;
+		if (prep.measRepeat) {
+			measRepeat = prep.measRepeat;
 		}
 
-		_moo_b_mute_by_unit = p_prep.flags.unitMute;
-		_moo_b_loop = p_prep.flags.loop;
+		mutedByUnit = prep.flags.unitMute;
+		songLooping = prep.flags.loop;
 
-		setVolume(p_prep.master_volume);
+		setVolume(prep.masterVolume);
 
-		_moo_bt_clock = song.master.get_beat_clock();
-		_moo_bt_num = song.master.get_beat_num();
-		_moo_bt_tempo = song.master.get_beat_tempo();
-		_moo_clock_rate = cast(float)(60.0f * cast(double) _dst_sps / (cast(double) _moo_bt_tempo * cast(double) _moo_bt_clock));
-		_moo_smp_stride = (44100.0f / _dst_sps);
-		_moo_top = 0x7fff;
+		beatClock = song.master.getBeatClock();
+		beatNum = song.master.getBeatNum();
+		beatTempo = song.master.getBeatTempo();
+		mooClockRate = cast(float)(60.0f * cast(double) outputSamplesPerSecond / (cast(double) beatTempo * cast(double) beatClock));
+		mooSampleStride = (44100.0f / outputSamplesPerSecond);
+		mooTop = 0x7fff;
 
-		_moo_time_pan_index = 0;
+		mooTimePanIndex = 0;
 
-		_moo_smp_end = cast(int)(cast(double) meas_end * cast(double) _moo_bt_num * cast(double) _moo_bt_clock * _moo_clock_rate);
-		_moo_smp_repeat = cast(int)(cast(double) meas_repeat * cast(double) _moo_bt_num * cast(double) _moo_bt_clock * _moo_clock_rate);
+		mooSampleEnd = cast(int)(cast(double) measEnd * cast(double) beatNum * cast(double) beatClock * mooClockRate);
+		mooSampleRepeat = cast(int)(cast(double) measRepeat * cast(double) beatNum * cast(double) beatClock * mooClockRate);
 
-		if (p_prep.start_pos_float) {
-			_moo_smp_start = cast(int)(cast(float) moo_get_total_sample() * p_prep.start_pos_float);
-		} else if (p_prep.start_pos_sample) {
-			_moo_smp_start = p_prep.start_pos_sample;
+		if (prep.startPosFloat) {
+			mooSampleStart = cast(int)(cast(float) mooGetTotalSample() * prep.startPosFloat);
+		} else if (prep.startPosSample) {
+			mooSampleStart = prep.startPosSample;
 		} else {
-			_moo_smp_start = cast(int)(cast(double) p_prep.start_pos_meas * cast(double) _moo_bt_num * cast(double) _moo_bt_clock * _moo_clock_rate);
+			mooSampleStart = cast(int)(cast(double) prep.startPosMeas * cast(double) beatNum * cast(double) beatClock * mooClockRate);
 		}
 
-		_moo_smp_count = _moo_smp_start;
-		_moo_smp_smooth = _dst_sps / 250; // (0.004sec) // (0.010sec)
+		mooSampleCount = mooSampleStart;
+		mooSampleSmooth = outputSamplesPerSecond / 250; // (0.004sec) // (0.010sec)
 
-		if (p_prep.fadein_sec > 0) {
-			moo_set_fade(1, p_prep.fadein_sec);
+		if (prep.fadeInSec > 0) {
+			mooSetFade(1, prep.fadeInSec);
 		} else {
-			moo_set_fade(0, 0);
+			mooSetFade(0, 0);
 		}
 		start();
 	}
 
 	void setVolume(float volume) @safe {
 		enforce(!volume.isNaN, "Volume must be a number");
-		_moo_master_vol = clamp(volume, 0.0, 1.0);
+		masterVolume = clamp(volume, 0.0, 1.0);
 	}
 
 	void start() @safe {
-		tones_clear();
+		tonesClear();
 
-		_moo_p_eve = song.evels.get_Records();
+		currentEventRecords = song.evels.getRecords();
 
-		_moo_InitUnitTone();
+		mooInitUnitTone();
 
-		_moo_b_end_vomit = false;
+		songPlaying = false;
 	}
 
 	////////////////////
 	//
 	////////////////////
 
-	bool Moo(short[] p_buf) nothrow @safe {
-		if (!_moo_b_init) {
+	bool moo(short[] buffer) nothrow @safe {
+		if (!isMooInitialized) {
 			return false;
 		}
-		if (!_moo_b_valid_data) {
+		if (!songLoaded) {
 			return false;
 		}
-		if (_moo_b_end_vomit) {
-			return false;
-		}
-
-		bool b_ret = false;
-
-		int smp_w = 0;
-
-		if (p_buf.length % _dst_ch_num) {
+		if (songPlaying) {
 			return false;
 		}
 
-		int smp_num = cast(int)(p_buf.length / _dst_ch_num);
+		bool bRe = false;
+
+		int samplesWritten = 0;
+
+		if (buffer.length % outputChannels) {
+			return false;
+		}
+
+		int sampleCount = cast(int)(buffer.length / outputChannels);
 
 		{
 			short[2] sample;
 
-			for (smp_w = 0; smp_w < smp_num; smp_w++) {
-				if (!_moo_PXTONE_SAMPLE(sample[])) {
-					_moo_b_end_vomit = true;
+			for (samplesWritten = 0; samplesWritten < sampleCount; samplesWritten++) {
+				if (!mooPxtoneSample(sample[])) {
+					songPlaying = true;
 					break;
 				}
-				for (int ch = 0; ch < _dst_ch_num; ch++, p_buf = p_buf[1 .. $]) {
-					p_buf[0] = sample[ch];
+				for (int ch = 0; ch < outputChannels; ch++, buffer = buffer[1 .. $]) {
+					buffer[0] = sample[ch];
 				}
 			}
-			for (; smp_w < smp_num; smp_w++) {
-				for (int ch = 0; ch < _dst_ch_num; ch++, p_buf = p_buf[1 .. $]) {
-					p_buf[0] = 0;
+			for (; samplesWritten < sampleCount; samplesWritten++) {
+				for (int ch = 0; ch < outputChannels; ch++, buffer = buffer[1 .. $]) {
+					buffer[0] = 0;
 				}
 			}
 		}
 
-		if (_sampled_proc) {
-			int clock = cast(int)(_moo_smp_count / _moo_clock_rate);
-			if (!_sampled_proc(_sampled_user, &this)) {
-				_moo_b_end_vomit = true;
+		if (sampledCallback) {
+			int clock = cast(int)(mooSampleCount / mooClockRate);
+			if (!sampledCallback(sampledCallbackUserData, &this)) {
+				songPlaying = true;
 				goto term;
 			}
 		}
 
-		b_ret = true;
+		bRe = true;
 	term:
-		return b_ret;
+		return bRe;
 	}
 }
 
-int pxtnService_moo_CalcSampleNum(int meas_num, int beat_num, int sps, float beat_tempo) nothrow @safe {
-	uint total_beat_num;
-	uint sample_num;
-	if (!beat_tempo) {
+private int mooCalcSampleNum(int measNumber, int beatNumber, int sps, float beatTempo) nothrow @safe {
+	uint totalBeatNum;
+	uint sampleNum;
+	if (!beatTempo) {
 		return 0;
 	}
-	total_beat_num = meas_num * beat_num;
-	sample_num = cast(uint)(cast(double) sps * 60 * cast(double) total_beat_num / cast(double) beat_tempo);
-	return sample_num;
+	totalBeatNum = measNumber * beatNumber;
+	sampleNum = cast(uint)(cast(double) sps * 60 * cast(double) totalBeatNum / cast(double) beatTempo);
+	return sampleNum;
 }
