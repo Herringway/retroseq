@@ -775,11 +775,14 @@ struct PxToneSong {
 	}
 }
 
-unittest {
+@safe unittest {
+	ubyte[] trustedRead(string filename) @trusted {
+		import std.file : read;
+		return cast(ubyte[])read(filename);
+	}
 	import std.algorithm.comparison : equal;
 	import std.algorithm.iteration : map;
-	import std.file : read;
-	auto song = PxToneSong(cast(ubyte[])read("pxtone/sample data/sample.ptcop"));
+	auto song = PxToneSong(trustedRead("pxtone/sample data/sample.ptcop"));
 	assert(song.text.getCommentBuf() == "boss03\r\n13/03/07\r\n13/06/27 fix tr1 maes9-\r\n");
 	assert(song.text.getNameBuf() == "Hard Cording");
 	assert(song.units.map!(x => x.getNameBuf().dup).equal(["Brass", "Techno", "Middle", "Bass", "Dr Hi Hat", "u-drum_snare2", "Dr Bass"]));
