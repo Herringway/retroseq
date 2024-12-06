@@ -144,7 +144,7 @@ struct pxtnVOMITPREPARATION {
 	int measRepeat = 0;
 	float fadeInSec = 0.0;
 
-	BitFlags!PxtnFlags flags;
+	BitFlags!PxtnFlags flags = PxtnFlags.loop;
 	float masterVolume = 1.0;
 	invariant {
 		import std.math : isNaN;
