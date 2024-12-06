@@ -186,7 +186,7 @@ private:
 	// vomit..
 	//////////////
 	bool songLoaded;
-	bool songPlaying = true;
+	bool songStopped = true;
 	bool isMooInitialized;
 
 	bool mutedByUnit;
@@ -1017,7 +1017,7 @@ public:
 
 	bool mooIsEndVomit() const @safe {
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
-		return songPlaying;
+		return songStopped;
 	}
 
 	void mooSetMuteByUnit(bool b) @safe {
@@ -1084,13 +1084,13 @@ public:
 
 	int mooGetSamplingOffset() const @safe {
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
-		enforce(!songPlaying, new PxtoneException("playback has ended"));
+		enforce(!songStopped, new PxtoneException("playback has ended"));
 		return mooSampleCount;
 	}
 
 	int mooGetSamplingEnd() const @safe {
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
-		enforce(!songPlaying, new PxtoneException("playback has ended"));
+		enforce(!songStopped, new PxtoneException("playback has ended"));
 		return mooSampleEnd;
 	}
 
@@ -1100,7 +1100,7 @@ public:
 	}
 	void mooPreparation(in pxtnVOMITPREPARATION prep) @safe {
 		scope(failure) {
-			songPlaying = true;
+			songStopped = true;
 		}
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
 		enforce(songLoaded, new PxtoneException("no valid data loaded"));
@@ -1165,7 +1165,7 @@ public:
 
 		mooInitUnitTone();
 
-		songPlaying = false;
+		songStopped = false;
 	}
 
 	////////////////////
@@ -1179,7 +1179,7 @@ public:
 		if (!songLoaded) {
 			return false;
 		}
-		if (songPlaying) {
+		if (songStopped) {
 			return false;
 		}
 
@@ -1199,11 +1199,11 @@ public:
 			for (samplesWritten = 0; samplesWritten < sampleCount; samplesWritten++) {
 				try {
 					if (!mooPxtoneSample(sample[])) {
-						songPlaying = true;
+						songStopped = true;
 						break;
 					}
 				} catch (Exception) {
-					songPlaying = true;
+					songStopped = true;
 					break;
 				}
 				for (int ch = 0; ch < outputChannels; ch++, buffer = buffer[1 .. $]) {
@@ -1220,7 +1220,7 @@ public:
 		if (sampledCallback) {
 			int clock = cast(int)(mooSampleCount / mooClockRate);
 			if (!sampledCallback(sampledCallbackUserData, &this)) {
-				songPlaying = true;
+				songStopped = true;
 				goto term;
 			}
 		}
