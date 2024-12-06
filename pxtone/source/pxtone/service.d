@@ -262,7 +262,7 @@ private:
 		isInitialized = true;
 	}
 
-	private void mooInitialize() nothrow @safe {
+	private void mooInitialize() @safe {
 		mooFrequency = new PxtnPulseFrequency();
 		groupSamples = new int[](pxtnMaxTuneGroupNumber);
 
@@ -610,9 +610,9 @@ public:
 		}
 	}
 
-	bool tonesClear() nothrow @safe {
+	void tonesClear() @safe {
 		if (!isInitialized) {
-			return false;
+			throw new PxtoneException("pxtnService not initialized");
 		}
 		for (int i = 0; i < delays.length; i++) {
 			delays[i].toneClear();
@@ -620,10 +620,9 @@ public:
 		for (int i = 0; i < units.length; i++) {
 			units[i].toneClear();
 		}
-		return true;
 	}
 
-	int groupNum() const nothrow @safe {
+	int groupNum() const @safe {
 		return isInitialized ? pxtnMaxTuneGroupNumber : 0;
 	}
 
@@ -631,51 +630,37 @@ public:
 	// Delay..
 	// ---------------------------
 
-	int delayNum() const nothrow @safe {
-		return isInitialized ? cast(int)delays.length : 0;
+	int delayNum() const @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		return cast(int)delays.length;
 	}
 
-	int delayMax() const nothrow @safe {
-		return isInitialized ? cast(int)delays.length : 0;
+	int delayMax() const @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		return cast(int)delays.length;
 	}
 
-	bool delaySet(int idx, DelayUnit unit, float freq, float rate, int group) nothrow @safe {
-		if (!isInitialized) {
-			return false;
-		}
-		if (idx >= delays.length) {
-			return false;
-		}
+	void delaySet(int idx, DelayUnit unit, float freq, float rate, int group) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException(idx < delays.length, "delay index out of range");
 		delays[idx].set(unit, freq, rate, group);
-		return true;
 	}
 
-	bool delayAdd(DelayUnit unit, float freq, float rate, int group) nothrow @safe {
-		if (!isInitialized) {
-			return false;
-		}
-		if (delays.length >= pxtnMaxTuneDelayStruct) {
-			return false;
-		}
+	void delayAdd(DelayUnit unit, float freq, float rate, int group) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException(delays.length < pxtnMaxTuneDelayStruct, "delay index out of range");
 		delays.length++;
 		delays[$ - 1] = PxtnDelay.init;
 		delays[$ - 1].set(unit, freq, rate, group);
-		return true;
 	}
 
-	bool delayRemove(int idx) nothrow @safe {
-		if (!isInitialized) {
-			return false;
-		}
-		if (idx >= delays.length) {
-			return false;
-		}
-
+	void delayRemove(int idx) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException(idx < delays.length, "delay index out of range");
 		for (int i = idx; i < delays.length; i++) {
 			delays[i] = delays[i + 1];
 		}
 		delays.length--;
-		return true;
 	}
 
 	void delayReadyTone(int idx) @safe {
@@ -688,13 +673,9 @@ public:
 		delays[idx].toneReady(song.master.getBeatNum(), song.master.getBeatTempo(), outputSamplesPerSecond);
 	}
 
-	PxtnDelay* delayGet(int idx) nothrow @safe {
-		if (!isInitialized) {
-			return null;
-		}
-		if (idx < 0 || idx >= delays.length) {
-			return null;
-		}
+	PxtnDelay* delayGet(int idx) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException((idx >= 0) && (idx < delays.length), "delay index out of range");
 		return &delays[idx];
 	}
 
@@ -702,71 +683,48 @@ public:
 	// Over Drive..
 	// ---------------------------
 
-	int overDriveNum() const nothrow @safe {
-		return isInitialized ? cast(int)overdrives.length : 0;
+	int overDriveNum() const @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		return cast(int)overdrives.length;
 	}
 
-	int overDriveMax() const nothrow @safe {
-		return isInitialized ? cast(int)overdrives.length : 0;
+	int overDriveMax() const @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		return cast(int)overdrives.length;
 	}
 
-	bool overDriveSet(int idx, float cut, float amp, int group) nothrow @safe {
-		if (!isInitialized) {
-			return false;
-		}
-		if (idx >= overdrives.length) {
-			return false;
-		}
+	void overDriveSet(int idx, float cut, float amp, int group) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException(idx < overdrives.length, "overdrive index out of range");
 		overdrives[idx].set(cut, amp, group);
-		return true;
 	}
 
-	bool overDriveAdd(float cut, float amp, int group) nothrow @safe {
-		if (!isInitialized) {
-			return false;
-		}
-		if (overdrives.length >= overdrives.length) {
-			return false;
-		}
+	void overDriveAdd(float cut, float amp, int group) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		//enforce!PxtoneException(overdrives.length < ???, "too many overdrives");
 		overdrives ~= new pxtnOverDrive();
 		overdrives[$ - 1].set(cut, amp, group);
-		return true;
 	}
 
-	bool overDriveRemove(int idx) nothrow @safe {
-		if (!isInitialized) {
-			return false;
-		}
-		if (idx >= overdrives.length) {
-			return false;
-		}
-
+	void overDriveRemove(int idx) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException(idx < overdrives.length, "overdrive index out of range");
 		overdrives[idx] = null;
 		for (int i = idx; i < overdrives.length; i++) {
 			overdrives[i] = overdrives[i + 1];
 		}
 		overdrives.length--;
-		return true;
 	}
 
-	bool overDriveReadyTone(int idx) nothrow @safe {
-		if (!isInitialized) {
-			return false;
-		}
-		if (idx < 0 || idx >= overdrives.length) {
-			return false;
-		}
+	void overDriveReadyTone(int idx) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException((idx >= 0) && (idx < overdrives.length), "overdrive index out of range");
 		overdrives[idx].toneReady();
-		return true;
 	}
 
-	pxtnOverDrive* overDriveGet(int idx) nothrow @safe {
-		if (!isInitialized) {
-			return null;
-		}
-		if (idx < 0 || idx >= overdrives.length) {
-			return null;
-		}
+	pxtnOverDrive* overDriveGet(int idx) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException((idx >= 0) && (idx < overdrives.length), "overdrive index out of range");
 		return overdrives[idx];
 	}
 
@@ -774,71 +732,45 @@ public:
 	// Woice..
 	// ---------------------------
 
-	int woiceNum() const nothrow @safe {
-		return isInitialized ? cast(int)woices.length : 0;
+	int woiceNum() const @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		return cast(int)woices.length;
 	}
 	alias woiceMax = woiceNum;
 
-	inout(pxtnWoice)* woiceGet(int idx) inout nothrow @safe {
-		if (!isInitialized) {
-			return null;
-		}
-		if (idx < 0 || idx >= woices.length) {
-			return null;
-		}
+	inout(pxtnWoice)* woiceGet(int idx) inout @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException((idx >= 0) && (idx < woices.length), "woice index out of range");
 		return woices[idx];
 	}
 
 	void woiceRead(int idx, ref PxtnDescriptor desc, PxtnWoiceType type) @safe {
-		if (!isInitialized) {
-			throw new PxtoneException("pxtnService not initialized");
-		}
-		if (idx < 0 || idx >= woices.length) {
-			throw new PxtoneException("param");
-		}
-		if (idx > woices.length) {
-			throw new PxtoneException("param");
-		}
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException((idx >= 0) && (idx < woices.length), "woice index out of range");
 		if (idx == woices.length) {
 			woices ~= new pxtnWoice();
-		}
-
-		scope(failure) {
-			woiceRemove(idx);
 		}
 		woices[idx].read(desc, type);
 	}
 
 	void woiceReadyTone(int idx) @safe {
-		if (!isInitialized) {
-			throw new PxtoneException("pxtnService not initialized");
-		}
-		if (idx < 0 || idx >= woices.length) {
-			throw new PxtoneException("param");
-		}
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException((idx >= 0) && (idx < woices.length), "woice index out of range");
 		song.woices[idx].toneReady(woices[idx], pxtnPulseNoiseBuilder, outputSamplesPerSecond);
 	}
 
-	bool woiceRemove(int idx) nothrow @safe {
-		if (!isInitialized) {
-			return false;
-		}
-		if (idx < 0 || idx >= woices.length) {
-			return false;
-		}
+	void woiceRemove(int idx) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException((idx >= 0) && (idx < woices.length), "woice index out of range");
 		woices[idx] = null;
 		for (int i = idx; i < woices.length - 1; i++) {
 			woices[i] = woices[i + 1];
 		}
 		woices.length--;
-		return true;
 	}
 
-	bool woiceReplace(int oldPlace, int newPlace) nothrow @safe {
-		if (!isInitialized) {
-			return false;
-		}
-
+	void woiceReplace(int oldPlace, int newPlace) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		pxtnWoice* woice = woices[oldPlace];
 		int maxPlace = cast(int)woices.length - 1;
 
@@ -846,7 +778,7 @@ public:
 			newPlace = maxPlace;
 		}
 		if (newPlace == oldPlace) {
-			return true;
+			return;
 		}
 
 		if (oldPlace < newPlace) {
@@ -864,49 +796,39 @@ public:
 		}
 
 		woices[newPlace] = woice;
-		return true;
 	}
 
 	// ---------------------------
 	// Unit..
 	// ---------------------------
 
-	int unitNum() const nothrow @safe {
-		return isInitialized ? cast(int)units.length : 0;
+	int unitNum() const @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		return cast(int)units.length;
 	}
 
-	int unitMax() const nothrow @safe {
-		return isInitialized ? cast(int)units.length : 0;
+	int unitMax() const @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		return cast(int)units.length;
 	}
 
-	private inout(PxtnUnit)* unitGet(int idx) inout nothrow @safe {
-		if (!isInitialized) {
-			return null;
-		}
-		if (idx < 0 || idx >= units.length) {
-			return null;
-		}
+	private inout(PxtnUnit)* unitGet(int idx) inout @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException((idx >= 0) && (idx < units.length), "unit index out of range");
 		return &units[idx];
 	}
 
-	bool unitRemove(int idx) nothrow @safe {
-		if (!isInitialized) {
-			return false;
-		}
-		if (idx < 0 || idx >= units.length) {
-			return false;
-		}
+	void unitRemove(int idx) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException((idx >= 0) && (idx < units.length), "unit index out of range");
 		for (int i = idx; i < units.length; i++) {
 			units[i] = units[i + 1];
 		}
 		units.length--;
-		return true;
 	}
 
-	bool unitReplace(int oldPlace, int newPlace) nothrow @safe {
-		if (!isInitialized) {
-			return false;
-		}
+	void unitReplace(int oldPlace, int newPlace) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 
 		PxtnUnit woice = units[oldPlace];
 		int maxPlace = cast(int)units.length - 1;
@@ -915,7 +837,7 @@ public:
 			newPlace = maxPlace;
 		}
 		if (newPlace == oldPlace) {
-			return true;
+			return;
 		}
 
 		if (oldPlace < newPlace) {
@@ -928,35 +850,27 @@ public:
 			}
 		}
 		units[newPlace] = woice;
-		return true;
 	}
 
-	bool unitAddNew() nothrow @safe {
-		if (pxtnMaxTuneUnitStruct < units.length) {
-			return false;
-		}
+	void unitAddNew() @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException(pxtnMaxTuneUnitStruct >= units.length, "too many units");
 		units.length++;
 		units[$ - 1] = PxtnUnit.init;
-		return true;
 	}
 
-	bool unitSetOperatedAll(bool b) nothrow @safe {
-		if (!isInitialized) {
-			return false;
-		}
+	void unitSetOperatedAll(bool b) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		for (int u = 0; u < units.length; u++) {
 			units[u].setOperated(b);
 			if (b) {
 				units[u].setPlayed(true);
 			}
 		}
-		return true;
 	}
 
-	bool unitSolo(int idx) nothrow @safe {
-		if (!isInitialized) {
-			return false;
-		}
+	void unitSolo(int idx) @safe {
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		for (int u = 0; u < units.length; u++) {
 			if (u == idx) {
 				units[u].setPlayed(true);
@@ -964,7 +878,6 @@ public:
 				units[u].setPlayed(false);
 			}
 		}
-		return false;
 	}
 
 	// ---------------------------
