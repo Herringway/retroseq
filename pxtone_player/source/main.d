@@ -74,15 +74,9 @@ int main(string[] args) {
 	pxtn.load(file);
 
 	trace("Preparing pxtone");
-	// Prepare to play music
-	{
-		pxtnVOMITPREPARATION prep;
-		prep.flags.loop = true;
-		prep.startPosFloat = 0;
-		prep.masterVolume = 0.80f;
 
-		pxtn.mooPreparation(prep);
-	}
+	// Prepare to play music
+	pxtn.mooPreparation();
 	if (!initAudio(&_sampling_func, _CHANNEL_NUM, _SAMPLE_PER_SECOND, &pxtn)) {
 		return 1;
 	}
