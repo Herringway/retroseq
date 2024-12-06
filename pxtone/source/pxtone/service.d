@@ -235,7 +235,7 @@ private:
 
 	private void initialize(int fixEvelsNum, bool bEdit) @safe {
 		if (isInitialized) {
-			throw new PxtoneException("pxtnService not initialized");
+			throw new PxtoneException("pxtnService already initialized");
 		}
 
 		scope(failure) {
