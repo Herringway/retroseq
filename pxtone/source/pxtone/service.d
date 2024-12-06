@@ -238,10 +238,6 @@ private:
 			throw new PxtoneException("pxtnService already initialized");
 		}
 
-		scope(failure) {
-			release();
-		}
-
 		int byteSize = 0;
 
 		loadVorbis();
@@ -260,69 +256,26 @@ private:
 		// unit
 		units.reserve(pxtnMaxTuneUnitStruct);
 
-		if (!mooInitialize()) {
-			throw new PxtoneException("mooInitialize failed");
-		}
+		mooInitialize();
 
 		edit = bEdit;
 		isInitialized = true;
-
 	}
 
-	private void release() @safe {
-		isInitialized = false;
-
-		mooDestructor();
-
-		delays = null;
-		overdrives = null;
-		woices = null;
-		units = null;
-	}
-
-	private void mooDestructor() nothrow @safe {
-		mooRelease();
-	}
-
-	private bool mooInitialize() nothrow @safe {
-		bool bRet = false;
-
+	private void mooInitialize() nothrow @safe {
 		mooFrequency = new PxtnPulseFrequency();
-		if (!mooFrequency) {
-			goto term;
-		}
 		groupSamples = new int[](pxtnMaxTuneGroupNumber);
-		if (!groupSamples) {
-			goto term;
-		}
 
 		isMooInitialized = true;
-		bRet = true;
-	term:
-		if (!bRet) {
-			mooRelease();
-		}
-
-		return bRet;
-	}
-
-	private bool mooRelease() nothrow @safe {
-		if (!isMooInitialized) {
-			return false;
-		}
-		isMooInitialized = false;
-		mooFrequency = null;
-		groupSamples = null;
-		return true;
 	}
 
 	////////////////////////////////////////////////
 	// Units   ////////////////////////////////////
 	////////////////////////////////////////////////
 
-	private bool mooResetVoiceOn(PxtnUnit* unit, int w) const nothrow @safe {
+	private void mooResetVoiceOn(PxtnUnit* unit, int w) const @safe {
 		if (!isMooInitialized) {
-			return false;
+			throw new PxtoneException("Moo not initialized!");
 		}
 
 		const(PxtnVoiceInstance)* voiceInstance;
@@ -330,7 +283,7 @@ private:
 		const(pxtnWoice)* woice = woiceGet(w);
 
 		if (!woice) {
-			return false;
+			throw new PxtoneException("Moo not initialized!");
 		}
 
 		unit.setWoice(woice);
@@ -347,24 +300,22 @@ private:
 			}
 			unit.toneResetAnd2prm(v, cast(int)(voiceInstance.envelopeRelease / mooClockRate), ofsFreq);
 		}
-		return true;
 	}
 
-	private bool mooInitUnitTone() nothrow @safe {
+	private void mooInitUnitTone() @safe {
 		if (!isMooInitialized) {
-			return false;
+			throw new PxtoneException("Moo not initialized!");
 		}
 		for (int u = 0; u < units.length; u++) {
 			PxtnUnit* unit = unitGet(u);
 			unit.toneInit();
 			mooResetVoiceOn(unit, EventDefault.voiceNumber);
 		}
-		return true;
 	}
 
-	private bool mooPxtoneSample(scope short[] pData) nothrow @safe {
+	private bool mooPxtoneSample(scope short[] pData) @safe {
 		if (!isMooInitialized) {
-			return false;
+			throw new PxtoneException("Moo not initialized!");
 		}
 
 		// envelope..
@@ -1246,7 +1197,12 @@ public:
 			short[2] sample;
 
 			for (samplesWritten = 0; samplesWritten < sampleCount; samplesWritten++) {
-				if (!mooPxtoneSample(sample[])) {
+				try {
+					if (!mooPxtoneSample(sample[])) {
+						songPlaying = true;
+						break;
+					}
+				} catch (Exception) {
 					songPlaying = true;
 					break;
 				}
