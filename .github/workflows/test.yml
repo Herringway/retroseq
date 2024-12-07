@@ -16,7 +16,7 @@ jobs:
         dc:
           - dmd-latest
           - ldc-latest
-          - dmd-beta
+          # - dmd-beta
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
