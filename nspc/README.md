@@ -1,8 +1,8 @@
-# NSPCPlay
+# Retroseq:nspc
 
 ## Introduction
 
-NSPCPlay is an implementation of the NSPC engine used and extended by many Super Nintendo games. Currently, only variants compatible with Earthbound's player are compatible, but this may be extended in the future.
+This is an implementation of the NSPC engine used and extended by many Super Nintendo games. Currently, only variants compatible with Earthbound's player are compatible, but this may be extended in the future.
 
 ## Building
 
@@ -52,4 +52,4 @@ Used in Super Mario World and Pilotwings.
 
 ## Credits
 
-NSPCPlay is based upon the code used in the Earthbound Music Editor, EBMusEd, and extended by Cameron 'Herringway' Ross.
+This is based upon the code used in the Earthbound Music Editor, EBMusEd, and extended by Cameron 'Herringway' Ross.
