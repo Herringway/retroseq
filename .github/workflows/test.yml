@@ -1,9 +1,7 @@
 ---
-name: D
+name: Test
 
 "on":
-  schedule:
-    - cron: "0 0 1 * *" # run first day of every month
   push:
     branches:
       - main
@@ -28,3 +26,9 @@ jobs:
       - name: 'Test'
         run: |
           dub test
+          dub test :sseq
+          dub test :m4a
+          dub test :nspc
+          dub test :organya
+          dub test :piyopiyo
+          dub test :pxtone
