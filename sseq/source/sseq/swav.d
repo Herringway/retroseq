@@ -1,22 +1,26 @@
+///
 module sseq.swav;
 
 import sseq.common;
 
+///
 struct SWAV
 {
+	///
 	static struct Header {
 		align(1):
-		ubyte waveType;
-		ubyte loop;
-		ushort sampleRate;
-		ushort time;
-		ushort loopOffset;
-		uint nonLoopLength;
+		ubyte waveType; ///
+		ubyte loop; ///
+		ushort sampleRate; ///
+		ushort time; ///
+		ushort loopOffset; ///
+		uint nonLoopLength; ///
 	}
-	Header header;
-	const(ubyte)[] origData;
-	short[] data;
+	Header header; ///
+	const(ubyte)[] origData; ///
+	short[] data; ///
 }
+///
 short[] decode(const(ubyte)[] origData, ref SWAV.Header header) @safe {
 	uint size = (header.loopOffset + header.nonLoopLength) * 4;
 	short[] data;
@@ -52,6 +56,7 @@ short[] decode(const(ubyte)[] origData, ref SWAV.Header header) @safe {
 	}
 	return data;
 }
+///
 void DecodeADPCM(const(ubyte)[] origData, short[] finalData, uint len) @safe {
 	int predictedValue = origData[0] | (origData[1] << 8);
 	int stepIndex = origData[2] | (origData[3] << 8);
@@ -68,13 +73,14 @@ void DecodeADPCM(const(ubyte)[] origData, short[] finalData, uint len) @safe {
 	}
 }
 
-
+///
 private immutable int[] ima_index_table =
 [
 	-1, -1, -1, -1, 2, 4, 6, 8,
 	-1, -1, -1, -1, 2, 4, 6, 8
 ];
 
+///
 private immutable int[] ima_step_table =
 [
 	7, 8, 9, 10, 11, 12, 13, 14, 16, 17,
@@ -88,6 +94,7 @@ private immutable int[] ima_step_table =
 	15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
 ];
 
+///
 private void DecodeADPCMNibble(int nibble, ref int stepIndex, ref int predictedValue) @safe
 {
 	int step = ima_step_table[stepIndex];

@@ -1,4 +1,5 @@
-﻿module pxtone.woice;
+///
+module pxtone.woice;
 // '12/03/03 pxtnWoice.
 
 import pxtone.pxtn;
@@ -14,103 +15,113 @@ import pxtone.pulse.oggv;
 import pxtone.util;
 import pxtone.woiceptv;
 
-enum pxtnMaxTuneWoiceName = 16; // fixture.
+enum pxtnMaxTuneWoiceName = 16; /// fixture.
 
-enum pxtnMaxUnitControlVoice = 2; // max-woice per unit
+enum pxtnMaxUnitControlVoice = 2; /// max-woice per unit
 
-enum pxtnBufferSizeTimePan = 0x40;
-enum pxtnBitsPerSample = 16;
+enum pxtnBufferSizeTimePan = 0x40; ///
+enum pxtnBitsPerSample = 16; ///
 
+///
 enum PTVVoiceFlag {
-	waveLoop = 0x00000001,
-	smooth = 0x00000002,
-	beatFit = 0x00000004,
-	uncovered = 0xfffffff8,
+	waveLoop = 0x00000001, ///
+	smooth = 0x00000002, ///
+	beatFit = 0x00000004, ///
+	uncovered = 0xfffffff8, ///
 }
 
+///
 enum PTVDataFlag {
-	wave = 0x00000001,
-	envelope = 0x00000002,
-	uncovered = 0xfffffffc,
+	wave = 0x00000001, ///
+	envelope = 0x00000002, ///
+	uncovered = 0xfffffffc, ///
 }
 
-immutable identifierCode = "PTVOICE-";
+immutable identifierCode = "PTVOICE-"; ///
 
+///
 enum PxtnWoiceType {
-	none = 0,
-	pcm,
-	ptv,
-	ptn,
-	oggVorbis,
+	none = 0, ///
+	pcm, ///
+	ptv, ///
+	ptn, ///
+	oggVorbis, ///
 }
 
+///
 enum PxtnVoiceType {
-	coordinate = 0,
-	overtone,
-	noise,
-	sampling,
-	oggVorbis,
+	coordinate = 0, ///
+	overtone, ///
+	noise, ///
+	sampling, ///
+	oggVorbis, ///
 }
 
+///
 struct PxtnVoiceInstance {
-	int sampleHead;
-	int sampleBody;
-	int sampleTail;
-	ubyte[] sample;
+	int sampleHead; ///
+	int sampleBody; ///
+	int sampleTail; ///
+	ubyte[] sample; ///
 
-	ubyte[] envelope;
-	int envelopeSize;
-	int envelopeRelease;
+	ubyte[] envelope; ///
+	int envelopeSize; ///
+	int envelopeRelease; ///
 }
 
+///
 struct PxtnVoiceEnvelope {
-	int fps;
-	int headNumber;
-	int bodyNumber;
-	int tailNumber;
-	PxtnPoint[] points;
+	int fps; ///
+	int headNumber; ///
+	int bodyNumber; ///
+	int tailNumber; ///
+	PxtnPoint[] points; ///
 }
 
+///
 struct PxtnVoiceWave {
-	int num;
-	int reso; // COORDINATE RESOLUTION
-	PxtnPoint[] points;
+	int num; ///
+	int reso; /// COORDINATE RESOLUTION
+	PxtnPoint[] points; ///
 }
 
+///
 struct PxtnVoiceUnit {
-	int basicKey;
-	int volume;
-	int pan;
-	float tuning;
-	uint voiceFlags;
-	uint dataFlags;
+	int basicKey; ///
+	int volume; ///
+	int pan; ///
+	float tuning; ///
+	uint voiceFlags; ///
+	uint dataFlags; ///
 
-	PxtnVoiceType type;
-	PxtnPulsePCM pcm;
-	PxtnPulseNoise ptn;
+	PxtnVoiceType type; ///
+	PxtnPulsePCM pcm; ///
+	PxtnPulseNoise ptn; ///
 	version (WithOggVorbis) {
-		PxtnPulseOggv oggV;
+		PxtnPulseOggv oggV; ///
 	}
 
-	PxtnVoiceWave wave;
-	PxtnVoiceEnvelope envelope;
+	PxtnVoiceWave wave; ///
+	PxtnVoiceEnvelope envelope; ///
 }
 
+///
 struct PxtnVoiceTone {
-	double samplePosition;
-	float offsetFreq;
-	int envelopeVolume;
-	int lifeCount;
-	int onCount;
+	double samplePosition; ///
+	float offsetFreq; ///
+	int envelopeVolume; ///
+	int lifeCount; ///
+	int onCount; ///
 
-	int sampleCount;
-	int envelopeStart;
-	int envelopePosition;
-	int envelopeReleaseClock;
+	int sampleCount; ///
+	int envelopeStart; ///
+	int envelopePosition; ///
+	int envelopeReleaseClock; ///
 
-	int smoothVolume;
+	int smoothVolume; ///
 }
 
+///
 private void voiceRelease(PxtnVoiceUnit* voiceUnit, PxtnVoiceInstance* voiceInstance) nothrow @safe {
 	if (voiceUnit) {
 		voiceUnit.envelope.points = null;
@@ -125,6 +136,7 @@ private void voiceRelease(PxtnVoiceUnit* voiceUnit, PxtnVoiceInstance* voiceInst
 	}
 }
 
+///
 private void updateWavePTV(PxtnVoiceUnit* voiceUnit, PxtnVoiceInstance* voiceInstance, int ch, int sps, int bps) nothrow @safe {
 	double work, osc;
 	int longTmp;
@@ -197,15 +209,16 @@ private void updateWavePTV(PxtnVoiceUnit* voiceUnit, PxtnVoiceInstance* voiceIns
 }
 
 // 24byte =================
+///
 struct MaterialStructPCM {
-	ushort x3xUnitNumber;
-	ushort basicKey;
-	uint voiceFlags;
-	ushort ch;
-	ushort bps;
-	uint sps;
-	float tuning = 0.0;
-	uint dataSize;
+	ushort x3xUnitNumber; ///
+	ushort basicKey; ///
+	uint voiceFlags; ///
+	ushort ch; ///
+	ushort bps; ///
+	uint sps; ///
+	float tuning = 0.0; ///
+	uint dataSize; ///
 }
 
 /////////////
@@ -213,13 +226,13 @@ struct MaterialStructPCM {
 /////////////
 
 // 16byte =================
+///
 struct MaterialStructPTN {
-	ushort x3xUnitNumber;
-	ushort basicKey;
-	uint voiceFlags;
-	float tuning = 0.0;
-	int rrr; // 0: -v.0.9.2.3
-	// 1:  v.0.9.2.4-
+	ushort x3xUnitNumber; ///
+	ushort basicKey; ///
+	uint voiceFlags; ///
+	float tuning = 0.0; ///
+	int rrr; /// 0: -v.0.9.2.3, 1:  v.0.9.2.4-
 }
 
 /////////////////
@@ -227,11 +240,12 @@ struct MaterialStructPTN {
 /////////////////
 
 // 24byte =================
+///
 struct MaterialStructPTV {
-	ushort x3xUnitNumber;
-	ushort rrr;
-	float x3xTuning = 0.0;
-	int size;
+	ushort x3xUnitNumber; ///
+	ushort rrr; ///
+	float x3xTuning = 0.0; ///
+	int size; ///
 }
 
 //////////////////////
@@ -239,53 +253,60 @@ struct MaterialStructPTV {
 //////////////////////
 
 // 16byte =================
+///
 struct MaterialStructOGGV {
-	ushort xxx; //ch;
-	ushort basicKey;
-	uint voiceFlags;
-	float tuning = 0.0;
+	ushort xxx; ///ch;
+	ushort basicKey; ///
+	uint voiceFlags; ///
+	float tuning = 0.0; ///
 }
 
 ////////////////////////
 // publics..
 ////////////////////////
 
+///
 struct pxtnWoice {
 package:
-	int voiceNum;
+	int voiceNum; ///
 
-	char[pxtnMaxTuneWoiceName + 1] nameBuffer;
-	uint nameSize;
+	char[pxtnMaxTuneWoiceName + 1] nameBuffer; ///
+	uint nameSize; ///
 
-	PxtnWoiceType type = PxtnWoiceType.none;
-	PxtnVoiceUnit[] voices;
-	PxtnVoiceInstance[] voiceInstances;
+	PxtnWoiceType type = PxtnWoiceType.none; ///
+	PxtnVoiceUnit[] voices; ///
+	PxtnVoiceInstance[] voiceInstances; ///
 
-	float x3xTuning;
-	int x3xBasicKey; // tuning old-fmt when key-event
+	float x3xTuning; ///
+	int x3xBasicKey; /// tuning old-fmt when key-event
 
 public:
-
+	///
 	 ~this() nothrow @safe {
 		voiceRelease();
 	}
 
+	///
 	int getVoiceNum() const nothrow @safe {
 		return voiceNum;
 	}
 
+	///
 	float getX3xTuning() const nothrow @safe {
 		return x3xTuning;
 	}
 
+	///
 	int getX3xBasicKey() const nothrow @safe {
 		return x3xBasicKey;
 	}
 
+	///
 	PxtnWoiceType getType() const nothrow @safe {
 		return type;
 	}
 
+	///
 	inout(PxtnVoiceUnit)* getVoice(int idx) inout nothrow @safe {
 		if (idx < 0 || idx >= voiceNum) {
 			return null;
@@ -293,6 +314,7 @@ public:
 		return &voices[idx];
 	}
 
+	///
 	const(PxtnVoiceInstance)* getInstance(int idx) const nothrow @safe {
 		if (idx < 0 || idx >= voiceNum) {
 			return null;
@@ -300,6 +322,7 @@ public:
 		return &voiceInstances[idx];
 	}
 
+	///
 	bool setNameBuf(const(char)[] name) nothrow @safe {
 		if (!name || name.length < 0 || name.length > pxtnMaxTuneWoiceName) {
 			return false;
@@ -312,10 +335,12 @@ public:
 		return true;
 	}
 
+	///
 	const(char)[] getNameBuf() const return nothrow @safe {
 		return nameBuffer[0 .. nameSize];
 	}
 
+	///
 	bool isNameBuf() const nothrow @safe {
 		if (nameSize > 0) {
 			return true;
@@ -323,6 +348,7 @@ public:
 		return false;
 	}
 
+	///
 	void voiceAllocate(int voiceNum) @safe {
 		voiceRelease();
 
@@ -350,6 +376,7 @@ public:
 		}
 	}
 
+	///
 	void voiceRelease() nothrow @safe {
 		for (int v = 0; v < voiceNum; v++) {
 			.voiceRelease(&voices[v], &voiceInstances[v]);
@@ -359,6 +386,7 @@ public:
 		voiceNum = 0;
 	}
 
+	///
 	bool copy(pxtnWoice* pDst) const @safe {
 		bool bRet = false;
 		int v, num;
@@ -430,6 +458,7 @@ public:
 		return bRet;
 	}
 
+	///
 	void slim() nothrow @safe {
 		for (int i = voiceNum - 1; i >= 0; i--) {
 			bool bRemove = false;
@@ -453,6 +482,7 @@ public:
 		}
 	}
 
+	///
 	void read(ref PxtnDescriptor desc, PxtnWoiceType type) @safe {
 		switch (type) {
 			// PCM
@@ -510,6 +540,7 @@ public:
 		}
 	}
 
+	///
 	bool ptvWrite(ref PxtnDescriptor pDoc, scope int* pTotal) const @safe {
 		bool bRet = false;
 		const(PxtnVoiceUnit)* voiceUnit = null;
@@ -566,6 +597,7 @@ public:
 		return bRet;
 	}
 
+	///
 	void ptvRead(ref PxtnDescriptor pDoc) @safe {
 		PxtnVoiceUnit* voiceUnit = null;
 		ubyte[8] code = 0;
@@ -626,6 +658,7 @@ public:
 		type = PxtnWoiceType.ptv;
 	}
 
+	///
 	void ioMatePCMWrite(ref PxtnDescriptor pDoc) const @safe {
 		const PxtnPulsePCM* pulsePCM = &voices[0].pcm;
 		const(PxtnVoiceUnit)* voiceUnit = &voices[0];
@@ -646,6 +679,7 @@ public:
 		pDoc.write(pulsePCM.getPCMBuffer());
 	}
 
+	///
 	void ioMatePCMRead(ref PxtnDescriptor pDoc) @safe {
 		MaterialStructPCM pcm;
 		int size = 0;
@@ -679,6 +713,7 @@ public:
 		}
 	}
 
+	///
 	void ioMatePTNWrite(ref PxtnDescriptor pDoc) const @safe {
 		MaterialStructPTN ptn;
 		const(PxtnVoiceUnit)* voiceUnit;
@@ -703,6 +738,7 @@ public:
 		pDoc.seek(PxtnSeek.cur, size);
 	}
 
+	///
 	void ioMatePTNRead(ref PxtnDescriptor pDoc) @safe {
 		MaterialStructPTN ptn;
 		int size = 0;
@@ -736,6 +772,7 @@ public:
 		x3xTuning = 0;
 	}
 
+	///
 	bool ioMatePTVWrite(ref PxtnDescriptor pDoc) const @safe {
 		MaterialStructPTV ptv;
 		int headSize = MaterialStructPTV.sizeof + int.sizeof;
@@ -764,6 +801,7 @@ public:
 		return true;
 	}
 
+	///
 	void ioMatePTVRead(ref PxtnDescriptor pDoc) @safe {
 		MaterialStructPTV ptv;
 		int size = 0;
@@ -783,6 +821,7 @@ public:
 	}
 
 	version (WithOggVorbis) {
+		///
 		bool ioMateOGGVWrite(ref PxtnDescriptor pDoc) const @safe {
 			if (!voices) {
 				return false;
@@ -805,6 +844,7 @@ public:
 			return true;
 		}
 
+		///
 		void ioMateOGGVRead(ref PxtnDescriptor pDoc) @safe {
 			MaterialStructOGGV mate;
 			int size = 0;
@@ -838,6 +878,7 @@ public:
 		}
 	}
 
+	///
 	void toneReadySample(PxtnVoiceInstance[] voinsts, PxtnVoiceUnit[] voices, const PxtnPulseNoiseBuilder ptnBuilder) const @safe {
 		PxtnVoiceInstance* voiceInstance = null;
 		PxtnVoiceUnit* voiceUnit = null;
@@ -915,6 +956,7 @@ public:
 		}
 	}
 
+	///
 	void toneReadyEnvelope(PxtnVoiceInstance[] voinsts, PxtnVoiceUnit[] voices, int sps) const @safe {
 		int e = 0;
 		PxtnPoint[] pPoint = null;
@@ -984,6 +1026,7 @@ public:
 		pPoint = null;
 	}
 
+	///
 	void toneReady(pxtnWoice* woice, const PxtnPulseNoiseBuilder ptnBuilder, int sps) const @safe {
 		toneReadySample(woice.voiceInstances, woice.voices, ptnBuilder);
 		toneReadyEnvelope(woice.voiceInstances, woice.voices, sps);

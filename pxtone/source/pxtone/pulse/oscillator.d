@@ -1,18 +1,21 @@
-﻿module pxtone.pulse.oscillator;
+///
+module pxtone.pulse.oscillator;
 
 import pxtone.pxtn;
 
 import std.math;
 
+///
 struct PxtnPulseOscillator {
 private:
-	const(PxtnPoint)[] pPoint = null;
-	int pointNum = 0;
-	int pointReso = 0;
-	int volume = 0;
-	int sampleNum = 0;
+	const(PxtnPoint)[] pPoint = null; ///
+	int pointNum = 0; ///
+	int pointReso = 0; ///
+	int volume = 0; ///
+	int sampleNum = 0; ///
 
 public:
+	///
 	void readyGetSample(return const scope PxtnPoint[] pPoint, int pointNum, int volume, int sampleNum, int pointReso) nothrow @safe scope {
 		this.volume = volume;
 		this.pPoint = pPoint;
@@ -21,6 +24,7 @@ public:
 		this.pointReso = pointReso;
 	}
 
+	///
 	double getOneSampleOvertone(int index) nothrow @safe scope {
 		int o;
 		double workDouble = 0;
@@ -36,6 +40,7 @@ public:
 		return workDouble;
 	}
 
+	///
 	double getOneSampleCoordinate(int index) nothrow @safe scope {
 		int i;
 		int c;

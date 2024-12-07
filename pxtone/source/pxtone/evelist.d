@@ -1,4 +1,5 @@
-﻿module pxtone.evelist;
+///
+module pxtone.evelist;
 
 import pxtone.descriptor;
 import pxtone.error;
@@ -8,6 +9,7 @@ import pxtone.util;
 // global
 ///////////////////////
 
+///
 private bool evelistKindIsTail(int kind) nothrow @safe {
 	if (kind == EventKind.on || kind == EventKind.portament) {
 		return true;
@@ -15,56 +17,60 @@ private bool evelistKindIsTail(int kind) nothrow @safe {
 	return false;
 }
 
+///
 enum EventKind {
-	none = 0, //  0
+	none = 0, ///  0
 
-	on, //  1
-	key, //  2
-	panVolume, //  3
-	velocity, //  4
-	volume, //  5
-	portament, //  6
-	beatClock, //  7
-	beatTempo, //  8
-	beatNumber, //  9
-	repeat, // 10
-	last, // 11
-	voiceNumber, // 12
-	groupNumber, // 13
-	tuning, // 14
-	panTime, // 15
+	on, // / 1
+	key, ///  2
+	panVolume, ///  3
+	velocity, ///  4
+	volume, ///  5
+	portament, ///  6
+	beatClock, ///  7
+	beatTempo, ///  8
+	beatNumber, ///  9
+	repeat, /// 10
+	last, /// 11
+	voiceNumber, /// 12
+	groupNumber, /// 13
+	tuning, /// 14
+	panTime, /// 15
 
-	num, // 16
+	num, /// 16
 }
 
+///
 struct EventDefault {
-	enum volume = 104;
-	enum velocity = 104;
-	enum panVolume = 64;
-	enum panTime = 64;
-	enum portament = 0;
-	enum voiceNumber = 0;
-	enum groupNumber = 0;
-	enum key = 0x6000;
-	enum basicKey = 0x4500; // 4A(440Hz?)
-	enum tuning = 1.0f;
+	enum volume = 104; ///
+	enum velocity = 104; ///
+	enum panVolume = 64; ///
+	enum panTime = 64; ///
+	enum portament = 0; ///
+	enum voiceNumber = 0; ///
+	enum groupNumber = 0; ///
+	enum key = 0x6000; ///
+	enum basicKey = 0x4500; /// 4A(440Hz?)
+	enum tuning = 1.0f; ///
 
-	enum beatNumber = 4;
-	enum beatTempo = 120;
-	enum beatClock = 480;
+	enum beatNumber = 4; ///
+	enum beatTempo = 120; ///
+	enum beatClock = 480; ///
 }
 
+///
 struct EveRecord {
-	ubyte kind;
-	ubyte unitNumber;
-	ubyte reserve1;
-	ubyte reserve2;
-	int value;
-	int clock;
-	EveRecord* prev;
-	EveRecord* next;
+	ubyte kind; ///
+	ubyte unitNumber; ///
+	ubyte reserve1; ///
+	ubyte reserve2; ///
+	int value; ///
+	int clock; ///
+	EveRecord* prev; ///
+	EveRecord* next; ///
 }
 
+///
 private int defaultKindValue(ubyte kind) nothrow @safe {
 	switch (kind) {
 		//	case EventKind.on        : return ;
@@ -100,6 +106,7 @@ private int defaultKindValue(ubyte kind) nothrow @safe {
 	return 0;
 }
 
+///
 private int comparePriority(ubyte kind1, ubyte kind2) nothrow @safe {
 	static immutable int[EventKind.num] priorityTable = [
 		0, // EventKind.none  = 0
@@ -124,27 +131,29 @@ private int comparePriority(ubyte kind1, ubyte kind2) nothrow @safe {
 }
 
 // event struct(12byte) =================
+///
 struct EventStructure {
-	ushort unitIndex;
-	ushort eventKind;
-	ushort dataNumber; // １イベントのデータ数。現在は 2 ( clock / volume ）
-	ushort rrr;
-	uint eventNumber;
+	ushort unitIndex; ///
+	ushort eventKind; ///
+	ushort dataNumber; /// １イベントのデータ数。現在は 2 (clock / volume)
+	ushort rrr; ///
+	uint eventNumber; ///
 }
 
 //--------------------------------
 
+///
 struct PxtnEventList {
-
 private:
 
-	int eventAllocatedNum;
-	EveRecord[] events;
-	EveRecord* start;
-	int linear;
+	int eventAllocatedNum; ///
+	EveRecord[] events; ///
+	EveRecord* start; ///
+	int linear; ///
 
-	EveRecord* eventRecords;
+	EveRecord* eventRecords; ///
 
+	///
 	void recordSet(EveRecord* pRec, EveRecord* prev, EveRecord* next, int clock, ubyte unitNumber, ubyte kind, int value) nothrow @safe {
 		if (prev) {
 			prev.next = pRec;
@@ -163,6 +172,7 @@ private:
 		pRec.value = value;
 	}
 
+	///
 	void recordCut(EveRecord* pRec) nothrow @safe {
 		if (pRec.prev) {
 			pRec.prev.next = pRec.next;
@@ -176,13 +186,14 @@ private:
 	}
 
 public:
-
+	///
 	void release() nothrow @safe {
 		events = null;
 		start = null;
 		eventAllocatedNum = 0;
 	}
 
+	///
 	void clear() nothrow @safe {
 		if (events) {
 			events[0 .. eventAllocatedNum] = EveRecord.init;
@@ -190,10 +201,12 @@ public:
 		start = null;
 	}
 
+	///
 	~this() nothrow @safe {
 		release();
 	}
 
+	///
 	void allocate(int maxEventNumber) @safe {
 		release();
 		events = new EveRecord[](maxEventNumber);
@@ -204,6 +217,7 @@ public:
 		eventAllocatedNum = maxEventNumber;
 	}
 
+	///
 	int getNumMax() const nothrow @safe {
 		if (!events) {
 			return 0;
@@ -211,6 +225,7 @@ public:
 		return eventAllocatedNum;
 	}
 
+	///
 	int getMaxClock() const nothrow @safe {
 		int maxClock = 0;
 		int clock;
@@ -230,6 +245,7 @@ public:
 
 	}
 
+	///
 	int getCount() const nothrow @safe {
 		if (!events || !start) {
 			return 0;
@@ -242,6 +258,7 @@ public:
 		return count;
 	}
 
+	///
 	int getCount(ubyte kind, int value) const nothrow @safe {
 		if (!events) {
 			return 0;
@@ -256,6 +273,7 @@ public:
 		return count;
 	}
 
+	///
 	int getCount(ubyte unitNumber) const nothrow @safe {
 		if (!events) {
 			return 0;
@@ -270,6 +288,7 @@ public:
 		return count;
 	}
 
+	///
 	int getCount(ubyte unitNumber, ubyte kind) const nothrow @safe {
 		if (!events) {
 			return 0;
@@ -284,6 +303,7 @@ public:
 		return count;
 	}
 
+	///
 	int getCount(int clock1, int clock2, ubyte unitNumber) const nothrow @safe {
 		if (!events) {
 			return 0;
@@ -313,6 +333,7 @@ public:
 		return count;
 	}
 
+	///
 	int getValue(int clock, ubyte unitNumber, ubyte kind) const nothrow @safe {
 		if (!events) {
 			return 0;
@@ -333,6 +354,7 @@ public:
 		return val;
 	}
 
+	///
 	const(EveRecord)* getRecords() const nothrow @safe {
 		if (!events) {
 			return null;
@@ -340,6 +362,7 @@ public:
 		return start;
 	}
 
+	///
 	bool recordAdd(int clock, ubyte unitNumber, ubyte kind, int value) nothrow @safe {
 		if (!events) {
 			return false;
@@ -431,6 +454,7 @@ public:
 		return true;
 	}
 
+	///
 	bool recordAdd(int clock, ubyte unitNumber, ubyte kind, float newValue) nothrow @safe {
 		union Reinterpret {
 			float f;
@@ -444,6 +468,7 @@ public:
 	// linear
 	/////////////////////
 
+	///
 	bool linearStart() nothrow @safe {
 		if (!events) {
 			return false;
@@ -453,6 +478,7 @@ public:
 		return true;
 	}
 
+	///
 	void linearAdd(int clock, ubyte unitNumber, ubyte kind, int value) nothrow @safe {
 		EveRecord* p = &events[linear];
 
@@ -464,6 +490,7 @@ public:
 		linear++;
 	}
 
+	///
 	void linearAdd(int clock, ubyte unitNumber, ubyte kind, float newValue) nothrow @safe {
 		union Reinterpret {
 			float f;
@@ -473,6 +500,7 @@ public:
 		linearAdd(clock, unitNumber, kind, value);
 	}
 
+	///
 	void linearEnd(bool bConnect) nothrow @safe {
 		if (events[0].kind != EventKind.none) {
 			start = &events[0];
@@ -489,6 +517,7 @@ public:
 		}
 	}
 
+	///
 	int recordClockShift(int clock, int shift, ubyte unitNumber) nothrow @safe  // can't be under 0.
 	{
 		if (!events) {
@@ -561,6 +590,7 @@ public:
 		return count;
 	}
 
+	///
 	int recordValueSet(int clock1, int clock2, ubyte unitNumber, ubyte kind, int value) nothrow @safe {
 		if (!events) {
 			return 0;
@@ -578,6 +608,7 @@ public:
 		return count;
 	}
 
+	///
 	int recordValueChange(int clock1, int clock2, ubyte unitNumber, ubyte kind, int value) nothrow @safe {
 		if (!events) {
 			return 0;
@@ -639,6 +670,7 @@ public:
 		return count;
 	}
 
+	///
 	int recordValueOmit(ubyte kind, int value) nothrow @safe {
 		if (!events) {
 			return 0;
@@ -660,6 +692,7 @@ public:
 		return count;
 	}
 
+	///
 	int recordValueReplace(ubyte kind, int oldValue, int newValue) nothrow @safe {
 		if (!events) {
 			return 0;
@@ -699,6 +732,7 @@ public:
 		return count;
 	}
 
+	///
 	int recordDelete(int clock1, int clock2, ubyte unitNumber, ubyte kind) nothrow @safe {
 		if (!events) {
 			return 0;
@@ -731,6 +765,7 @@ public:
 		return count;
 	}
 
+	///
 	int recordDelete(int clock1, int clock2, ubyte unitNumber) nothrow @safe {
 		if (!events) {
 			return 0;
@@ -761,6 +796,7 @@ public:
 		return count;
 	}
 
+	///
 	int recordUnitNumberDelete(ubyte unitNumber) nothrow @safe  // delete event has the unit-no
 	{
 		if (!events) {
@@ -781,6 +817,7 @@ public:
 		return count;
 	}
 
+	///
 	int recordUnitNumberSet(ubyte unitNumber) nothrow @safe  // set the unit-no
 	{
 		if (!events) {
@@ -795,6 +832,7 @@ public:
 		return count;
 	}
 
+	///
 	int recordUnitNumberReplace(ubyte oldUnit, ubyte newUnit) nothrow @safe  // exchange unit
 	{
 		if (!events) {
@@ -831,6 +869,7 @@ public:
 		return count;
 	}
 
+	///
 	int beatClockOperation(int rate) nothrow @safe {
 		if (!events) {
 			return 0;
@@ -853,6 +892,7 @@ public:
 	// io
 	// ------------
 
+	///
 	void ioWrite(ref PxtnDescriptor pDoc, int rough) const @safe {
 		int eveNum = getCount();
 		int relativeSize = 0;
@@ -895,6 +935,7 @@ public:
 		}
 	}
 
+	///
 	void ioRead(ref PxtnDescriptor pDoc) @safe {
 		int size = 0;
 		int eveNum = 0;
@@ -919,6 +960,7 @@ public:
 		}
 	}
 
+	///
 	int ioReadEventNum(ref PxtnDescriptor pDoc) const @safe {
 		int size = 0;
 		int eveNum = 0;
@@ -946,6 +988,7 @@ public:
 		return eveNum;
 	}
 
+	///
 	bool x4xReadStart() nothrow @safe {
 		if (!events) {
 			return false;
@@ -956,10 +999,12 @@ public:
 		return true;
 	}
 
+	///
 	void x4xReadNewKind() nothrow @safe {
 		eventRecords = null;
 	}
 
+	///
 	void x4xReadAdd(int clock, ubyte unitNumber, ubyte kind, int value) nothrow @safe {
 		EveRecord* pNew = null;
 		EveRecord* pPrev = null;
@@ -1023,7 +1068,7 @@ public:
 		eventRecords = pNew;
 	}
 
-	// write event.
+	/// write event.
 	void ioUnitReadX4xEvent(ref PxtnDescriptor pDoc, bool bTailAbsolute, bool bCheckRRR) @safe {
 		EventStructure evnt;
 		int clock = 0;
@@ -1063,6 +1108,7 @@ public:
 		x4xReadNewKind();
 	}
 
+	///
 	void ioReadX4xEventNum(ref PxtnDescriptor pDoc, out int pNum) const @safe {
 		EventStructure evnt;
 		int work = 0;

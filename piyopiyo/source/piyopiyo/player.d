@@ -1,3 +1,4 @@
+///
 module piyopiyo.player;
 
 import std.algorithm.comparison;
@@ -11,58 +12,63 @@ import retroseq.mixer;
 
 public import retroseq.interpolation : InterpolationMethod;
 
-private immutable int[12] freqTable = [ 1551, 1652, 1747, 1848, 1955, 2074, 2205, 2324, 2461, 2616, 2770, 2938 ];
+private immutable int[12] freqTable = [ 1551, 1652, 1747, 1848, 1955, 2074, 2205, 2324, 2461, 2616, 2770, 2938 ]; ///
 
+///
 private enum SoundMode {
-	playLoop,
-	stop,
-	play
+	playLoop, ///
+	stop, ///
+	play, ///
 }
 
-private enum maxRecord = 1000;
+private enum maxRecord = 1000; ///
 
+///
 private struct TrackHeader {
 	//Track information
-	ubyte octave;
-	ubyte icon;
-	uint length;
-	uint volume;
-	uint unused1;
-	uint unused2;
-	byte[0x100] wave;
-	ubyte[0x40] envelope;
+	ubyte octave; ///
+	ubyte icon; ///
+	uint length; ///
+	uint volume; ///
+	uint unused1; ///
+	uint unused2; ///
+	byte[0x100] wave; ///
+	ubyte[0x40] envelope; ///
 }
 static assert(TrackHeader.sizeof == 0x154);
 
+///
 private struct Header {
-	char[3] magic;
-	bool writable;
-	uint pTrack1;
-	uint wait;
-	int repeatX;
-	int endX;
-	int records;
+	char[3] magic; ///
+	bool writable; ///
+	uint pTrack1; ///
+	uint wait; ///
+	int repeatX; ///
+	int endX; ///
+	int records; ///
 
 	//Track headers
-	TrackHeader[3] track;
-	uint percussionVolume;
+	TrackHeader[3] track; ///
+	uint percussionVolume; ///
 }
 static assert(Header.sizeof == 0x418);
 
+///
 struct PiyoPiyo {
 	//Loaded header
-	private Header header;
+	private Header header; ///
 
 	//Playback state
-	private bool playing;
-	private int position;
-	private MonoTime tick;
-	private uint[maxRecord][4] record;
-	private bool initialized;
-	private int volume;
-	private bool fading;
-	private size_t[int] loadedSamples;
-	private Mixer mixer;
+	private bool playing; ///
+	private int position; ///
+	private MonoTime tick; ///
+	private uint[maxRecord][4] record; ///
+	private bool initialized; ///
+	private int volume; ///
+	private bool fading; ///
+	private size_t[int] loadedSamples; ///
+	private Mixer mixer; ///
+	///
 	public void initialize(uint sampleRate, InterpolationMethod interpolationMethod) @safe {
 		mixer = Mixer(interpolationMethod, sampleRate, &update);
 		loadedSamples[472] = loadWav(wavBASS1);
@@ -91,6 +97,7 @@ struct PiyoPiyo {
 		loadedSamples[495] = loadWav(wavSYMBAL1);
 		initialized = true;
 	}
+	///
 	private bool readData(const ubyte[] data) @safe {
 		//Fail if PiyoPiyo hasn't been initialised
 		if (initialized == false)
@@ -106,6 +113,7 @@ struct PiyoPiyo {
 		fading = false;
 		return true;
 	}
+	///
 	private void update() @safe nothrow {
 		static immutable int[8] panTable = [
 			0, 96, 180, 224, 256, 288, 332, 420
@@ -154,6 +162,7 @@ struct PiyoPiyo {
 			tick = MonoTime.currTime();
 		}
 	}
+	///
 	private void makeSoundObjects() @safe {
 		//Make sure PiyoPiyo has been initialised
 		if (initialized) {
@@ -174,6 +183,7 @@ struct PiyoPiyo {
 		}
 	}
 
+	///
 	public void changeVolume(int volume) @safe nothrow {
 		volume = volume;
 		//(volume - 300) * 8)
@@ -192,32 +202,39 @@ struct PiyoPiyo {
 			}
 		}
 	}
+	///
 	public void play() @safe {
 		playing = true;
 		setMusicTimer(20);
 	}
 
+	///
 	public void stop() @safe {
 		playing = false;
 		setMusicTimer(0);
 	}
 
+	///
 	public void loadMusic(const ubyte[] data) @safe {
 		readData(data);
 		makeSoundObjects();
 	}
 
+	///
 	public void setFadeout() @safe {
 		fading = true;
 	}
 
+	///
 	public void setPosition(uint position) @safe {
 		position = position;
 	}
+	///
 	public uint getPosition() @safe {
 		return position;
 	}
 
+	///
 	private bool makeSoundObject(scope byte[] wave, scope ubyte[] envelope, int octave, int dataSize, int no) @safe {
 		bool result;
 		int i;
@@ -257,6 +274,7 @@ struct PiyoPiyo {
 		}
 		return result;
 	}
+	///
 	private void playSoundObject(int no, int mode) @safe nothrow {
 		if (auto sample = no in loadedSamples) {
 			switch (mode) {
@@ -277,6 +295,7 @@ struct PiyoPiyo {
 			}
 		}
 	}
+	///
 	private size_t loadWav(const(ubyte)[] data) @safe {
 		if (data == null) { //uh oh. no audio. use an empty sample
 			return mixer.createSound(22050, (byte[]).init);
@@ -285,40 +304,43 @@ struct PiyoPiyo {
 		return mixer.createSound(cast(ushort)wav.numSamplesPerSec, data[wav.data.offsetof .. wav.data.offsetof + wav.subchunk2Size]);
 	}
 
+	///
 	public void fillBuffer(scope short[2][] finalBuffer) @safe nothrow {
 		mixer.mixSounds(finalBuffer);
 	}
 
+	///
 	private void setMusicTimer(uint milliseconds) @safe {
 		mixer.setCallbackFrequency(milliseconds.msecs);
 	}
 }
 
+///
 private struct WAVFile {
 	align(1):
-	char[4] chunkID;
-	uint chunkSize;
-	char[4] chunkFormat;
-	char[4] subchunkID;
-	uint subchunkSize;
-	ushort formatTag;
-	ushort numChannels;
-	uint numSamplesPerSec;
-	uint numAvgBytesPerSec;
-	ushort numBlockAlign;
-	ushort bitsPerSample;
-	ushort cbSize;
-	char[4] factchunk2ID;
-	uint factchunk2Size;
-	ubyte[4] factData;
-	char[4] subchunk2ID;
-	uint subchunk2Size;
-	ubyte[0] data;
+	char[4] chunkID; ///
+	uint chunkSize; ///
+	char[4] chunkFormat; ///
+	char[4] subchunkID; ///
+	uint subchunkSize; ///
+	ushort formatTag; ///
+	ushort numChannels; ///
+	uint numSamplesPerSec; ///
+	uint numAvgBytesPerSec; ///
+	ushort numBlockAlign; ///
+	ushort bitsPerSample; ///
+	ushort cbSize; ///
+	char[4] factchunk2ID; ///
+	uint factchunk2Size; ///
+	ubyte[4] factData; ///
+	char[4] subchunk2ID; ///
+	uint subchunk2Size; ///
+	ubyte[0] data; ///
 }
 
-private immutable wavBASS1 = cast(immutable(ubyte)[])import("BASS1.wav");
-private immutable wavBASS2 = cast(immutable(ubyte)[])import("BASS2.wav");
-private immutable wavHAT1 = cast(immutable(ubyte)[])import("HAT1.wav");
-private immutable wavHAT2 = cast(immutable(ubyte)[])import("HAT2.wav");
-private immutable wavSNARE1 = cast(immutable(ubyte)[])import("SNARE1.wav");
-private immutable wavSYMBAL1 = cast(immutable(ubyte)[])import("SYMBAL1.wav");
+private immutable wavBASS1 = cast(immutable(ubyte)[])import("BASS1.wav"); ///
+private immutable wavBASS2 = cast(immutable(ubyte)[])import("BASS2.wav"); ///
+private immutable wavHAT1 = cast(immutable(ubyte)[])import("HAT1.wav"); ///
+private immutable wavHAT2 = cast(immutable(ubyte)[])import("HAT2.wav"); ///
+private immutable wavSNARE1 = cast(immutable(ubyte)[])import("SNARE1.wav"); ///
+private immutable wavSYMBAL1 = cast(immutable(ubyte)[])import("SYMBAL1.wav"); ///

@@ -1,3 +1,4 @@
+///
 module nspcplay.player;
 
 import nspcplay.common;
@@ -11,46 +12,49 @@ import std.experimental.logger;
 import std.format;
 import std.typecons;
 
-enum uint nativeSamplingRate = 32000;
+enum uint nativeSamplingRate = 32000; ///
 
+///
 private struct SongState {
-	ChannelState[] channels;
-	byte transpose;
-	Slider volume = Slider(0xC000);
-	Slider tempo;
-	int nextTimerTick;
-	int cycleTimer = 255;
-	ubyte percussionBase; // set with FA
-	ubyte repeatCount;
-	int phraseCounter = -1;
+	ChannelState[] channels; ///
+	byte transpose; ///
+	Slider volume = Slider(0xC000); ///
+	Slider tempo; ///
+	int nextTimerTick; ///
+	int cycleTimer = 255; ///
+	ubyte percussionBase; /// set with FA
+	ubyte repeatCount; ///
+	int phraseCounter = -1; ///
 
-	ubyte fadeTicks;
-	ubyte targetEchoVolumeLeft;
-	ubyte targetEchoVolumeRight;
-	bool echoWrites;
-	ubyte echoRemaining = 1;
-	ubyte echoVolumeLeft;
-	ubyte echoVolumeRight;
-	ubyte echoDelay;
-	ubyte echoFeedbackVolume;
-	ushort echoBufferIndex;
-	ubyte firBufferIndex;
-	short[15000] echoBuffer;
-	ubyte[8] firCoefficients;
-	short[8] firLeft;
-	short[8] firRight;
-	bool enchantedReadahead = true; //this is a bug that existed in the prototype, and optionally by addmusick
+	ubyte fadeTicks; ///
+	ubyte targetEchoVolumeLeft; ///
+	ubyte targetEchoVolumeRight; ///
+	bool echoWrites; ///
+	ubyte echoRemaining = 1; ///
+	ubyte echoVolumeLeft; ///
+	ubyte echoVolumeRight; ///
+	ubyte echoDelay; ///
+	ubyte echoFeedbackVolume; ///
+	ushort echoBufferIndex; ///
+	ubyte firBufferIndex; ///
+	short[15000] echoBuffer; ///
+	ubyte[8] firCoefficients; ///
+	short[8] firLeft; ///
+	short[8] firRight; ///
+	bool enchantedReadahead = true; /// this is a bug that existed in the prototype, and optionally by addmusick
 	//amk state
-	bool amkFixSampleLoadTuning;
-	bool useAltRTable;
+	bool amkFixSampleLoadTuning; ///
+	bool useAltRTable; ///
 }
 
+///
 private struct Slider {
-	ushort current;
-	ushort delta;
-	ubyte cycles;
-	ubyte target;
+	ushort current; ///
+	ushort delta; ///
+	ubyte cycles; ///
+	ubyte target; ///
 
+	///
 	private void slide() nothrow @safe pure {
 		if (cycles) {
 			if (--cycles == 0) {
@@ -62,89 +66,93 @@ private struct Slider {
 	}
 }
 
+///
 enum ADSRPhase {
-	attack,
-	decay,
-	sustain,
-	gain,
-	release
+	attack, ///
+	decay, ///
+	sustain, ///
+	gain, ///
+	release, ///
 }
 
+///
 enum SeekStyle {
-	absolute,
-	relative,
+	absolute, ///
+	relative, ///
 }
 
+///
 private struct ChannelState {
-	bool enabled = true;
-	int next; // time left in note
+	bool enabled = true; ///
+	int next; /// time left in note
 
-	Slider note;
-	ubyte currentPortStartCounter;
-	ubyte noteLength;
-	ubyte noteStyle;
+	Slider note; ///
+	ubyte currentPortStartCounter; ///
+	ubyte noteLength; ///
+	ubyte noteStyle; ///
 
-	ubyte noteRelease; // time to release note, in cycles
+	ubyte noteRelease; /// time to release note, in cycles
 
-	Parser parser;
+	Parser parser; ///
 
-	ubyte instrument; // instrument
-	ADSRGain instrumentADSRGain;
-	ubyte finetune;
-	byte transpose;
-	Slider panning = Slider(0x0A00);
-	ubyte panFlags;
-	Slider volume = Slider(0xFF00);
-	ubyte totalVolume;
-	byte leftVolume;
-	byte rightVolume;
+	ubyte instrument; /// instrument
+	ADSRGain instrumentADSRGain; ///
+	ubyte finetune; ///
+	byte transpose; ///
+	Slider panning = Slider(0x0A00); ///
+	ubyte panFlags; ///
+	Slider volume = Slider(0xFF00); ///
+	ubyte totalVolume; ///
+	byte leftVolume; ///
+	byte rightVolume; ///
 
-	ubyte portType;
-	ubyte portStart;
-	ubyte portLength;
-	ubyte portRange;
-	ubyte vibratoStart;
-	ubyte vibratoSpeed;
-	ubyte vibratoMaxRange;
-	ubyte vibratoFadeIn;
-	ubyte tremoloStart;
-	ubyte tremoloSpeed;
-	ubyte tremoloRange;
+	ubyte portType; ///
+	ubyte portStart; ///
+	ubyte portLength; ///
+	ubyte portRange; ///
+	ubyte vibratoStart; ///
+	ubyte vibratoSpeed; ///
+	ubyte vibratoMaxRange; ///
+	ubyte vibratoFadeIn; ///
+	ubyte tremoloStart; ///
+	ubyte tremoloSpeed; ///
+	ubyte tremoloRange; ///
 
-	ubyte vibratoPhase;
-	ubyte vibratoStartCounter;
-	ubyte currentVibratoRange;
-	ubyte vibratoFadeInCounter;
-	ubyte vibratoRangeDelta;
-	ubyte tremoloPhase;
-	ubyte tremoloStartCounter;
+	ubyte vibratoPhase; ///
+	ubyte vibratoStartCounter; ///
+	ubyte currentVibratoRange; ///
+	ubyte vibratoFadeInCounter; ///
+	ubyte vibratoRangeDelta; ///
+	ubyte tremoloPhase; ///
+	ubyte tremoloStartCounter; ///
 
-	ubyte sampleID;
-	int samplePosition = -1;
-	int noteFrequency;
+	ubyte sampleID; ///
+	int samplePosition = -1; ///
+	int noteFrequency; ///
 
-	short gain;
-	ADSRPhase adsrPhase;
-	ushort adsrCounter;
-	ubyte adsrRate;
+	short gain; ///
+	ADSRPhase adsrPhase; ///
+	ushort adsrCounter; ///
+	ubyte adsrRate; ///
 
-	short[8] interpolationBuffer;
-	short lastSample;
+	short[8] interpolationBuffer; ///
+	short lastSample; ///
 
-	bool echoEnabled;
+	bool echoEnabled; ///
 
 	// Konami-specific state
-	ushort loopStart;
-	ushort loopCount;
-	ubyte noteDelta; //TODO: implement this. what unit does this use?
-	ubyte volumeDelta; //ditto
+	ushort loopStart; ///
+	ushort loopCount; ///
+	ubyte noteDelta; /// TODO: implement this. what unit does this use?
+	ubyte volumeDelta; /// ditto
 	// AMK specific state
-	Nullable!ushort tuningOverride;
-	ushort semitoneTune;
-	ubyte volumeBoost;
-	ushort[ubyte] remotes;
+	Nullable!ushort tuningOverride; ///
+	ushort semitoneTune; ///
+	ubyte volumeBoost; ///
+	ushort[ubyte] remotes; ///
 	// Pseudo VCMD state
-	Nullable!ubyte releaseOverride;
+	Nullable!ubyte releaseOverride; ///
+	///
 	void setADSRPhase(ADSRPhase phase) @safe pure nothrow {
 		adsrCounter = 0;
 		adsrPhase = phase;
@@ -171,25 +179,25 @@ private struct ChannelState {
 	}
 }
 
+///
 private struct Parser {
-	Track sequenceData;
-	/// the sequence data that will be restored upon return from subroutine
-	Track subroutineReturnData;
-	/// Starting address of the subroutine
-	ushort subroutineStartAddress;
-	/// Number of times to repeat the subroutine
-	ubyte subroutineCount;
-	/// Sequence data at  the start of a loop
-	const(Command)[] loopStart;
+	Track sequenceData; ///
+	Track subroutineReturnData; /// the sequence data that will be restored upon return from subroutine
+	ushort subroutineStartAddress; /// Starting address of the subroutine
+	ubyte subroutineCount; /// Number of times to repeat the subroutine
+	const(Command)[] loopStart; /// Sequence data at  the start of a loop
 	/// Number of times to loop
-	ubyte loopCount = 0xFF;
+	ubyte loopCount = 0xFF; ///
+	///
 	bool empty() const @safe pure nothrow {
 		return sequenceData.data.length == 0;
 	}
+	///
 	Command popCommand(const Song song) nothrow @safe pure {
 		bool _;
 		return popCommand(song, _);
 	}
+	///
 	Command popCommand(const Song song, out bool done, bool followSubroutines = true) nothrow @safe pure {
 		const command = sequenceData.data[0];
 		if (command.type == VCMDClass.terminator) {
@@ -239,9 +247,10 @@ private struct Parser {
 	}
 }
 
-// Rates (in samples) until next step is applied
+/// Rates (in samples) until next step is applied
 private immutable adsrGainRates = [ 0, 2048, 1536, 1280, 1024, 768, 640, 512, 384, 320, 256, 192, 160, 128, 96, 80, 64, 48, 40, 32, 24, 20, 16, 12, 10, 8, 6, 5, 4, 3, 2, 1 ];
 
+///
 void doADSR(ref ChannelState channel) nothrow @safe pure {
 	ushort level() {
 		return cast(ushort)(((channel.gain - 1) >> 8) + 1);
@@ -288,6 +297,7 @@ void doADSR(ref ChannelState channel) nothrow @safe pure {
 	channel.gain = clamp(channel.gain, cast(short)0, cast(short)0x7FF);
 }
 
+///
 void doEcho(ref SongState state, ref short leftSample, ref short rightSample, int mixrate) nothrow pure @safe {
 	const echoAddress = state.echoBufferIndex * 2;
 
@@ -336,30 +346,30 @@ void doEcho(ref SongState state, ref short leftSample, ref short rightSample, in
 }
 
 version(purePlayer) {
-	alias Callback = void function(scope NSPCPlayer*) @safe pure nothrow;
+	alias Callback = void function(scope NSPCPlayer*) @safe pure nothrow; ///
 } else {
-	alias Callback = void function(scope NSPCPlayer*) @safe nothrow;
+	alias Callback = void function(scope NSPCPlayer*) @safe nothrow; ///
 }
 
 ///
 struct NSPCPlayer {
-	enum defaultSpeed = 500;
+	enum defaultSpeed = 500; ///
 
-	const(Song)* currentSong;
-	SongState state;
-	private SongState backupState;
-	private int _mixrate = nativeSamplingRate;
-	private int timerSpeed = defaultSpeed;
-	private bool songPlaying;
+	const(Song)* currentSong; ///
+	SongState state; ///
+	private SongState backupState; ///
+	private int _mixrate = nativeSamplingRate; ///
+	private int timerSpeed = defaultSpeed; ///
+	private bool songPlaying; ///
 
-	private bool loopEnabled = true;
+	private bool loopEnabled = true; ///
 
-	Interpolation interpolation = Interpolation.gaussian;
+	Interpolation interpolation = Interpolation.gaussian; ///
 
-	size_t onTimerTicksLeft;
-	bool repeatTimer;
-	Callback onTimerTick;
-	Callback onPhraseChange;
+	size_t onTimerTicksLeft; ///
+	bool repeatTimer; ///
+	Callback onTimerTick; ///
+	Callback onPhraseChange; ///
 	///
 	short[2][] fillBuffer()(scope short[2][] buffer) {
 		enum left = 0;
@@ -435,6 +445,7 @@ struct NSPCPlayer {
 		return buffer[0 .. length];
 	}
 
+	///
 	private void calcTotalVolume(ref ChannelState c, byte tremoloPhase) nothrow @safe pure {
 		ubyte v = (tremoloPhase << 1 ^ tremoloPhase >> 7) & 0xFF;
 		v = ~(v * c.tremoloRange >> 8) & 0xFF;
@@ -445,6 +456,7 @@ struct NSPCPlayer {
 		c.totalVolume = v * v >> 8;
 	}
 
+	///
 	private int calcVolume3(const ChannelState c, int pan, int flag) nothrow pure @safe {
 		static immutable ubyte[] panTable = [0x00, 0x01, 0x03, 0x07, 0x0D, 0x15, 0x1E, 0x29, 0x34, 0x42, 0x51, 0x5E, 0x67, 0x6E, 0x73, 0x77, 0x7A, 0x7C, 0x7D, 0x7E, 0x7F, 0x7F];
 		const ubyte[] ph = panTable[pan >> 8 .. (pan >> 8) + 2];
@@ -457,11 +469,13 @@ struct NSPCPlayer {
 		return v;
 	}
 
+	///
 	private void calcVolume2(ref ChannelState c, int pan) nothrow pure @safe {
 		c.leftVolume = cast(byte) calcVolume3(c, pan, 0x80);
 		c.rightVolume = cast(byte) calcVolume3(c, 0x1400 - pan, 0x40);
 	}
 
+	///
 	private void makeSlider(ref Slider s, int cycles, int target) nothrow pure @safe {
 		if (cycles) {
 			s.delta = cast(ushort)(((target << 8) - (s.current & 0xFF00)) / cycles);
@@ -470,6 +484,7 @@ struct NSPCPlayer {
 		}
 	}
 
+	///
 	private void setInstrument(ref ChannelState c, size_t instrument) nothrow pure @safe {
 		const idata = currentSong.instruments[instrument];
 		c.instrument = cast(ubyte) instrument;
@@ -477,6 +492,7 @@ struct NSPCPlayer {
 		setADSRGain(c, idata.adsrGain);
 		c.tuningOverride.nullify();
 	}
+	///
 	private void setADSRGain(ref ChannelState c, const ADSRGain adsrGain) nothrow pure @safe {
 		c.instrumentADSRGain = adsrGain;
 		if (adsrGain.mode == ADSRGainMode.directGain) {
@@ -484,7 +500,7 @@ struct NSPCPlayer {
 		}
 	}
 
-	// calculate how far to advance the sample pointer on each output sample
+	/// calculate how far to advance the sample pointer on each output sample
 	private void setFrequency(ref ChannelState c, int note16) const nothrow pure @safe {
 		static immutable ushort[13] noteFrequencyTable = [0x085F, 0x08DE, 0x0965, 0x09F4, 0x0A8C, 0x0B2C, 0x0BD6, 0x0C8B, 0x0D4A, 0x0E14, 0x0EEA, 0x0FCD, 0x10BE];
 
@@ -515,6 +531,7 @@ struct NSPCPlayer {
 		c.noteFrequency = (freq * (nativeSamplingRate << (15 - 12))) / mixrate;
 	}
 
+	///
 	private int calcVibratoDisp(ref ChannelState c, int phase) nothrow pure @safe {
 		int range = c.currentVibratoRange;
 		if (range > 0xF0) {
@@ -532,7 +549,7 @@ struct NSPCPlayer {
 		}
 		return disp; /*   \/ */
 	}
-	// do a Ex/Fx code
+	/// do a Ex/Fx code
 	private void doCommand(ref ChannelState c, const Command command) nothrow pure @safe {
 		final switch (command.special) {
 			case VCMD.instrument:
@@ -733,6 +750,7 @@ struct NSPCPlayer {
 	}
 
 	// $0654 + $08D4-$8EF
+	///
 	private void doNote(ref ChannelState c, const Command command) nothrow pure @safe {
 		ubyte note = command.note;
 		executeRemote(255, c);
@@ -804,6 +822,7 @@ struct NSPCPlayer {
 		c.noteRelease = cast(ubyte) rel;
 	}
 
+	///
 	private void loadPattern()() {
 		state.phraseCounter = cast(uint)((state.phraseCounter + 1) % currentSong.order.length);
 		const nextPhrase = currentSong.order[state.phraseCounter];
@@ -849,6 +868,7 @@ struct NSPCPlayer {
 			onPhraseChange(&this);
 		}
 	}
+	///
 	public void setChannel(size_t index, Track commands) nothrow pure @safe {
 		state.channels[index].enabled = false;
 		state.channels[index].parser.sequenceData = commands;
@@ -859,6 +879,7 @@ struct NSPCPlayer {
 		state.channels[index].enabled = true;
 	}
 
+	///
 	private void doKeySweepVibratoChecks(ref ChannelState c) nothrow pure @safe {
 		// key off
 		if (c.noteRelease) {
@@ -901,7 +922,8 @@ struct NSPCPlayer {
 			}
 		}
 	}
-	bool inRemote = false;
+	bool inRemote = false; ///
+	///
 	private void executeRemote(ubyte event, ref ChannelState channel) nothrow pure @safe {
 		assert(!inRemote);
 		if (auto seq = event in channel.remotes) {
@@ -924,6 +946,7 @@ struct NSPCPlayer {
 		}
 		return true;
 	}
+	///
 	private bool executeCommand(ref ChannelState channel, const Command command, ref bool done) nothrow pure @safe {
 		final switch (command.type) {
 			case VCMDClass.terminator:
@@ -952,12 +975,14 @@ struct NSPCPlayer {
 		}
 		return false;
 	}
+	///
 	public void executeCommand(ubyte channel, const Command command) nothrow pure @safe {
 		bool _;
 		executeCommand(state.channels[channel], command, _);
 	}
 
 	// $07F9 + $0625
+	///
 	private bool doCycle() nothrow pure @safe {
 		foreach (ref channel; state.channels) {
 			if (--channel.next >= 0) {
@@ -1016,6 +1041,7 @@ struct NSPCPlayer {
 		return true;
 	}
 
+	///
 	private int subCycleCalc(int delta) nothrow pure @safe {
 		if (delta < 0x8000) {
 			return state.cycleTimer * delta >> 8;
@@ -1024,6 +1050,7 @@ struct NSPCPlayer {
 		}
 	}
 
+	///
 	private void doSubCycle() nothrow pure @safe {
 		foreach (ref channel; state.channels) {
 			if (channel.parser.sequenceData == Track.init) {
@@ -1063,6 +1090,7 @@ struct NSPCPlayer {
 		}
 	}
 
+	///
 	private bool doTimer()() {
 		state.cycleTimer += state.tempo.current >> 8;
 		if (state.cycleTimer >= 256) {
@@ -1108,6 +1136,7 @@ struct NSPCPlayer {
 			state.enchantedReadahead = currentSong.defaultEnchantedReadahead;
 		}
 	}
+	///
 	this(int sampleRate) nothrow pure @safe {
 		mixrate = sampleRate;
 	}
@@ -1116,9 +1145,11 @@ struct NSPCPlayer {
 	void play() @safe pure nothrow {
 		songPlaying = true;
 	}
+	///
 	void stop() @safe pure nothrow {
 		songPlaying = false;
 	}
+	///
 	void seek()(size_t ticks, SeekStyle style) {
 		if (style == SeekStyle.absolute) {
 			initialize();
@@ -1127,6 +1158,7 @@ struct NSPCPlayer {
 			doTimer();
 		}
 	}
+	///
 	void loadSong()(const Song song) {
 		if (songPlaying) {
 			stop();
@@ -1146,75 +1178,94 @@ struct NSPCPlayer {
 	public void setChannelEnabled(ubyte channel, bool enabled) @safe nothrow pure {
 		state.channels[channel].enabled = enabled;
 	}
+	///
 	bool isPlaying() const pure @safe nothrow {
 		return songPlaying;
 	}
+	///
 	public ref inout(int) mixrate() inout nothrow pure @safe return {
 		return _mixrate;
 	}
+	///
 	public void fade(ubyte ticks, ubyte targetVolume) @safe nothrow pure {
 		backupState.volume = state.volume;
 		makeSlider(state.volume, ticks, targetVolume);
 	}
+	///
 	public void tempo(ubyte tempo) @safe nothrow pure {
 		backupState.tempo = state.tempo;
 		state.tempo.current = cast(ushort)(tempo << 8);
 	}
+	///
 	public void restoreTempo() @safe nothrow pure {
 		state.tempo = backupState.tempo;
 	}
+	///
 	public ubyte tempo() @safe nothrow pure {
 		return state.tempo.current >> 8;
 	}
+	///
 	public void volume(ubyte volume) @safe nothrow pure {
 		backupState.volume = state.volume;
 		state.volume.current = cast(ushort)(volume << 8);
 	}
+	///
 	public void restoreVolume() @safe nothrow pure {
 		state.volume = backupState.volume;
 	}
+	///
 	public ubyte volume() @safe nothrow pure {
 		return state.volume.current >> 8;
 	}
+	///
 	public void setChannelVolume(ubyte channel, ubyte volume) @safe nothrow pure {
 		if (channel < state.channels.length) {
 			backupState.channels[channel].volume = state.channels[channel].volume;
 			state.channels[channel].volume.current = cast(ushort)(volume << 8);
 		}
 	}
+	///
 	public void restoreChannelVolume(ubyte channel) @safe nothrow pure {
 		if (channel < state.channels.length) {
 			state.channels[channel].volume = backupState.channels[channel].volume;
 		}
 	}
+	///
 	public ubyte getChannelVolume(ubyte channel) @safe nothrow pure {
 		if (channel < state.channels.length) {
 			return state.channels[channel].volume.current >> 8;
 		}
 		return 0;
 	}
+	///
 	public void transpose(ubyte transpose) @safe nothrow pure {
 		backupState.transpose = state.transpose;
 		state.transpose = transpose;
 	}
+	///
 	public void restoreTranspose() @safe nothrow pure {
 		state.transpose = backupState.transpose;
 	}
+	///
 	public void addTimer(size_t ticks, typeof(onTimerTick) func) @safe nothrow pure {
 		onTimerTicksLeft = ticks;
 		onTimerTick = func;
 	}
+	///
 	public void addTimer(typeof(onTimerTick) func) @safe nothrow pure {
 		onTimerTicksLeft = 0;
 		repeatTimer = true;
 		onTimerTick = func;
 	}
+	///
 	auto phraseCounter() const @safe pure nothrow {
 		return state.phraseCounter;
 	}
+	///
 	void stopChannel(size_t channel) @safe pure nothrow {
 		state.channels[channel].noteRelease = 0;
 	}
+	///
 	bool isChannelPlaying(size_t channel) @safe pure nothrow {
 		return state.channels[channel].samplePosition != -1;
 	}
@@ -1228,6 +1279,7 @@ version(purePlayer) {
 	}
 }
 
+///
 private bool inRange(T)(T val, T lower, T upper) {
 	return ((val >= lower) && (val <= upper));
 }

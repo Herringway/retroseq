@@ -1,5 +1,7 @@
+///
 module m4a.cgb_tables;
 
+///
 immutable short[32] PU0 = [
 	1, 1,-1,-1,-1,-1,-1,-1,
 	-1,-1,-1,-1,-1,-1,-1,-1,
@@ -7,6 +9,7 @@ immutable short[32] PU0 = [
 	-1,-1,-1,-1,-1,-1,-1,-1
 ];
 
+///
 immutable short[32] PU1 = [
 	1, 1, 1, 1,-1,-1,-1,-1,
 	-1,-1,-1,-1,-1,-1,-1,-1,
@@ -14,6 +17,7 @@ immutable short[32] PU1 = [
 	-1,-1,-1,-1,-1,-1,-1,-1
 ];
 
+///
 immutable short[32] PU2 = [
 	1, 1, 1, 1, 1, 1, 1, 1,
 	-1,-1,-1,-1,-1,-1,-1,-1,
@@ -21,6 +25,7 @@ immutable short[32] PU2 = [
 	-1,-1,-1,-1,-1,-1,-1,-1
 ];
 
+///
 immutable short[32] PU3 = [
 	1, 1, 1, 1, 1, 1, 1, 1,
 	1, 1, 1, 1,-1,-1,-1,-1,
@@ -28,6 +33,7 @@ immutable short[32] PU3 = [
 	1, 1, 1, 1,-1,-1,-1,-1
 ];
 
+///
 immutable float[2048] freqTable = [
 	32,
 	32.0156326331216,
@@ -2079,6 +2085,7 @@ immutable float[2048] freqTable = [
 	65536
 ];
 
+///
 immutable float[256] freqTableNSE = [
 	524288,
 	262144,

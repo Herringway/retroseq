@@ -1,3 +1,4 @@
+///
 module m4a.sound_mixer;
 
 import m4a.mp2k_common;
@@ -5,7 +6,7 @@ import m4a.cgb_audio;
 import m4a.internal;
 import m4a.m4a;
 
-
+///
 void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure {
 	int samplesPerFrame = cast(int)audioBuffer.length;
 
@@ -46,6 +47,7 @@ void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure {
 	}
 }
 
+///
 void SampleMixer (ref SoundMixerState mixer, uint scanlineLimit, ushort samplesPerFrame, float[2][] outBuffer, ubyte dmaCounter) @system pure {
 	uint reverb = mixer.reverb;
 	if (reverb) {
@@ -90,7 +92,7 @@ void SampleMixer (ref SoundMixerState mixer, uint scanlineLimit, ushort samplesP
 	}
 }
 
-// Returns 1 if channel is still active after moving envelope forward a frame
+/// Returns 1 if channel is still active after moving envelope forward a frame
 private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 	// MP2K envelope shape
 	//                                                                 |
@@ -191,6 +193,7 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 	}
 }
 
+///
 private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, const Wave wav, float[2][] outBuffer, ushort samplesPerFrame, float divFreq) @system pure {
 	ubyte v = cast(ubyte)(chan.envelopeVolume * (mixer.masterVol + 1) / 16U);
 	chan.envelopeVolumeRight = chan.rightVolume * v / 256U;

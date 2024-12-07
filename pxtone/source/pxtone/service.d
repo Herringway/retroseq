@@ -1,3 +1,4 @@
+///
 module pxtone.service;
 
 import pxtone.pxtn;
@@ -24,128 +25,134 @@ import std.math;
 import std.stdio;
 import std.typecons;
 
+///
 enum PxtnFlags {
-	loop = 1 << 0,
-	unitMute = 1 << 1
+	loop = 1 << 0, ///
+	unitMute = 1 << 1, ///
 }
 
-enum versionSize = 16;
-enum identifierCodeSize = 8;
+enum versionSize = 16; ///
+enum identifierCodeSize = 8; ///
 
 //                                       0123456789012345
-immutable identifierCodeTuneX2x = "PTTUNE--20050608";
-immutable identifierCodeTuneX3x = "PTTUNE--20060115";
-immutable identifierCodeTuneX4x = "PTTUNE--20060930";
-immutable identifierCodeTuneV5 = "PTTUNE--20071119";
+immutable identifierCodeTuneX2x = "PTTUNE--20050608"; ///
+immutable identifierCodeTuneX3x = "PTTUNE--20060115"; ///
+immutable identifierCodeTuneX4x = "PTTUNE--20060930"; ///
+immutable identifierCodeTuneV5 = "PTTUNE--20071119"; ///
 
-immutable identifierCodeProjectX1x = "PTCOLLAGE-050227";
-immutable identifierCodeProjectX2x = "PTCOLLAGE-050608";
-immutable identifierCodeProjectX3x = "PTCOLLAGE-060115";
-immutable identifierCodeProjectX4x = "PTCOLLAGE-060930";
-immutable identifierCodeProjectV5 = "PTCOLLAGE-071119";
+immutable identifierCodeProjectX1x = "PTCOLLAGE-050227"; ///
+immutable identifierCodeProjectX2x = "PTCOLLAGE-050608"; ///
+immutable identifierCodeProjectX3x = "PTCOLLAGE-060115"; ///
+immutable identifierCodeProjectX4x = "PTCOLLAGE-060930"; ///
+immutable identifierCodeProjectV5 = "PTCOLLAGE-071119"; ///
 
-immutable identifierCodeX1xPROJ = "PROJECT=";
-immutable identifierCodeX1xEVEN = "EVENT===";
-immutable identifierCodeX1xUNIT = "UNIT====";
-immutable identifierCodeX1xEND = "END=====";
-immutable identifierCodeX1xPCM = "matePCM=";
+immutable identifierCodeX1xPROJ = "PROJECT="; ///
+immutable identifierCodeX1xEVEN = "EVENT==="; ///
+immutable identifierCodeX1xUNIT = "UNIT===="; ///
+immutable identifierCodeX1xEND = "END====="; ///
+immutable identifierCodeX1xPCM = "matePCM="; ///
 
-immutable identifierCodeX3xPxtnUNIT = "pxtnUNIT";
-immutable identifierCodeX4xEvenMAST = "evenMAST";
-immutable identifierCodeX4xEvenUNIT = "evenUNIT";
+immutable identifierCodeX3xPxtnUNIT = "pxtnUNIT"; ///
+immutable identifierCodeX4xEvenMAST = "evenMAST"; ///
+immutable identifierCodeX4xEvenUNIT = "evenUNIT"; ///
 
-immutable identifierCodeAntiOPER = "antiOPER"; // anti operation(edit)
+immutable identifierCodeAntiOPER = "antiOPER"; /// anti operation(edit)
 
-immutable identifierCodeNumUNIT = "num UNIT";
-immutable identifierCodeMasterV5 = "MasterV5";
-immutable identifierCodeEventV5 = "Event V5";
-immutable identifierCodeMatePCM = "matePCM ";
-immutable identifierCodeMatePTV = "matePTV ";
-immutable identifierCodeMatePTN = "matePTN ";
-immutable identifierCodeMateOGGV = "mateOGGV";
-immutable identifierCodeEffeDELA = "effeDELA";
-immutable identifierCodeEffeOVER = "effeOVER";
-immutable identifierCodeTextNAME = "textNAME";
-immutable identifierCodeTextCOMM = "textCOMM";
-immutable identifierCodeAssiUNIT = "assiUNIT";
-immutable identifierCodeAssiWOIC = "assiWOIC";
-immutable identifierCodePxtoneND = "pxtoneND";
+immutable identifierCodeNumUNIT = "num UNIT"; ///
+immutable identifierCodeMasterV5 = "MasterV5"; ///
+immutable identifierCodeEventV5 = "Event V5"; ///
+immutable identifierCodeMatePCM = "matePCM "; ///
+immutable identifierCodeMatePTV = "matePTV "; ///
+immutable identifierCodeMatePTN = "matePTN "; ///
+immutable identifierCodeMateOGGV = "mateOGGV"; ///
+immutable identifierCodeEffeDELA = "effeDELA"; ///
+immutable identifierCodeEffeOVER = "effeOVER"; ///
+immutable identifierCodeTextNAME = "textNAME"; ///
+immutable identifierCodeTextCOMM = "textCOMM"; ///
+immutable identifierCodeAssiUNIT = "assiUNIT"; ///
+immutable identifierCodeAssiWOIC = "assiWOIC"; ///
+immutable identifierCodePxtoneND = "pxtoneND"; ///
 
+///
 enum Tag {
-	Unknown = 0,
-	antiOPER,
+	Unknown = 0, ///
+	antiOPER, ///
 
-	x1xPROJ,
-	x1xUNIT,
-	x1xPCM,
-	x1xEVEN,
-	x1xEND,
-	x3xPxtnUNIT,
-	x4xEvenMAST,
-	x4xEvenUNIT,
+	x1xPROJ, ///
+	x1xUNIT, ///
+	x1xPCM, ///
+	x1xEVEN, ///
+	x1xEND, ///
+	x3xPxtnUNIT, ///
+	x4xEvenMAST, ///
+	x4xEvenUNIT, ///
 
-	numUnit,
-	MasterV5,
-	EventV5,
-	matePCM,
-	matePTV,
-	matePTN,
-	mateOGGV,
-	effeDELA,
-	effeOVER,
-	textNAME,
-	textCOMM,
-	assiUNIT,
-	assiWOIC,
-	pxtoneND
+	numUnit, ///
+	MasterV5, ///
+	EventV5, ///
+	matePCM, ///
+	matePTV, ///
+	matePTN, ///
+	mateOGGV, ///
+	effeDELA, ///
+	effeOVER, ///
+	textNAME, ///
+	textCOMM, ///
+	assiUNIT, ///
+	assiWOIC, ///
+	pxtoneND ///
 
 }
 
-
+///
 struct AssistWoice {
-	ushort woiceIndex;
-	ushort rrr;
-	char[pxtnMaxTuneWoiceName] name = 0;
+	ushort woiceIndex; ///
+	ushort rrr; ///
+	char[pxtnMaxTuneWoiceName] name = 0; ///
 }
 
+///
 struct AssistUnit {
-	ushort unitIndex;
-	ushort rrr;
-	char[pxtnMaxTuneUnitName] name = 0;
+	ushort unitIndex; ///
+	ushort rrr; ///
+	char[pxtnMaxTuneUnitName] name = 0; ///
 }
 
+///
 struct NumUnit {
-	short num;
-	short rrr;
+	short num; ///
+	short rrr; ///
 }
 
 // x1x project..------------------
 
 // project (36byte) ================
+///
 struct Project {
-	char[16] x1xName = 0;
+	char[16] x1xName = 0; ///
 
-	float x1xBeatTempo = 0.0;
-	ushort x1xBeatClock;
-	ushort x1xBeatNum;
-	ushort x1xBeatNote;
-	ushort x1xMeasNum;
-	ushort x1xChannelNum;
-	ushort x1xBps;
-	uint x1xSps;
+	float x1xBeatTempo = 0.0; ///
+	ushort x1xBeatClock; ///
+	ushort x1xBeatNum; ///
+	ushort x1xBeatNote; ///
+	ushort x1xMeasNum; ///
+	ushort x1xChannelNum; ///
+	ushort x1xBps; ///
+	uint x1xSps; ///
 }
 
+///
 struct pxtnVOMITPREPARATION {
-	int startPosMeas = 0;
-	int startPosSample = 0;
-	float startPosFloat = 0.0;
+	int startPosMeas = 0; ///
+	int startPosSample = 0; ///
+	float startPosFloat = 0.0; ///
 
-	int measEnd = 0;
-	int measRepeat = 0;
-	float fadeInSec = 0.0;
+	int measEnd = 0; ///
+	int measRepeat = 0; ///
+	float fadeInSec = 0.0; ///
 
-	BitFlags!PxtnFlags flags = PxtnFlags.loop;
-	float masterVolume = 1.0;
+	BitFlags!PxtnFlags flags = PxtnFlags.loop; ///
+	float masterVolume = 1.0; ///
 	invariant {
 		import std.math : isNaN;
 		assert(!masterVolume.isNaN, "Master volume should never be NaN!");
@@ -154,72 +161,78 @@ struct pxtnVOMITPREPARATION {
 	}
 }
 
+///
 alias pxtnSampledCallback = bool function(void* user, scope const(PxtnService)* pxtn) @safe nothrow;
 
+///
 package enum FMTVER {
-	unknown = 0,
-	x1x, // has fixed event num of 10000
-	x2x, // no version of exe
-	x3x, // unit has voice / basic-key for only view
-	x4x, // unit has event
-	v5,
+	unknown = 0, ///
+	x1x, /// has fixed event num of 10000
+	x2x, /// no version of exe
+	x3x, /// unit has voice / basic-key for only view
+	x4x, /// unit has event
+	v5, ///
 }
+///
 struct PxtnService {
 private:
 
-	bool isInitialized;
-	bool edit;
-	bool fixEventListNumber;
+	bool isInitialized; ///
+	bool edit; ///
+	bool fixEventListNumber; ///
 
-	int outputChannels, outputSamplesPerSecond, outputBytesPerSample;
+	int outputChannels; ///
+	int outputSamplesPerSecond; ///
+	int outputBytesPerSample; ///
 
-	PxtnPulseNoiseBuilder pxtnPulseNoiseBuilder;
+	PxtnPulseNoiseBuilder pxtnPulseNoiseBuilder; ///
 
-	PxtnDelay[] delays;
-	pxtnOverDrive*[] overdrives;
-	pxtnWoice*[] woices;
-	PxtnUnit[] units;
+	PxtnDelay[] delays; ///
+	pxtnOverDrive*[] overdrives; ///
+	pxtnWoice*[] woices; ///
+	PxtnUnit[] units; ///
 
-	const(PxToneSong)* song;
+	const(PxToneSong)* song; ///
 
 	//////////////
 	// vomit..
 	//////////////
-	bool songLoaded;
-	bool songStopped = true;
-	bool isMooInitialized;
+	bool songLoaded; ///
+	bool songStopped = true; ///
+	bool isMooInitialized; ///
 
-	bool mutedByUnit;
-	bool songLooping = true;
+	bool mutedByUnit; ///
+	bool songLooping = true; ///
 
-	int mooSampleSmooth;
-	float mooClockRate; // as the sample
-	int mooSampleCount;
-	int mooSampleStart;
-	int mooSampleEnd;
-	int mooSampleRepeat;
+	int mooSampleSmooth; ///
+	float mooClockRate; /// as the sample
+	int mooSampleCount; ///
+	int mooSampleStart; ///
+	int mooSampleEnd; ///
+	int mooSampleRepeat; ///
 
-	int mooFadeCount;
-	int mooFadeMax;
-	int mooFadeFade;
-	float masterVolume = 1.0f;
+	int mooFadeCount; ///
+	int mooFadeMax; ///
+	int mooFadeFade; ///
+	float masterVolume = 1.0f; ///
 
-	int mooTop;
-	float mooSampleStride;
-	int mooTimePanIndex;
+	int mooTop; ///
+	float mooSampleStride; ///
+	int mooTimePanIndex; ///
 
-	float beatTempo;
+	float beatTempo; ///
 
 	// for make now-meas
-	int beatClock;
-	int beatNum;
+	int beatClock; ///
+	int beatNum; ///
 
-	int[] groupSamples;
+	int[] groupSamples; ///
 
-	const(EveRecord)* currentEventRecords;
+	const(EveRecord)* currentEventRecords; ///
 
-	PxtnPulseFrequency* mooFrequency;
+	PxtnPulseFrequency* mooFrequency; ///
 
+	///
 	static void loadVorbis() @trusted {
 		version (WithOggVorbis) {
 			import derelict.vorbis;
@@ -233,6 +246,7 @@ private:
 		}
 	}
 
+	///
 	private void initialize(int fixEvelsNum, bool bEdit) @safe {
 		if (isInitialized) {
 			throw new PxtoneException("pxtnService already initialized");
@@ -262,6 +276,7 @@ private:
 		isInitialized = true;
 	}
 
+	///
 	private void mooInitialize() @safe {
 		mooFrequency = new PxtnPulseFrequency();
 		groupSamples = new int[](pxtnMaxTuneGroupNumber);
@@ -273,6 +288,7 @@ private:
 	// Units   ////////////////////////////////////
 	////////////////////////////////////////////////
 
+	///
 	private void mooResetVoiceOn(PxtnUnit* unit, int w) const @safe {
 		if (!isMooInitialized) {
 			throw new PxtoneException("Moo not initialized!");
@@ -302,6 +318,7 @@ private:
 		}
 	}
 
+	///
 	private void mooInitUnitTone() @safe {
 		if (!isMooInitialized) {
 			throw new PxtoneException("Moo not initialized!");
@@ -313,6 +330,7 @@ private:
 		}
 	}
 
+	///
 	private bool mooPxtoneSample(scope short[] pData) @safe {
 		if (!isMooInitialized) {
 			throw new PxtoneException("Moo not initialized!");
@@ -527,7 +545,7 @@ private:
 	void* sampledCallbackUserData;
 
 public:
-
+	///
 	void load(const PxToneSong song) @safe {
 		this.song = &[song][0];
 		delays = new PxtnDelay[](song.delays.length);
@@ -587,10 +605,12 @@ public:
 		songLoaded = true;
 	}
 
+	///
 	void initialize() @safe {
 		initialize(0, false);
 	}
 
+	///
 	void tonesReady() @safe {
 		if (!isInitialized) {
 			throw new PxtoneException("pxtnService not initialized");
@@ -610,6 +630,7 @@ public:
 		}
 	}
 
+	///
 	void tonesClear() @safe {
 		if (!isInitialized) {
 			throw new PxtoneException("pxtnService not initialized");
@@ -622,6 +643,7 @@ public:
 		}
 	}
 
+	///
 	int groupNum() const @safe {
 		return isInitialized ? pxtnMaxTuneGroupNumber : 0;
 	}
@@ -630,22 +652,26 @@ public:
 	// Delay..
 	// ---------------------------
 
+	///
 	int delayNum() const @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		return cast(int)delays.length;
 	}
 
+	///
 	int delayMax() const @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		return cast(int)delays.length;
 	}
 
+	///
 	void delaySet(int idx, DelayUnit unit, float freq, float rate, int group) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException(idx < delays.length, "delay index out of range");
 		delays[idx].set(unit, freq, rate, group);
 	}
 
+	///
 	void delayAdd(DelayUnit unit, float freq, float rate, int group) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException(delays.length < pxtnMaxTuneDelayStruct, "delay index out of range");
@@ -654,6 +680,7 @@ public:
 		delays[$ - 1].set(unit, freq, rate, group);
 	}
 
+	///
 	void delayRemove(int idx) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException(idx < delays.length, "delay index out of range");
@@ -663,6 +690,7 @@ public:
 		delays.length--;
 	}
 
+	///
 	void delayReadyTone(int idx) @safe {
 		if (!isInitialized) {
 			throw new PxtoneException("pxtnService not initialized");
@@ -673,6 +701,7 @@ public:
 		delays[idx].toneReady(song.master.getBeatNum(), song.master.getBeatTempo(), outputSamplesPerSecond);
 	}
 
+	///
 	PxtnDelay* delayGet(int idx) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException((idx >= 0) && (idx < delays.length), "delay index out of range");
@@ -683,22 +712,26 @@ public:
 	// Over Drive..
 	// ---------------------------
 
+	///
 	int overDriveNum() const @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		return cast(int)overdrives.length;
 	}
 
+	///
 	int overDriveMax() const @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		return cast(int)overdrives.length;
 	}
 
+	///
 	void overDriveSet(int idx, float cut, float amp, int group) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException(idx < overdrives.length, "overdrive index out of range");
 		overdrives[idx].set(cut, amp, group);
 	}
 
+	///
 	void overDriveAdd(float cut, float amp, int group) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		//enforce!PxtoneException(overdrives.length < ???, "too many overdrives");
@@ -706,6 +739,7 @@ public:
 		overdrives[$ - 1].set(cut, amp, group);
 	}
 
+	///
 	void overDriveRemove(int idx) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException(idx < overdrives.length, "overdrive index out of range");
@@ -716,12 +750,14 @@ public:
 		overdrives.length--;
 	}
 
+	///
 	void overDriveReadyTone(int idx) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException((idx >= 0) && (idx < overdrives.length), "overdrive index out of range");
 		overdrives[idx].toneReady();
 	}
 
+	///
 	pxtnOverDrive* overDriveGet(int idx) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException((idx >= 0) && (idx < overdrives.length), "overdrive index out of range");
@@ -732,18 +768,21 @@ public:
 	// Woice..
 	// ---------------------------
 
+	///
 	int woiceNum() const @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		return cast(int)woices.length;
 	}
 	alias woiceMax = woiceNum;
 
+	///
 	inout(pxtnWoice)* woiceGet(int idx) inout @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException((idx >= 0) && (idx < woices.length), "woice index out of range");
 		return woices[idx];
 	}
 
+	///
 	void woiceRead(int idx, ref PxtnDescriptor desc, PxtnWoiceType type) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException((idx >= 0) && (idx < woices.length), "woice index out of range");
@@ -753,12 +792,14 @@ public:
 		woices[idx].read(desc, type);
 	}
 
+	///
 	void woiceReadyTone(int idx) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException((idx >= 0) && (idx < woices.length), "woice index out of range");
 		song.woices[idx].toneReady(woices[idx], pxtnPulseNoiseBuilder, outputSamplesPerSecond);
 	}
 
+	///
 	void woiceRemove(int idx) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException((idx >= 0) && (idx < woices.length), "woice index out of range");
@@ -769,6 +810,7 @@ public:
 		woices.length--;
 	}
 
+	///
 	void woiceReplace(int oldPlace, int newPlace) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		pxtnWoice* woice = woices[oldPlace];
@@ -802,22 +844,26 @@ public:
 	// Unit..
 	// ---------------------------
 
+	///
 	int unitNum() const @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		return cast(int)units.length;
 	}
 
+	///
 	int unitMax() const @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		return cast(int)units.length;
 	}
 
+	///
 	private inout(PxtnUnit)* unitGet(int idx) inout @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException((idx >= 0) && (idx < units.length), "unit index out of range");
 		return &units[idx];
 	}
 
+	///
 	void unitRemove(int idx) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException((idx >= 0) && (idx < units.length), "unit index out of range");
@@ -827,6 +873,7 @@ public:
 		units.length--;
 	}
 
+	///
 	void unitReplace(int oldPlace, int newPlace) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 
@@ -852,6 +899,7 @@ public:
 		units[newPlace] = woice;
 	}
 
+	///
 	void unitAddNew() @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException(pxtnMaxTuneUnitStruct >= units.length, "too many units");
@@ -859,6 +907,7 @@ public:
 		units[$ - 1] = PxtnUnit.init;
 	}
 
+	///
 	void unitSetOperatedAll(bool b) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		for (int u = 0; u < units.length; u++) {
@@ -869,6 +918,7 @@ public:
 		}
 	}
 
+	///
 	void unitSolo(int idx) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		for (int u = 0; u < units.length; u++) {
@@ -884,6 +934,7 @@ public:
 	// Quality..
 	// ---------------------------
 
+	///
 	void setDestinationQuality(int channels, int sps) @safe {
 		enforce(isInitialized, new PxtoneException("pxtnService not initialized"));
 		switch (channels) {
@@ -899,6 +950,7 @@ public:
 		outputSamplesPerSecond = sps;
 	}
 
+	///
 	void getDestinationQuality(int* channels, int* samplesPerSecond) const @safe {
 		enforce(isInitialized, new PxtoneException("pxtnService not initialized"));
 		if (channels) {
@@ -909,6 +961,7 @@ public:
 		}
 	}
 
+	///
 	void setSampledCallback(pxtnSampledCallback proc, void* user) @safe {
 		enforce(isInitialized, new PxtoneException("pxtnService not initialized"));
 		sampledCallback = proc;
@@ -923,26 +976,31 @@ public:
 	// get / set
 	///////////////////////
 
+	///
 	bool mooIsValidData() const @safe {
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
 		return songLoaded;
 	}
 
+	///
 	bool mooIsEndVomit() const @safe {
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
 		return songStopped;
 	}
 
+	///
 	void mooSetMuteByUnit(bool b) @safe {
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
 		mutedByUnit = b;
 	}
 
+	///
 	void mooSetLoop(bool b) @safe {
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
 		songLooping = b;
 	}
 
+	///
 	void mooSetFade(int fade, float sec) @safe {
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
 		mooFadeMax = cast(int)(cast(float) outputSamplesPerSecond * sec) >> 8;
@@ -960,6 +1018,7 @@ public:
 		} // off
 	}
 
+	///
 	void mooSetMasterVolume(float v) @safe {
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
 		if (v < 0) {
@@ -971,6 +1030,7 @@ public:
 		masterVolume = v;
 	}
 
+	///
 	int mooGetTotalSample() const @safe {
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
 		enforce(songLoaded, new PxtoneException("no valid data loaded"));
@@ -983,24 +1043,28 @@ public:
 		return mooCalcSampleNum(measNum, beatNum, outputSamplesPerSecond, song.master.getBeatTempo());
 	}
 
+	///
 	int mooGetNowClock() const @safe {
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
 		enforce(mooClockRate, new PxtoneException("No clock rate set"));
 		return cast(int)(mooSampleCount / mooClockRate);
 	}
 
+	///
 	int mooGetEndClock() const @safe {
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
 		enforce(mooClockRate, new PxtoneException("No clock rate set"));
 		return cast(int)(mooSampleEnd / mooClockRate);
 	}
 
+	///
 	int mooGetSamplingOffset() const @safe {
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
 		enforce(!songStopped, new PxtoneException("playback has ended"));
 		return mooSampleCount;
 	}
 
+	///
 	int mooGetSamplingEnd() const @safe {
 		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
 		enforce(!songStopped, new PxtoneException("playback has ended"));
@@ -1008,9 +1072,11 @@ public:
 	}
 
 	// preparation
+	///
 	void mooPreparation() @safe {
 		return mooPreparation(pxtnVOMITPREPARATION.init);
 	}
+	///
 	void mooPreparation(in pxtnVOMITPREPARATION prep) @safe {
 		scope(failure) {
 			songStopped = true;
@@ -1066,11 +1132,13 @@ public:
 		start();
 	}
 
+	///
 	void setVolume(float volume) @safe {
 		enforce(!volume.isNaN, "Volume must be a number");
 		masterVolume = clamp(volume, 0.0, 1.0);
 	}
 
+	///
 	void start() @safe {
 		tonesClear();
 
@@ -1085,6 +1153,7 @@ public:
 	//
 	////////////////////
 
+	///
 	bool moo(short[] buffer) nothrow @safe {
 		if (!isMooInitialized) {
 			return false;
@@ -1144,6 +1213,7 @@ public:
 	}
 }
 
+///
 private int mooCalcSampleNum(int measNumber, int beatNumber, int sps, float beatTempo) nothrow @safe {
 	uint totalBeatNum;
 	uint sampleNum;

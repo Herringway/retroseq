@@ -1,3 +1,4 @@
+///
 module sseq.player;
 
 import sseq.common;
@@ -12,22 +13,28 @@ import std.algorithm;
 import std.math;
 import std.random;
 
+///
 struct Player
 {
-	ubyte prio, nTracks;
-	ushort tempo, tempoCount, tempoRate /* 8.8 fixed point */;
-	short masterVol, sseqVol;
+	ubyte prio; ///
+	ubyte nTracks; ///
+	ushort tempo; ///
+	ushort tempoCount; ///
+	ushort tempoRate; ///8.8 fixed point
+	short masterVol; ///
+	short sseqVol; ///
 
-	const(Song)* song;
+	const(Song)* song; ///
 
-	ubyte[FSS_TRACKCOUNT] trackIds;
-	Track[FSS_MAXTRACKS] tracks;
-	Channel[16] channels;
-	short[32] variables = -1;
+	ubyte[FSS_TRACKCOUNT] trackIds; ///
+	Track[FSS_MAXTRACKS] tracks; ///
+	Channel[16] channels; ///
+	short[32] variables = -1; ///
 
-	uint sampleRate;
-	Interpolation interpolation;
+	uint sampleRate; ///
+	Interpolation interpolation; ///
 
+	///
 	bool Setup(const Song song) {
 		for (size_t i = 0; i < 16; ++i)
 		{
@@ -50,6 +57,7 @@ struct Player
 
 		return true;
 	}
+	///
 	void ClearState() {
 		this.tempo = 120;
 		this.tempoCount = 0;
@@ -59,11 +67,13 @@ struct Player
 		this.secondsIntoPlayback = 0;
 		this.secondsUntilNextClock = SecondsPerClockCycle;
 	}
+	///
 	void FreeTracks() {
 		for (ubyte i = 0; i < this.nTracks; ++i)
 			this.tracks[this.trackIds[i]].Free();
 		this.nTracks = 0;
 	}
+	///
 	void Stop(bool bKillSound) {
 		this.ClearState();
 		for (ubyte i = 0; i < this.nTracks; ++i)
@@ -85,6 +95,7 @@ struct Player
 		}
 		this.FreeTracks();
 	}
+	///
 	int ChannelAlloc(ChannelType type, int priority) @safe {
 		static immutable ubyte[][] arrayArray = [
 			ChannelType.pcm: [ 4, 5, 6, 7, 2, 0, 3, 1, 8, 9, 10, 11, 14, 12, 15, 13 ],
@@ -119,6 +130,7 @@ struct Player
 		this.channels[curChnNo].clearHistory();
 		return curChnNo;
 	}
+	///
 	int TrackAlloc() @safe {
 		for (int i = 0; i < FSS_MAXTRACKS; ++i)
 		{
@@ -133,6 +145,7 @@ struct Player
 		}
 		return -1;
 	}
+	///
 	void Run() @safe {
 		while (this.tempoCount >= 240)
 		{
@@ -143,6 +156,7 @@ struct Player
 		}
 		this.tempoCount += (cast(int)(this.tempo) * cast(int)(this.tempoRate)) >> 8;
 	}
+	///
 	void runTrack(int trackID) @safe {
 		auto track = &this.tracks[trackID];
 		// Indicate "heartbeat" for this track
@@ -475,12 +489,14 @@ struct Player
 				track.overriding.overriding = false;
 		}
 	}
+	///
 	void UpdateTracks() @safe {
 		for (int i = 0; i < 16; ++i)
 			UpdateTrack(this.channels[i]);
 		for (int i = 0; i < FSS_MAXTRACKS; ++i)
 			this.tracks[i].updateFlags = false;
 	}
+	///
 	void UpdateTrack(ref Channel channel) @safe {
 		int trkn = channel.trackId;
 		if (trkn == -1)
@@ -529,6 +545,7 @@ struct Player
 			}
 		}
 	}
+	///
 	void ReleaseAllNotes(ref Track track) @safe {
 		for (int i = 0; i < 16; ++i)
 		{
@@ -537,6 +554,7 @@ struct Player
 				chn.Release();
 		}
 	}
+	///
 	int NoteOn(ref Track track, int key, int vel, int len) @safe {
 		auto sbnk = this.song.sbnk;
 
@@ -652,6 +670,7 @@ struct Player
 
 		return nCh;
 	}
+	///
 	int NoteOnTie(ref Track track, int key, int vel) @safe {
 		// Find an existing note
 		int i;
@@ -742,6 +761,7 @@ struct Player
 			}
 		}
 	}
+	///
 	void UpdateVol(const Track track, ref Channel channel) const @safe {
 		int finalVol = masterVol;
 		finalVol += sseqVol;
@@ -751,14 +771,17 @@ struct Player
 			finalVol = -AMPL_K;
 		channel.extAmpl = cast(short)finalVol;
 	}
+	///
 	void UpdatePan(const Track trk, ref Channel channel) const @safe {
 		channel.extPan = trk.pan;
 	}
+	///
 	void UpdateTune(const Track trk, ref Channel channel) const @safe {
 		int tune = (cast(int)(channel.key) - cast(int)(channel.orgKey)) * 64;
 		tune += (cast(int)(trk.pitchBend) * cast(int)(trk.pitchBendRange)) >> 1;
 		channel.extTune = tune;
 	}
+	///
 	void UpdateMod(const Track trk, ref Channel channel) const @safe {
 		channel.modType = trk.modType;
 		channel.modSpeed = trk.modSpeed;
@@ -766,6 +789,7 @@ struct Player
 		channel.modRange = trk.modRange;
 		channel.modDelay = trk.modDelay;
 	}
+	///
 	void UpdatePorta(const Track trk, ref Channel channel) const @safe {
 		channel.manualSweep = false;
 		channel.sweepPitch = trk.sweepPitch;
@@ -792,6 +816,7 @@ struct Player
 		}
 	}
 
+	///
 	void UpdateChannel(ref Channel channel) @safe {
 		// Kill active channels that aren't physically active
 		if (channel.state > ChannelState.start && !channel.reg.enable)
@@ -962,6 +987,7 @@ struct Player
 			channel.reg.SetControlRegister(cr);
 		}
 	}
+	///
 	int Interpolate(ref Channel channel) @safe {
 		double ratio = channel.reg.samplePosition;
 		ratio -= cast(int)(ratio);
@@ -1012,6 +1038,7 @@ struct Player
 			case Interpolation.none: assert(0);
 		}
 	}
+	///
 	int GenerateSample(ref Channel channel) @safe {
 		if (channel.reg.samplePosition < 0)
 			return 0;
@@ -1057,78 +1084,81 @@ struct Player
 	}
 }
 
+///
 private int muldiv7(int val, ubyte mul) @safe
 {
 	return mul == 127 ? val : ((val * mul) >> 7);
 }
 
+///
 enum SseqCommand
 {
-	SSEQ_CMD_ALLOCTRACK = 0xFE, // Silently ignored
-	SSEQ_CMD_OPENTRACK = 0x93,
+	SSEQ_CMD_ALLOCTRACK = 0xFE, /// Silently ignored
+	SSEQ_CMD_OPENTRACK = 0x93, ///
 
-	SSEQ_CMD_REST = 0x80,
-	SSEQ_CMD_PATCH = 0x81,
-	SSEQ_CMD_PAN = 0xC0,
-	SSEQ_CMD_VOL = 0xC1,
-	SSEQ_CMD_MASTERVOL = 0xC2,
-	SSEQ_CMD_PRIO = 0xC6,
-	SSEQ_CMD_NOTEWAIT = 0xC7,
-	SSEQ_CMD_TIE = 0xC8,
-	SSEQ_CMD_EXPR = 0xD5,
-	SSEQ_CMD_TEMPO = 0xE1,
-	SSEQ_CMD_END = 0xFF,
+	SSEQ_CMD_REST = 0x80, ///
+	SSEQ_CMD_PATCH = 0x81, ///
+	SSEQ_CMD_PAN = 0xC0, ///
+	SSEQ_CMD_VOL = 0xC1, ///
+	SSEQ_CMD_MASTERVOL = 0xC2, ///
+	SSEQ_CMD_PRIO = 0xC6, ///
+	SSEQ_CMD_NOTEWAIT = 0xC7, ///
+	SSEQ_CMD_TIE = 0xC8, ///
+	SSEQ_CMD_EXPR = 0xD5, ///
+	SSEQ_CMD_TEMPO = 0xE1, ///
+	SSEQ_CMD_END = 0xFF, ///
 
-	SSEQ_CMD_GOTO = 0x94,
-	SSEQ_CMD_CALL = 0x95,
-	SSEQ_CMD_RET = 0xFD,
-	SSEQ_CMD_LOOPSTART = 0xD4,
-	SSEQ_CMD_LOOPEND = 0xFC,
+	SSEQ_CMD_GOTO = 0x94, ///
+	SSEQ_CMD_CALL = 0x95, ///
+	SSEQ_CMD_RET = 0xFD, ///
+	SSEQ_CMD_LOOPSTART = 0xD4, ///
+	SSEQ_CMD_LOOPEND = 0xFC, ///
 
-	SSEQ_CMD_TRANSPOSE = 0xC3,
-	SSEQ_CMD_PITCHBEND = 0xC4,
-	SSEQ_CMD_PITCHBENDRANGE = 0xC5,
+	SSEQ_CMD_TRANSPOSE = 0xC3, ///
+	SSEQ_CMD_PITCHBEND = 0xC4, ///
+	SSEQ_CMD_PITCHBENDRANGE = 0xC5, ///
 
-	SSEQ_CMD_ATTACK = 0xD0,
-	SSEQ_CMD_DECAY = 0xD1,
-	SSEQ_CMD_SUSTAIN = 0xD2,
-	SSEQ_CMD_RELEASE = 0xD3,
+	SSEQ_CMD_ATTACK = 0xD0, ///
+	SSEQ_CMD_DECAY = 0xD1, ///
+	SSEQ_CMD_SUSTAIN = 0xD2, ///
+	SSEQ_CMD_RELEASE = 0xD3, ///
 
-	SSEQ_CMD_PORTAKEY = 0xC9,
-	SSEQ_CMD_PORTAFLAG = 0xCE,
-	SSEQ_CMD_PORTATIME = 0xCF,
-	SSEQ_CMD_SWEEPPITCH = 0xE3,
+	SSEQ_CMD_PORTAKEY = 0xC9, ///
+	SSEQ_CMD_PORTAFLAG = 0xCE, ///
+	SSEQ_CMD_PORTATIME = 0xCF, ///
+	SSEQ_CMD_SWEEPPITCH = 0xE3, ///
 
-	SSEQ_CMD_MODDEPTH = 0xCA,
-	SSEQ_CMD_MODSPEED = 0xCB,
-	SSEQ_CMD_MODTYPE = 0xCC,
-	SSEQ_CMD_MODRANGE = 0xCD,
-	SSEQ_CMD_MODDELAY = 0xE0,
+	SSEQ_CMD_MODDEPTH = 0xCA, ///
+	SSEQ_CMD_MODSPEED = 0xCB, ///
+	SSEQ_CMD_MODTYPE = 0xCC, ///
+	SSEQ_CMD_MODRANGE = 0xCD, ///
+	SSEQ_CMD_MODDELAY = 0xE0, ///
 
-	SSEQ_CMD_RANDOM = 0xA0,
-	SSEQ_CMD_PRINTVAR = 0xD6,
-	SSEQ_CMD_IF = 0xA2,
-	SSEQ_CMD_FROMVAR = 0xA1,
-	SSEQ_CMD_SETVAR = 0xB0,
-	SSEQ_CMD_ADDVAR = 0xB1,
-	SSEQ_CMD_SUBVAR = 0xB2,
-	SSEQ_CMD_MULVAR = 0xB3,
-	SSEQ_CMD_DIVVAR = 0xB4,
-	SSEQ_CMD_SHIFTVAR = 0xB5,
-	SSEQ_CMD_RANDVAR = 0xB6,
-	SSEQ_CMD_CMP_EQ = 0xB8,
-	SSEQ_CMD_CMP_GE = 0xB9,
-	SSEQ_CMD_CMP_GT = 0xBA,
-	SSEQ_CMD_CMP_LE = 0xBB,
-	SSEQ_CMD_CMP_LT = 0xBC,
-	SSEQ_CMD_CMP_NE = 0xBD,
+	SSEQ_CMD_RANDOM = 0xA0, ///
+	SSEQ_CMD_PRINTVAR = 0xD6, ///
+	SSEQ_CMD_IF = 0xA2, ///
+	SSEQ_CMD_FROMVAR = 0xA1, ///
+	SSEQ_CMD_SETVAR = 0xB0, ///
+	SSEQ_CMD_ADDVAR = 0xB1, ///
+	SSEQ_CMD_SUBVAR = 0xB2, ///
+	SSEQ_CMD_MULVAR = 0xB3, ///
+	SSEQ_CMD_DIVVAR = 0xB4, ///
+	SSEQ_CMD_SHIFTVAR = 0xB5, ///
+	SSEQ_CMD_RANDVAR = 0xB6, ///
+	SSEQ_CMD_CMP_EQ = 0xB8, ///
+	SSEQ_CMD_CMP_GE = 0xB9, ///
+	SSEQ_CMD_CMP_GT = 0xBA, ///
+	SSEQ_CMD_CMP_LE = 0xBB, ///
+	SSEQ_CMD_CMP_LT = 0xBC, ///
+	SSEQ_CMD_CMP_NE = 0xBD, ///
 
-	SSEQ_CMD_MUTE = 0xD7 // Unsupported
+	SSEQ_CMD_MUTE = 0xD7 /// Unsupported
 };
 
-static const ubyte VariableByteCount = 1 << 7;
-static const ubyte ExtraByteOnNoteOrVarOrCmp = 1 << 6;
+static const ubyte VariableByteCount = 1 << 7; ///
+static const ubyte ExtraByteOnNoteOrVarOrCmp = 1 << 6; ///
 
+///
 static ubyte SseqCommandByteCount(int cmd) @safe
 {
 	if (cmd < 0x80)
@@ -1203,11 +1233,17 @@ static ubyte SseqCommandByteCount(int cmd) @safe
 		}
 }
 
+///
 private short varFuncSet(short, short value) @safe { return value; };
+///
 private short varFuncAdd(short var, short value) @safe { return cast(short)(var + value); };
+///
 private short varFuncSub(short var, short value) @safe { return cast(short)(var - value); };
+///
 private short varFuncMul(short var, short value) @safe { return cast(short)(var * value); };
+///
 private short varFuncDiv(short var, short value) @safe { return cast(short)(var / value); };
+///
 private short varFuncShift(short var, short value) @safe
 {
 	if (value < 0)
@@ -1215,6 +1251,7 @@ private short varFuncShift(short var, short value) @safe
 	else
 		return cast(short)(var << value);
 };
+///
 private short varFuncRand(short, short value) @safe {
 	if (value < 0)
 		return cast(short)(-uniform(0, -value + 1));
@@ -1222,6 +1259,7 @@ private short varFuncRand(short, short value) @safe {
 		return cast(short)uniform(0, value + 1);
 };
 
+///
 private short function(short, short) @safe VarFunc(int cmd) @safe
 {
 	switch (cmd)
@@ -1245,13 +1283,20 @@ private short function(short, short) @safe VarFunc(int cmd) @safe
 	}
 }
 
+///
 private bool compareFuncEq(short a, short b) @safe { return a == b; }
+///
 private bool compareFuncGe(short a, short b) @safe { return a >= b; }
+///
 private bool compareFuncGt(short a, short b) @safe { return a > b; }
+///
 private bool compareFuncLe(short a, short b) @safe { return a <= b; }
+///
 private bool compareFuncLt(short a, short b) @safe { return a < b; }
+///
 private bool compareFuncNe(short a, short b) @safe { return a != b; }
 
+///
 private bool function(short, short) @safe CompareFunc(int cmd) @safe
 {
 	switch (cmd)
@@ -1273,6 +1318,7 @@ private bool function(short, short) @safe CompareFunc(int cmd) @safe
 	}
 }
 
+///
 private int getModFlag(int type) @safe
 {
 	switch (type)
@@ -1288,6 +1334,7 @@ private int getModFlag(int type) @safe
 	}
 }
 
+///
 private ushort Timer_Adjust(ushort basetmr, int pitch) @safe
 {
 	int shift = 0;
@@ -1325,6 +1372,7 @@ private ushort Timer_Adjust(ushort basetmr, int pitch) @safe
 	return cast(ushort)(tmr);
 }
 
+///
 private int calcVolDivShift(int x) @safe
 {
 	// VOLDIV(0) /1  >>0
@@ -1342,17 +1390,19 @@ private int calcVolDivShift(int x) @safe
  * These are static as they will not change between channels or runs
  * of the program.
  */
-private immutable uint SINC_RESOLUTION = 8192;
-private immutable uint SINC_WIDTH = 8;
-private immutable uint SINC_SAMPLES = SINC_RESOLUTION * SINC_WIDTH;
-private immutable double[SINC_SAMPLES + 1] sinc_lut = prepareSincLUT!(SINC_SAMPLES, SINC_WIDTH)();
-private immutable double[SINC_SAMPLES + 1] window_lut = prepareWindowLUT!(SINC_SAMPLES, SINC_WIDTH)();
+private immutable uint SINC_RESOLUTION = 8192; ///
+private immutable uint SINC_WIDTH = 8; ///
+private immutable uint SINC_SAMPLES = SINC_RESOLUTION * SINC_WIDTH; ///
+private immutable double[SINC_SAMPLES + 1] sinc_lut = prepareSincLUT!(SINC_SAMPLES, SINC_WIDTH)(); ///
+private immutable double[SINC_SAMPLES + 1] window_lut = prepareWindowLUT!(SINC_SAMPLES, SINC_WIDTH)(); ///
 
+///
 double sinc(double x) @safe
 {
 	return fEqual(x, 0.0) ? 1.0 : sin(x * M_PI) / (x * M_PI);
 }
 
+///
 private double[SINC_SAMPLES + 1] prepareSincLUT(size_t SINC_SAMPLES, size_t SINC_WIDTH)() {
 	double[SINC_SAMPLES + 1] result;
 	double dx = cast(double)(SINC_WIDTH) / SINC_SAMPLES, x = 0.0;
@@ -1364,6 +1414,7 @@ private double[SINC_SAMPLES + 1] prepareSincLUT(size_t SINC_SAMPLES, size_t SINC
 	return result;
 }
 
+///
 private double[SINC_SAMPLES + 1] prepareWindowLUT(size_t SINC_SAMPLES, size_t SINC_WIDTH)() {
 	double[SINC_SAMPLES + 1] result;
 	double dx = cast(double)(SINC_WIDTH) / SINC_SAMPLES, x = 0.0;
@@ -1375,4 +1426,5 @@ private double[SINC_SAMPLES + 1] prepareWindowLUT(size_t SINC_SAMPLES, size_t SI
 	return result;
 }
 
+///
 private immutable double M_PI = 3.14159265358979323846;

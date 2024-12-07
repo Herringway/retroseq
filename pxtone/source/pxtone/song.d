@@ -1,3 +1,4 @@
+///
 module pxtone.song;
 
 import pxtone.descriptor;
@@ -17,28 +18,32 @@ import std.format;
 import std.stdio;
 import std.string;
 
+///
 struct PxToneSong {
-	PxtnText text;
-	PxtnMaster master;
-	PxtnEventList evels;
+	PxtnText text; ///
+	PxtnMaster master; ///
+	PxtnEventList evels; ///
 
 
-	Delay[] delays;
-	pxtnOverDrive*[] overdrives;
-	pxtnWoice*[] woices;
-	PxtnUnit[] units;
+	Delay[] delays; ///
+	pxtnOverDrive*[] overdrives; ///
+	pxtnWoice*[] woices; ///
+	PxtnUnit[] units; ///
 
+	///
 	this(ubyte[] buffer) @safe {
 		PxtnDescriptor desc;
 		desc.setMemoryReadOnly(buffer);
 		read(desc);
 	}
 
+	///
 	this(File fd) @safe {
 		PxtnDescriptor desc;
 		desc.setFileReadOnly(fd);
 		read(desc);
 	}
+	///
 	static bool detect(ubyte[] buffer) @safe {
 		PxToneSong tmpSong;
 		PxtnDescriptor desc;
@@ -52,6 +57,7 @@ struct PxToneSong {
 		}
 		return true;
 	}
+	///
 	void clear() nothrow @safe {
 		text.setNameBuf("");
 		text.setCommentBuf("");
@@ -67,6 +73,7 @@ struct PxToneSong {
 
 		evels.release();
 	}
+	///
 	void read(ref PxtnDescriptor pDoc) @safe {
 		ushort exeVer = 0;
 		FMTVER fmtVer = FMTVER.unknown;
@@ -122,6 +129,7 @@ struct PxToneSong {
 	// save               //////////////////
 	////////////////////////////////////////
 
+	///
 	void write(ref PxtnDescriptor pDoc, bool bTune, ushort exeVer) @safe {
 		bool bRet = false;
 		int rough = bTune ? 10 : 1;
@@ -247,6 +255,7 @@ struct PxToneSong {
 	// Read Project //////////////
 	////////////////////////////////////////
 
+	///
 	private void readTuneItems(ref PxtnDescriptor pDoc) @safe {
 		bool bEnd = false;
 		char[identifierCodeSize + 1] code = '\0';
@@ -345,8 +354,9 @@ struct PxToneSong {
 				throw new PxtoneException("fmt unknown");
 			}
 		}
-
 	}
+
+	///
 	void readVersion(ref PxtnDescriptor pDoc, out FMTVER pFmtVer, out ushort pExeVer) @safe {
 		char[versionSize] gotVersion = '\0';
 		ushort dummy;
@@ -387,6 +397,7 @@ struct PxToneSong {
 		pDoc.read(dummy);
 	}
 
+	///
 	private void x1xProjectRead(ref PxtnDescriptor pDoc) @safe {
 		Project prjc;
 		int beatNum, beatClock;
@@ -411,6 +422,7 @@ struct PxToneSong {
 		master.set(beatNum, beatTempo, beatClock);
 	}
 
+	///
 	private void ioReadDelay(ref PxtnDescriptor pDoc) @safe {
 		if (pxtnMaxTuneDelayStruct < delays.length) {
 			throw new PxtoneException("fmt unknown");
@@ -432,6 +444,7 @@ struct PxToneSong {
 		delays ~= delay;
 	}
 
+	///
 	private void ioReadOverDrive(ref PxtnDescriptor pDoc) @safe {
 		if (pxtnMaxTuneOverdriveStruct < overdrives.length) {
 			throw new PxtoneException("fmt unknown");
@@ -442,6 +455,7 @@ struct PxToneSong {
 		overdrives ~= ovdrv;
 	}
 
+	///
 	private void ioReadWoice(ref PxtnDescriptor pDoc, PxtnWoiceType type) @safe {
 		if (pxtnMaxTuneWoiceStruct < woices.length) {
 			throw new PxtoneException("Too many woices");
@@ -473,6 +487,7 @@ struct PxToneSong {
 		woices ~= woice;
 	}
 
+	///
 	private void ioReadOldUnit(ref PxtnDescriptor pDoc, int ver) @safe {
 		if (pxtnMaxTuneUnitStruct < units.length) {
 			throw new PxtoneException("fmt unknown");
@@ -507,6 +522,7 @@ struct PxToneSong {
 	// comments
 	/////////////
 
+	///
 	const(char)[] read4Tag(ref PxtnDescriptor pDoc) @safe {
 		char[] result;
 		int pBufferSize;
@@ -528,6 +544,7 @@ struct PxToneSong {
 	// assi woice
 	/////////////
 
+	///
 	private bool ioAssistWoiceWrite(ref PxtnDescriptor pDoc, int idx) const @safe {
 		AssistWoice assi;
 		int size;
@@ -547,6 +564,7 @@ struct PxToneSong {
 		return true;
 	}
 
+	///
 	void ioAssistWoiceRead(ref PxtnDescriptor pDoc) @safe {
 		AssistWoice assi;
 		int size = 0;
@@ -571,6 +589,7 @@ struct PxToneSong {
 	// assi unit.
 	// -----
 
+	///
 	private bool ioAssistUnitWrite(ref PxtnDescriptor pDoc, int idx) const @safe {
 		AssistUnit assi;
 		int size;
@@ -586,6 +605,7 @@ struct PxToneSong {
 		return true;
 	}
 
+	///
 	private void ioAssistUnitRead(ref PxtnDescriptor pDoc) @safe {
 		AssistUnit assi;
 		int size;
@@ -610,6 +630,7 @@ struct PxToneSong {
 	// unit num
 	// -----
 
+	///
 	private void ioUnitNumberWrite(ref PxtnDescriptor pDoc) const @safe {
 		NumUnit data;
 		int size;
@@ -621,6 +642,7 @@ struct PxToneSong {
 		pDoc.write(data);
 	}
 
+	///
 	private void ioUnitNumberRead(ref PxtnDescriptor pDoc, out int pNum) @safe {
 		NumUnit data;
 		int size = 0;
@@ -643,6 +665,7 @@ struct PxToneSong {
 	}
 
 	// fix old key event
+	///
 	private bool x3xTuningKeyEvent() nothrow @safe {
 		if (units.length > woices.length) {
 			return false;
@@ -664,6 +687,7 @@ struct PxToneSong {
 	}
 
 	// fix old tuning (1.0)
+	///
 	private bool x3xAddTuningEvent() nothrow @safe {
 		if (units.length > woices.length) {
 			return false;
@@ -679,6 +703,7 @@ struct PxToneSong {
 		return true;
 	}
 
+	///
 	private bool x3xSetVoiceNames() nothrow @safe {
 		for (int i = 0; i < woices.length; i++) {
 			char[pxtnMaxTuneWoiceName + 1] name = 0;
@@ -691,6 +716,8 @@ struct PxToneSong {
 		}
 		return true;
 	}
+
+	///
 	private void preCountEvent(ref PxtnDescriptor pDoc, out int pCount) @safe {
 		bool bEnd = false;
 
@@ -789,6 +816,7 @@ struct PxToneSong {
 }
 
 
+///
 private Tag checkTagCode(scope const char[] pCode) nothrow @safe {
 	switch(pCode[0 .. identifierCodeSize]) {
 		case identifierCodeAntiOPER: return Tag.antiOPER;

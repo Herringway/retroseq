@@ -1,14 +1,17 @@
+///
 module sseq.symbsection;
 
 import sseq.common;
 import std.string;
 
+///
 struct SYMBSection
 {
 	align(1):
-	char[4] type;
-	uint blockSize;
-	uint[8] recordOffsets;
+	char[4] type; ///
+	uint blockSize; ///
+	uint[8] recordOffsets; ///
+	///
 	auto record(const(ubyte)[] symbBlock, size_t idx) const @safe {
 		static struct Result {
 			private const(ubyte)[] data;

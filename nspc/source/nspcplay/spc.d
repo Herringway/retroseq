@@ -1,3 +1,4 @@
+///
 module nspcplay.spc;
 
 import nspcplay.common : ReleaseTable, Variant, VolumeTable;
@@ -10,41 +11,45 @@ import std.logger;
 import std.range;
 import std.string;
 
+///
 union ID666Tags {
-	TextID666Tags text;
-	BinaryID666Tags binary;
+	TextID666Tags text; ///
+	BinaryID666Tags binary; ///
 }
 
+///
 struct TextID666Tags {
 	align(1):
-	char[32] songTitle;
-	char[32] gameTitle;
-	char[16] dumperName;
-	char[32] comments;
-	char[11] dumpDate;
-	char[3] fadeStart;
-	char[5] fadeLength;
-	char[32] songArtist;
-	ubyte defaultChannelEnables;
-	ubyte emulator;
-	ubyte[45] reserved;
+	char[32] songTitle; ///
+	char[32] gameTitle; ///
+	char[16] dumperName; ///
+	char[32] comments; ///
+	char[11] dumpDate; ///
+	char[3] fadeStart; ///
+	char[5] fadeLength; ///
+	char[32] songArtist; ///
+	ubyte defaultChannelEnables; ///
+	ubyte emulator; ///
+	ubyte[45] reserved; ///
 }
+///
 struct BinaryID666Tags {
 	align(1):
-	char[32] songTitle;
-	char[32] gameTitle;
-	char[16] dumperName;
-	char[32] comments;
-	ubyte[4] dumpDate;
-	ubyte[7] reserved;
-	char[3] fadeStart;
-	char[4] fadeLength;
-	char[32] songArtist;
-	ubyte defaultChannelEnables;
-	ubyte emulator;
-	ubyte[46] reserved2;
+	char[32] songTitle; ///
+	char[32] gameTitle; ///
+	char[16] dumperName; ///
+	char[32] comments; ///
+	ubyte[4] dumpDate; ///
+	ubyte[7] reserved; ///
+	char[3] fadeStart; ///
+	char[4] fadeLength; ///
+	char[32] songArtist; ///
+	ubyte defaultChannelEnables; ///
+	ubyte emulator; ///
+	ubyte[46] reserved2; ///
 }
 
+///
 Song loadSPCFile(scope const ubyte[] file) @safe {
 	Song song;
 	const spc = file[0x100 .. 0x10100];
@@ -68,10 +73,12 @@ Song loadSPCFile(scope const ubyte[] file) @safe {
 	song.loadNSPC(header, spc[]);
 	return song;
 }
+///
 private int integer(scope const ubyte[] data) @safe pure {
 	enforce(data.length >= 4);
 	return (cast(const(int)[])data[0 .. 4])[0];
 }
+///
 TagPair[] processExtendedID666(scope const ubyte[] data) @safe {
 	import std.conv : text;
 	import std.datetime.date : Date;
@@ -157,6 +164,7 @@ TagPair[] processExtendedID666(scope const ubyte[] data) @safe {
 	}
 	return result;
 }
+///
 TagPair[] processID666(scope const ubyte[] data) @safe {
 	TagPair[] result;
 	const id666 = (cast(const(ID666Tags)[])data)[0];
@@ -173,11 +181,13 @@ TagPair[] processID666(scope const ubyte[] data) @safe {
 	addTag("emulator", emulators.get(id666.text.emulator, ""));
 	return result;
 }
+///
 struct DetectionResult {
-	NSPCFileHeader header;
-	ushort songTableAddress;
+	NSPCFileHeader header; ///
+	ushort songTableAddress; ///
 }
 
+///
 DetectionResult detectParameters(scope const(ubyte)[] data, scope const(ubyte)[] dsp) @safe pure {
 	import std.algorithm.searching : find;
 	DetectionResult result;
@@ -310,38 +320,39 @@ DetectionResult detectParameters(scope const(ubyte)[] data, scope const(ubyte)[]
 	}
 	return result;
 }
-enum fzeroStart = [0x20, 0xCD, 0xCF, 0xBD, 0xE8, 0x00, 0x5D, 0xAF, 0xC8, 0xE8, 0xD0, 0xFB, 0xBC, 0x3F, 0x3D, 0x0E]; // start of f-zero's program
+enum fzeroStart = [0x20, 0xCD, 0xCF, 0xBD, 0xE8, 0x00, 0x5D, 0xAF, 0xC8, 0xE8, 0xD0, 0xFB, 0xBC, 0x3F, 0x3D, 0x0E]; /// start of f-zero's program
 // MOV $0C, #$02
 // POP A
 // ASL A
 // MOV Y, A
 // MOV A, <addr - 2> + Y
-enum amkPreTable = [0x8F, 0x02, 0x0C, 0xAE, 0x1C, 0xFD, 0xF6];
+enum amkPreTable = [0x8F, 0x02, 0x0C, 0xAE, 0x1C, 0xFD, 0xF6]; ///
 // MOV $0C, #$02
 // ASL A
 // MOV Y, A
 // MOV A, <addr - 2> + Y
-enum amkPreTable109 = [0x8F, 0x02, 0x0C, 0x1C, 0xFD, 0xF6];
-enum earlyAMK = [0x20, 0xCD, 0xCF, 0xBD, 0xE8, 0x00, 0x8D, 0x00, 0xD6, 0x00, 0x01, 0xFE, 0xFB, 0xD6, 0x00, 0x02]; //pre-1.0.9
-enum laterAMK = [0x20, 0xCD, 0xCF, 0xBD, 0xE8, 0x00, 0xFD, 0xD6, 0x00, 0x01, 0xD6, 0x00, 0x02, 0xD6, 0x00, 0x03]; //1.0.9
+enum amkPreTable109 = [0x8F, 0x02, 0x0C, 0x1C, 0xFD, 0xF6]; ///
+enum earlyAMK = [0x20, 0xCD, 0xCF, 0xBD, 0xE8, 0x00, 0x8D, 0x00, 0xD6, 0x00, 0x01, 0xFE, 0xFB, 0xD6, 0x00, 0x02]; /// pre-1.0.9
+enum laterAMK = [0x20, 0xCD, 0xCF, 0xBD, 0xE8, 0x00, 0xFD, 0xD6, 0x00, 0x01, 0xD6, 0x00, 0x02, 0xD6, 0x00, 0x03]; /// 1.0.9
+///
 enum ExID666IDs {
-	songName = 0x01,
-	gameName = 0x02,
-	artistName = 0x03,
-	dumperName = 0x04,
-	dateDumped = 0x05,
-	emulator = 0x06,
-	comments = 0x07,
-	ostTitle = 0x10,
-	ostDisc = 0x11,
-	ostTrack = 0x12,
-	publisher = 0x13,
-	copyrightYear = 0x14,
-	introLength = 0x30,
-	loopLength = 0x31,
-	endLength = 0x32,
-	fadeLength = 0x33,
-	mutedChannels = 0x34,
-	loopCount = 0x35,
-	amplification = 0x36,
+	songName = 0x01, ///
+	gameName = 0x02, ///
+	artistName = 0x03, ///
+	dumperName = 0x04, ///
+	dateDumped = 0x05, ///
+	emulator = 0x06, ///
+	comments = 0x07, ///
+	ostTitle = 0x10, ///
+	ostDisc = 0x11, ///
+	ostTrack = 0x12, ///
+	publisher = 0x13, ///
+	copyrightYear = 0x14, ///
+	introLength = 0x30, ///
+	loopLength = 0x31, ///
+	endLength = 0x32, ///
+	fadeLength = 0x33, ///
+	mutedChannels = 0x34, ///
+	loopCount = 0x35, ///
+	amplification = 0x36, ///
 }

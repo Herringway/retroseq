@@ -1,3 +1,4 @@
+///
 module nspcplay;
 
 public import nspcplay.common;

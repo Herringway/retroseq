@@ -1,3 +1,4 @@
+///
 module retroseq.mixer;
 
 import retroseq.interpolation;
@@ -5,19 +6,21 @@ import core.time;
 import std.algorithm.comparison : clamp, max, min;
 import std.math : pow;
 
+///
 struct Mixer {
+	///
 	static struct Sound {
-		private const(byte)[] samples;
-		private size_t position;
-		private ushort positionSubsample;
-		private uint advanceDelta;
-		private bool playing;
-		private bool looping;
-		private short volumeShared;
-		private short panL;
-		private short panR;
-		private short volumeL;
-		private short volumeR;
+		private const(byte)[] samples; ///
+		private size_t position; ///
+		private ushort positionSubsample; ///
+		private uint advanceDelta; ///
+		private bool playing; ///
+		private bool looping; ///
+		private short volumeShared; ///
+		private short panL; ///
+		private short panR; ///
+		private short volumeL; ///
+		private short volumeR; ///
 
 		/++
 			Set the panning for this sound.
@@ -73,12 +76,12 @@ struct Mixer {
 			positionSubsample = 0;
 		}
 	}
-	private InterpolationMethod interpolationMethod;
-	private uint outputFrequency = 48000;
-	private void delegate() @safe nothrow callback;
-	private Sound[] activeSoundList;
-	private size_t samplesUntilNextCallback;
-	private Duration callbackFrequency;
+	private InterpolationMethod interpolationMethod; ///
+	private uint outputFrequency = 48000; ///
+	private void delegate() @safe nothrow callback; ///
+	private Sound[] activeSoundList; ///
+	private size_t samplesUntilNextCallback; ///
+	private Duration callbackFrequency; ///
 	/++
 		Get a reference to an existing sound, suitable for modification.
 		Params:
@@ -119,10 +122,6 @@ struct Mixer {
 
 		return activeSoundList.length - 1;
 	}
-	void setCallbackFrequency(Duration duration) @safe pure nothrow {
-		callbackFrequency = duration;
-		samplesUntilNextCallback = (duration.total!"msecs" * outputFrequency) / 1000;
-	}
 	/// Ditto
 	size_t createSound(uint inFrequency, const(ubyte)[] inSamples) @safe pure {
 		auto newSamples = new byte[](inSamples.length);
@@ -130,6 +129,11 @@ struct Mixer {
 			sample = inSamples[idx] - 0x80;
 		}
 		return createSound(inFrequency, newSamples);
+	}
+	///
+	void setCallbackFrequency(Duration duration) @safe pure nothrow {
+		callbackFrequency = duration;
+		samplesUntilNextCallback = (duration.total!"msecs" * outputFrequency) / 1000;
 	}
 	/// Get the next pair of mixed samples
 	short[2] front() const @safe pure nothrow {
@@ -209,6 +213,7 @@ void mixSounds(ref Mixer mixer, scope short[2][] stream) @safe nothrow {
 	}
 }
 
+///
 private ushort millibelToScale(int volume) @safe pure @nogc nothrow {
 	// Volume is in hundredths of a decibel, from 0 to -10000
 	volume = clamp(volume, -10000, 0);

@@ -1,10 +1,12 @@
-﻿module pxtone.pulse.pcm;
+///
+module pxtone.pulse.pcm;
 
 import pxtone.pxtn;
 
 import pxtone.error;
 import pxtone.descriptor;
 
+///
 private struct WAVEFORMATCHUNK {
 	ushort formatID; // PCM:0x0001
 	ushort ch; //
@@ -15,17 +17,19 @@ private struct WAVEFORMATCHUNK {
 	ushort ext; // no use for pcm.
 }
 
+///
 struct PxtnPulsePCM {
 private:
-	int channels;
-	int sps;
-	int bps;
-	int sampleHead; // no use. 0
-	int sampleBody;
-	int sampleTail; // no use. 0
-	ubyte[] pcmSamples;
+	int channels; ///
+	int sps; ///
+	int bps; ///
+	int sampleHead; /// no use. 0
+	int sampleBody; ///
+	int sampleTail; /// no use. 0
+	ubyte[] pcmSamples; ///
 
 	// stereo / mono
+	///
 	private bool convertChannelNum(int newChannels) nothrow @safe {
 		ubyte[] pcmWork = null;
 		int sampleSize;
@@ -121,6 +125,7 @@ private:
 	}
 
 	// change bps
+	///
 	private bool convertBitPerSample(int newBPS) nothrow @safe {
 		ubyte[] pcmWork;
 		int sampleSize;
@@ -188,6 +193,7 @@ private:
 		return true;
 	}
 	// sps
+	///
 	private bool convertSamplePerSecond(int newSPS) nothrow @safe {
 		bool bRet = false;
 		int sampleNum;
@@ -304,10 +310,12 @@ private:
 	}
 
 public:
+	///
 	 ~this() nothrow @safe {
 		release();
 	}
 
+	///
 	void create(int ch, int sps, int bps, int sampleNum) @safe {
 		release();
 
@@ -337,6 +345,7 @@ public:
 		}
 	}
 
+	///
 	void release() nothrow @safe {
 		pcmSamples = null;
 		channels = 0;
@@ -347,6 +356,7 @@ public:
 		sampleTail = 0;
 	}
 
+	///
 	void read(ref PxtnDescriptor doc) @safe {
 		char[16] buf = 0;
 		uint size = 0;
@@ -396,6 +406,7 @@ public:
 		doc.read(pcmSamples[0 .. size]);
 	}
 
+	///
 	void write(ref PxtnDescriptor doc, const char[] pstrLIST) const @safe {
 		if (!pcmSamples) {
 			throw new PxtoneException("pcmSamples");
@@ -474,6 +485,7 @@ public:
 	}
 
 	// convert..
+	///
 	void convert(int newChannels, int newSPS, int newBPS) @safe {
 		if (!convertChannelNum(newChannels)) {
 			throw new PxtoneException("convertChannelNum");
@@ -486,6 +498,7 @@ public:
 		}
 	}
 
+	///
 	bool convertVolume(float v) nothrow @safe {
 		if (!pcmSamples) {
 			return false;
@@ -516,6 +529,7 @@ public:
 		return true;
 	}
 
+	///
 	void copy(ref PxtnPulsePCM pDest) const @safe {
 		if (!pcmSamples) {
 			pDest.release();
@@ -526,6 +540,7 @@ public:
 		pDest.pcmSamples[0 .. size] =pcmSamples[0 .. size];
 	}
 
+	///
 	bool copy(ref PxtnPulsePCM pDest, int start, int end) const @safe {
 		int size, offset;
 
@@ -547,44 +562,54 @@ public:
 		return true;
 	}
 
+	///
 	ubyte[] devolveSamplingBuffer() nothrow @safe {
 		ubyte[] p = pcmSamples;
 		pcmSamples = null;
 		return p;
 	}
 
+	///
 	float getSec() const nothrow @safe {
 		return cast(float)(sampleBody + sampleHead + sampleTail) / cast(float) sps;
 	}
 
+	///
 	int getChannels() const nothrow @safe {
 		return channels;
 	}
 
+	///
 	int getBPS() const nothrow @safe {
 		return bps;
 	}
 
+	///
 	int getSPS() const nothrow @safe {
 		return sps;
 	}
 
+	///
 	int getSampleBody() const nothrow @safe {
 		return sampleBody;
 	}
 
+	///
 	int getSampleHead() const nothrow @safe {
 		return sampleHead;
 	}
 
+	///
 	int getSampleTail() const nothrow @safe {
 		return sampleTail;
 	}
 
+	///
 	int getBufferSize() const nothrow @safe {
 		return (sampleHead + sampleBody + sampleTail) * channels * bps / 8;
 	}
 
+	///
 	inout(ubyte)[] getPCMBuffer() inout nothrow @safe {
 		return pcmSamples;
 	}

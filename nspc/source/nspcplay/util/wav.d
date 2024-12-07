@@ -1,5 +1,7 @@
+///
 module nspcplay.util.wav;
 
+///
 align(1) struct RIFFHeader {
 	align(1):
 	char[4] magic = "RIFF";
@@ -7,6 +9,7 @@ align(1) struct RIFFHeader {
 	char[4] type;
 }
 
+///
 align(1) struct RIFFChunkHeader {
 	align(1):
 	char[4] fourCC;
@@ -14,19 +17,23 @@ align(1) struct RIFFChunkHeader {
 	ubyte[0] data;
 }
 
+///
 struct RIFFChunk {
 	char[4] fourCC;
 	const(ubyte)[] data;
 }
 
+///
 private union RawBytes(T) {
 	T value;
 	ubyte[T.sizeof] raw;
 }
 
+///
 struct RIFFFile {
-	RIFFHeader header;
-	RIFFChunk[] chunks;
+	RIFFHeader header; ///
+	RIFFChunk[] chunks; ///
+	///
 	void toBytes(W)(ref W writer) const {
 		import std.range : put;
 		ulong totalLength;
@@ -43,6 +50,7 @@ struct RIFFFile {
 			put(writer, chunk.data);
 		}
 	}
+	///
 	this(const(ubyte)[] data) @safe pure {
 		header = (cast(const(RIFFHeader)[])(data[0 .. RIFFHeader.sizeof]))[0];
 		data = data[RIFFHeader.sizeof .. $];
@@ -57,16 +65,18 @@ struct RIFFFile {
 	}
 }
 
+///
 public align(1) struct WaveFormatHeader {
 	align(1):
-	ushort format = 1;
-	ushort channels;
-	uint sampleRate;
-	uint secondSize;
-	ushort sampleSize;
-	ushort bitsPerSample;
+	ushort format = 1; ///
+	ushort channels; ///
+	uint sampleRate; ///
+	uint secondSize; ///
+	ushort sampleSize; ///
+	ushort bitsPerSample; ///
 }
 
+///
 void dumpWav(T)(T[] samples, uint sampleRate, ushort channels, string filename, SampleChunk sampleChunk) {
 	import std.algorithm.iteration : joiner, map;
 	import std.array : array;
@@ -90,39 +100,44 @@ void dumpWav(T)(T[] samples, uint sampleRate, ushort channels, string filename, 
 	riffFile.toBytes(file);
 }
 
+///
 WaveFormatHeader readWaveHeader(const ubyte[] data) @safe pure {
 	return (cast(const(WaveFormatHeader)[])(data[0 .. WaveFormatHeader.sizeof]))[0];
 }
 
+///
 align(1) struct SampleLoop {
 	align(1):
-	uint id;
-	uint type;
-	uint start;
-	uint end;
-	uint fraction;
-	uint count;
+	uint id; ///
+	uint type; ///
+	uint start; ///
+	uint end; ///
+	uint fraction; ///
+	uint count; ///
 }
 
+///
 align(1) struct SampleChunkHeader {
 	align(1):
-	uint manufacturer;
-	uint product;
-	uint samplePeriod;
-	uint midiUnityNote;
-	uint midiPitchFraction;
-	uint smpteFormat;
-	uint smpteOffset;
-	uint sampleLoopCount;
-	uint extraDataLength;
-	SampleLoop[0] sampleLoops;
+	uint manufacturer; ///
+	uint product; ///
+	uint samplePeriod; ///
+	uint midiUnityNote; ///
+	uint midiPitchFraction; ///
+	uint smpteFormat; ///
+	uint smpteOffset; ///
+	uint sampleLoopCount; ///
+	uint extraDataLength; ///
+	SampleLoop[0] sampleLoops; ///
 }
 
+///
 struct SampleChunk {
-	SampleChunkHeader header;
-	const(SampleLoop)[] loops;
+	SampleChunkHeader header; ///
+	const(SampleLoop)[] loops; ///
 }
 
+///
 SampleChunk readSampleChunk(const ubyte[] data) @safe pure {
 	SampleChunk result;
 	const header = (cast(const(SampleChunkHeader)[])(data[0 .. SampleChunkHeader.sizeof]))[0];

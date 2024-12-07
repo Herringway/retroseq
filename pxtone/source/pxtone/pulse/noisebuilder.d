@@ -1,4 +1,5 @@
-﻿module pxtone.pulse.noisebuilder;
+///
+module pxtone.pulse.noisebuilder;
 
 import pxtone.pxtn;
 
@@ -8,51 +9,58 @@ import pxtone.pulse.oscillator;
 import pxtone.pulse.pcm;
 import pxtone.pulse.noise;
 
-private enum basicSampleRate = 44100.0;
-private enum basicFrequency = 100.0; // 100 Hz
-private enum samplingTop = 32767; //  16 bit max
-private enum keyTop = 0x3200; //  40 key
+private enum basicSampleRate = 44100.0; ///
+private enum basicFrequency = 100.0; /// 100 Hz
+private enum samplingTop = 32767; ///  16 bit max
+private enum keyTop = 0x3200; ///  40 key
 
+///
 private enum smpNumRand = 44100;
+///
 private enum smpNum = cast(int)(basicSampleRate / basicFrequency);
 
+///
 private enum RandomType {
-	none = 0,
-	saw,
-	rect,
+	none = 0, ///
+	saw, ///
+	rect, ///
 }
 
+///
 private struct Oscillator {
-	double increment;
-	double offset;
-	double volume;
-	const(short)[] pSmp;
-	bool bReverse;
-	RandomType ranType;
-	int rdmStart;
-	int rdmMargin;
-	int rdmIndex;
+	double increment; ///
+	double offset; ///
+	double volume; ///
+	const(short)[] pSmp; ///
+	bool bReverse; ///
+	RandomType ranType; ///
+	int rdmStart; ///
+	int rdmMargin; ///
+	int rdmIndex; ///
 }
 
+///
 private struct Point {
-	int smp;
-	double mag;
+	int smp; ///
+	double mag; ///
 }
 
+///
 private struct Unit {
-	bool bEnable;
-	double[2] pan;
-	int enveIndex;
-	double enveMagStart;
-	double enveMagMargin;
-	int enveCount;
-	Point[] enves;
+	bool bEnable; ///
+	double[2] pan; ///
+	int enveIndex; ///
+	double enveMagStart; ///
+	double enveMagMargin; ///
+	int enveCount; ///
+	Point[] enves; ///
 
-	Oscillator main;
-	Oscillator freq;
-	Oscillator volu;
+	Oscillator main; ///
+	Oscillator freq; ///
+	Oscillator volu; ///
 }
 
+///
 private void setOscillator(Oscillator* pTo, PxNoiseDesignOscillator* pFrom, int sps, const(short)[] pTbl, const(short)[] pTblRand) nothrow @safe {
 	const(short)[] p;
 
@@ -88,6 +96,7 @@ private void setOscillator(Oscillator* pTo, PxNoiseDesignOscillator* pFrom, int 
 
 }
 
+///
 private void increment(Oscillator* pOsc, double increment, const(short)[] pTblRand) nothrow @safe {
 	pOsc.offset += increment;
 	if (pOsc.offset > smpNum) {
@@ -108,13 +117,17 @@ private void increment(Oscillator* pOsc, double increment, const(short)[] pTblRa
 	}
 }
 
+///
 struct PxtnPulseNoiseBuilder {
 private:
+	///
 	static immutable short[][PxWaveType.num] pTables = genTables();
 
+	///
 	PxtnPulseFrequency freq;
 
 public:
+	///
 	PxtnPulsePCM buildNoise(ref PxtnPulseNoise pNoise, int ch, int sps, int bps) const @safe {
 		int offset = 0;
 		double work = 0;
@@ -335,6 +348,7 @@ public:
 	}
 }
 
+///
 short[][PxWaveType.num] genTables() @safe {
 	PxtnPoint[1] overtonesSine = [{1, 128}];
 	PxtnPoint[16] overtonesSaw2 = [{1, 128}, {2, 128}, {3, 128}, {4, 128}, {5, 128}, {6, 128}, {7, 128}, {8, 128}, {9, 128}, {10, 128}, {11, 128}, {12, 128}, {13, 128}, {14, 128}, {15, 128}, {16, 128},];

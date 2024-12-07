@@ -1,3 +1,4 @@
+///
 module nspcplay.sequence;
 
 import std.experimental.logger;
@@ -5,143 +6,146 @@ import std.format : FormatSpec;
 
 import nspcplay.common;
 
+///
 enum VCMDClass {
-	terminator,
-	noteDuration,
-	note,
-	tie,
-	rest,
-	percussion,
-	special,
+	terminator, ///
+	noteDuration, ///
+	note, ///
+	tie, ///
+	rest, ///
+	percussion, ///
+	special, ///
 }
 
+///
 enum VCMD {
-	instrument,
-	panning,
-	panningFade,
-	vibratoOn,
-	vibratoOff,
-	songVolume,
-	songVolumeFade,
-	tempo,
-	tempoFade,
-	globalAbsoluteTransposition,
-	channelAbsoluteTransposition,
-	tremoloOn,
-	tremoloOff,
-	volume,
-	volumeFade,
-	subRoutine,
-	vibratoFadeIn,
-	notePitchEnvelopeTo,
-	notePitchEnvelopeFrom,
-	notePitchEnvelopeOff,
-	fineTune,
-	echoEnableBitsAndVolume,
-	echoOff,
-	echoParameterSetup,
-	echoVolumeFade,
-	pitchSlideToNote,
-	percussionBaseInstrumentRedefine,
-	noop0,
-	noop1,
-	noop2,
-	channelMute,
-	fastForwardOn,
-	fastForwardOff,
-	invalid,
+	instrument, ///
+	panning, ///
+	panningFade, ///
+	vibratoOn, ///
+	vibratoOff, ///
+	songVolume, ///
+	songVolumeFade, ///
+	tempo, ///
+	tempoFade, ///
+	globalAbsoluteTransposition, ///
+	channelAbsoluteTransposition, ///
+	tremoloOn, ///
+	tremoloOff, ///
+	volume, ///
+	volumeFade, ///
+	subRoutine, ///
+	vibratoFadeIn, ///
+	notePitchEnvelopeTo, ///
+	notePitchEnvelopeFrom, ///
+	notePitchEnvelopeOff, ///
+	fineTune, ///
+	echoEnableBitsAndVolume, ///
+	echoOff, ///
+	echoParameterSetup, ///
+	echoVolumeFade, ///
+	pitchSlideToNote, ///
+	percussionBaseInstrumentRedefine, ///
+	noop0, ///
+	noop1, ///
+	noop2, ///
+	channelMute, ///
+	fastForwardOn, ///
+	fastForwardOff, ///
+	invalid, ///
 	// konami vcmds
-	konamiPanning,
-	konamiPanningFade,
-	konamiE4,
-	konamiLoopStart,
-	konamiLoopEnd,
-	konamiE7,
-	konamiF5,
-	konamiADSRGain,
+	konamiPanning, ///
+	konamiPanningFade, ///
+	konamiE4, ///
+	konamiLoopStart, ///
+	konamiLoopEnd, ///
+	konamiE7, ///
+	konamiF5, ///
+	konamiADSRGain, ///
 	// amk vcmds
-	amkSubloop,
-	amkSetADSRGain,
-	amkSampleLoad,
-	amkF4,
-	amkSetFIR,
-	amkWriteDSP,
-	amkEnableNoise,
-	amkSendData,
-	amkFA,
-	amkFB,
-	amkRemoteCommand,
+	amkSubloop, ///
+	amkSetADSRGain, ///
+	amkSampleLoad, ///
+	amkF4, ///
+	amkSetFIR, ///
+	amkWriteDSP, ///
+	amkEnableNoise, ///
+	amkSendData, ///
+	amkFA, ///
+	amkFB, ///
+	amkRemoteCommand, ///
 	// pseudo vcmds
-	setRelease,
-	deleteTrack,
+	setRelease, ///
+	deleteTrack, ///
 }
 
-enum ubyte variableLength = 255;
+enum ubyte variableLength = 255; ///
 
-// number of bytes following a Ex/Fx code
+/// number of bytes following a Ex/Fx code
 private immutable ubyte[VCMD.max + 1] codeLength = [
-	VCMD.instrument: 1, // E0
-	VCMD.panning: 1, // E1
-	VCMD.panningFade: 2, // E2
-	VCMD.vibratoOn: 3, // E3
-	VCMD.vibratoOff: 0, // E4
-	VCMD.songVolume: 1, // E5
-	VCMD.songVolumeFade: 2, // E6
-	VCMD.tempo: 1, // E7
-	VCMD.tempoFade: 2, // E8
-	VCMD.globalAbsoluteTransposition: 1, // E9
-	VCMD.channelAbsoluteTransposition: 1, // EA
-	VCMD.tremoloOn: 3, // EB
-	VCMD.tremoloOff: 0, // EC
-	VCMD.volume: 1, // ED
-	VCMD.volumeFade: 2, // EE
-	VCMD.subRoutine: 3, // EF
-	VCMD.vibratoFadeIn: 1, // F0
-	VCMD.notePitchEnvelopeTo: 3, // F1
-	VCMD.notePitchEnvelopeFrom: 3, // F2
-	VCMD.notePitchEnvelopeOff: 0, // F3
-	VCMD.fineTune: 1, // F4
-	VCMD.echoEnableBitsAndVolume: 3, // F5
-	VCMD.echoOff: 0, // F6
-	VCMD.echoParameterSetup: 3, // F7
-	VCMD.echoVolumeFade: 3, // F8
-	VCMD.pitchSlideToNote: 3, // F9
-	VCMD.percussionBaseInstrumentRedefine: 1, // FA
-	VCMD.channelMute: 0, // FC
-	VCMD.fastForwardOn: 0, // FD
-	VCMD.fastForwardOff: 0, // FE
+	VCMD.instrument: 1, /// E0
+	VCMD.panning: 1, /// E1
+	VCMD.panningFade: 2, /// E2
+	VCMD.vibratoOn: 3, /// E3
+	VCMD.vibratoOff: 0, /// E4
+	VCMD.songVolume: 1, /// E5
+	VCMD.songVolumeFade: 2, /// E6
+	VCMD.tempo: 1, /// E7
+	VCMD.tempoFade: 2, /// E8
+	VCMD.globalAbsoluteTransposition: 1, /// E9
+	VCMD.channelAbsoluteTransposition: 1, /// EA
+	VCMD.tremoloOn: 3, /// EB
+	VCMD.tremoloOff: 0, /// EC
+	VCMD.volume: 1, /// ED
+	VCMD.volumeFade: 2, /// EE
+	VCMD.subRoutine: 3, /// EF
+	VCMD.vibratoFadeIn: 1, /// F0
+	VCMD.notePitchEnvelopeTo: 3, /// F1
+	VCMD.notePitchEnvelopeFrom: 3, /// F2
+	VCMD.notePitchEnvelopeOff: 0, /// F3
+	VCMD.fineTune: 1, /// F4
+	VCMD.echoEnableBitsAndVolume: 3, /// F5
+	VCMD.echoOff: 0, /// F6
+	VCMD.echoParameterSetup: 3, /// F7
+	VCMD.echoVolumeFade: 3, /// F8
+	VCMD.pitchSlideToNote: 3, /// F9
+	VCMD.percussionBaseInstrumentRedefine: 1, /// FA
+	VCMD.channelMute: 0, /// FC
+	VCMD.fastForwardOn: 0, /// FD
+	VCMD.fastForwardOff: 0, /// FE
 	/// konami vcmds
-	VCMD.konamiPanning: 1, // E1
-	VCMD.konamiPanningFade: 2, // E2
-	VCMD.konamiE4: 2, // E4
-	VCMD.konamiLoopStart: 0, // E5
-	VCMD.konamiLoopEnd: 3, // E6
-	VCMD.konamiE7: 1, // E7
-	VCMD.konamiF5: 3, // F5
-	VCMD.konamiADSRGain: 3, // FB
+	VCMD.konamiPanning: 1, /// E1
+	VCMD.konamiPanningFade: 2, /// E2
+	VCMD.konamiE4: 2, /// E4
+	VCMD.konamiLoopStart: 0, /// E5
+	VCMD.konamiLoopEnd: 3, /// E6
+	VCMD.konamiE7: 1, /// E7
+	VCMD.konamiF5: 3, /// F5
+	VCMD.konamiADSRGain: 3, /// FB
 	// amk vcmds
-	VCMD.amkSubloop: 1,//E6
-	VCMD.amkSetADSRGain: 2, //ED
-	VCMD.amkSampleLoad: 2,//F3
-	VCMD.amkF4: 1, // F4
-	VCMD.amkSetFIR: 8,//F5
-	VCMD.amkWriteDSP: 2,//F6
-	VCMD.amkEnableNoise: 1,//F8
-	VCMD.amkSendData: 2,//F9
-	VCMD.amkFA: 2,//FA
-	VCMD.amkFB: variableLength,//FB
-	VCMD.amkRemoteCommand: 4,//FC
+	VCMD.amkSubloop: 1,/// E6
+	VCMD.amkSetADSRGain: 2, /// ED
+	VCMD.amkSampleLoad: 2,/// F3
+	VCMD.amkF4: 1, ///  F4
+	VCMD.amkSetFIR: 8,/// F5
+	VCMD.amkWriteDSP: 2,/// F6
+	VCMD.amkEnableNoise: 1,/// F8
+	VCMD.amkSendData: 2,/// F9
+	VCMD.amkFA: 2,/// FA
+	VCMD.amkFB: variableLength,/// FB
+	VCMD.amkRemoteCommand: 4,/// FC
 	// vcmds that don't actually do anything
-	VCMD.noop0: 0,
-	VCMD.noop1: 1,
-	VCMD.noop2: 2,
+	VCMD.noop0: 0, ///
+	VCMD.noop1: 1, ///
+	VCMD.noop2: 2, ///
 	// pseudo vcmds
-	VCMD.setRelease: 0,
-	VCMD.deleteTrack: 0,
+	VCMD.setRelease: 0, ///
+	VCMD.deleteTrack: 0, ///
 	// error
-	VCMD.invalid: 0,
+	VCMD.invalid: 0, ///
 ];
 
+///
 VCMDClass getCommandClass(Variant variant, ubyte val, out ubyte base) nothrow @safe pure {
 	final switch (variant) {
 		case Variant.standard:
@@ -187,12 +191,14 @@ VCMDClass getCommandClass(Variant variant, ubyte val, out ubyte base) nothrow @s
 			}
 	}
 }
+///
 ubyte percussionID(Variant variant) nothrow pure @safe {
 	if (variant == Variant.prototype) {
 		return 0xD0;
 	}
 	return 0xCA;
 }
+///
 VCMD getCommand(Variant variant, ubyte val) nothrow @safe pure {
 	final switch(variant) {
 		case Variant.konami:
@@ -384,13 +390,14 @@ VCMD getCommand(Variant variant, ubyte val) nothrow @safe pure {
 	assert(0, "Unknown command");
 }
 
+///
 struct Command {
-	private ubyte _cmd;
-	private ubyte _cmdBase;
-	VCMDClass type;
-	VCMD special;
-	const(ubyte)[] parameters;
-	const(ubyte)[] raw;
+	private ubyte _cmd; ///
+	private ubyte _cmdBase; ///
+	VCMDClass type; ///
+	VCMD special; ///
+	const(ubyte)[] parameters; ///
+	const(ubyte)[] raw; ///
 	/// returns byte 0, minus the beginning of whatever class of command
 	ubyte relative() const @safe pure nothrow scope {
 		return cast(ubyte)(_cmd - _cmdBase);
@@ -401,11 +408,13 @@ struct Command {
 	alias note = relative;
 	///
 	alias instrument = relative;
+	///
 	private void _tmp() const {
 		import std.range : nullSink;
 		auto n = nullSink;
 		toString(n, *(new FormatSpec!char()));
 	}
+	///
 	void toString(S, C)(ref S sink, scope const ref FormatSpec!C fmt) const @safe {
 		import std.format : formattedWrite;
 		import std.range : put;
@@ -630,6 +639,7 @@ struct Command {
 	}
 }
 
+///
 Command readCommand(Variant variant, return scope const(ubyte)[] p, out size_t readBytes) nothrow @safe pure {
 	Command command;
 	command.type = getCommandClass(variant, p[0], command._cmdBase);

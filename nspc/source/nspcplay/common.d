@@ -1,55 +1,63 @@
+///
 module nspcplay.common;
 
+///
 enum Variant : uint {
-	standard = 0,
-	prototype = 1, // Early SNES games from Nintendo
-	konami = 2, // Konami's NSPC variant - NYI
+	standard = 0, ///
+	prototype = 1, /// Early SNES games from Nintendo
+	konami = 2, /// Konami's NSPC variant - NYI
 	addmusick = 3, /// AddMusicK, a community-maintained extension to the prototype NSPC engine
 	fzero = 4, /// An almost-final version of standard N-SPC. Several commands are missing, master volume is 25% lower
 }
 
+///
 enum Interpolation {
-	gaussian,
-	none,
-	linear,
-	cubic,
-	sinc,
+	gaussian, ///
+	none, ///
+	linear, ///
+	cubic, ///
+	sinc, ///
 }
 
+///
 enum ReleaseTable : ubyte {
-	nintendo1,
-	hal1,
-	hal2,
-	hal3,
-	nintendo2,
-	nintendoProto,
+	nintendo1, ///
+	hal1, ///
+	hal2, ///
+	hal3, ///
+	nintendo2, ///
+	nintendoProto, ///
 }
 
+///
 enum VolumeTable : ubyte {
-	nintendo1,
-	hal1,
-	hal2,
-	hal3,
-	nintendo2,
-	nintendoProto,
+	nintendo1, ///
+	hal1, ///
+	hal2, ///
+	hal3, ///
+	nintendo2, ///
+	nintendoProto, ///
 }
 
+///
 enum GainMode {
-	linearDecreaseGain,
-	expDecreaseGain,
-	linearIncreaseGain,
-	bentIncreaseGain,
+	linearDecreaseGain, ///
+	expDecreaseGain, ///
+	linearIncreaseGain, ///
+	bentIncreaseGain, ///
 }
+///
 enum ADSRGainMode {
-	adsr,
-	customGain,
-	directGain,
+	adsr, ///
+	customGain, ///
+	directGain, ///
 }
 
+///
 align(1) struct ADSRGain {
 	align(1):
-	ushort adsr;
-	ubyte gain;
+	ushort adsr; ///
+	ubyte gain; ///
 	void toString(S)(ref S sink) const {
 		import std.format: formattedWrite;
 		try {
@@ -68,21 +76,27 @@ align(1) struct ADSRGain {
 		} catch (Exception) {}
 	}
 	const @safe pure nothrow:
+	///
 	ubyte attackRate() {
 		return adsr & 0x0F;
 	}
+	///
 	ubyte decayRate() {
 		return (adsr & 0x70) >> 4;
 	}
+	///
 	bool adsrGainSelect() {
 		return !!(adsr & 0x80);
 	}
+	///
 	ubyte sustainRate() {
 		return (adsr & 0x1F00) >> 8;
 	}
+	///
 	short sustainLevel() {
 		return (((adsr & 0xE000) >> 13) + 1) << 8;
 	}
+	///
 	ADSRGainMode mode() {
 		if (adsrGainSelect) {
 			return ADSRGainMode.adsr;
@@ -93,6 +107,7 @@ align(1) struct ADSRGain {
 			return ADSRGainMode.directGain;
 		}
 	}
+	///
 	GainMode gainMode() {
 		switch ((gain & 0x7F) >> 5) {
 			case 0:
@@ -106,38 +121,47 @@ align(1) struct ADSRGain {
 			default: assert(0);
 		}
 	}
+	///
 	ubyte gainRate() {
 		return gain & 0xF;
 	}
+	///
 	ubyte fixedVolume() {
 		return gain & 0x3F;
 	}
 }
+///
 struct Sample {
 	ushort start; /// starting address
 	short[] data; /// decoded signed 16-bit PCM data
 	int loopLength; /// Number of samples in loop
+	///
 	bool isValid() const @safe pure nothrow {
 		return data.length > 0;
 	}
+	///
 	ubyte[16] hash() const @safe pure nothrow {
 		import std.digest.md : md5Of;
 		return md5Of(data);
 	}
 }
+///
 struct Instrument {
 	align(1):
-	ubyte sampleID;
-	ADSRGain adsrGain;
-	private ubyte _tuning;
-	private ubyte _tuningFraction;
+	ubyte sampleID; ///
+	ADSRGain adsrGain; ///
+	private ubyte _tuning; ///
+	private ubyte _tuningFraction; ///
+	///
 	ushort tuning() const pure @safe nothrow {
 		return (_tuning << 8) + _tuningFraction;
 	}
+	///
 	void tuning(ushort val) pure @safe nothrow {
 		_tuning = (val & 0xFF00) >> 8;
 		_tuningFraction = val & 0xFF;
 	}
+	///
 	void toString(S)(ref S sink) const {
 		import std.format: formattedWrite;
 		try {
@@ -146,16 +170,20 @@ struct Instrument {
 	}
 }
 
+///
 class NSPCException : Exception {
+	///
 	this(string msg, string file = __FILE__, size_t line = __LINE__) @safe {
 		super(msg, file, line);
 	}
 }
 
+///
 package T read(T)(const(ubyte)[] data, size_t offset = 0) {
 	return (cast(const(T)[])(data[offset .. offset + T.sizeof]))[0];
 }
 
+///
 ADSRGain konamiADSRGain(const ubyte[] parameters) nothrow pure @safe {
 	ADSRGain tmp;
 	if (parameters[0] < 160) {
@@ -166,6 +194,7 @@ ADSRGain konamiADSRGain(const ubyte[] parameters) nothrow pure @safe {
 	return tmp;
 }
 
+///
 ADSRGain amkADSRGain(const ubyte[] parameters) nothrow pure @safe {
 	ADSRGain tmp;
 	if (parameters[0] == 0x80) {

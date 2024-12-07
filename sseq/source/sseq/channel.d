@@ -8,7 +8,7 @@ import sseq.track;
 
 import std.math;
 
-/*
+/**
  * This structure is meant to be similar to what is stored in the actual
  * Nintendo DS's sound registers.  Items that were not being used by this
  * player have been removed, and items which help the simulated registers
@@ -17,41 +17,43 @@ import std.math;
 struct NDSSoundRegister
 {
 	// Control Register
-	ubyte volumeMul;
-	ubyte volumeDiv;
-	ubyte panning;
-	ubyte waveDuty;
-	ubyte repeatMode;
-	ubyte format;
-	bool enable;
+	ubyte volumeMul; ///
+	ubyte volumeDiv; ///
+	ubyte panning; ///
+	ubyte waveDuty; ///
+	ubyte repeatMode; ///
+	ubyte format; ///
+	bool enable; ///
 
 	// Data Source Register
-	const(SWAV) *source;
+	const(SWAV) *source; ///
 
 	// Timer Register
-	ushort timer;
+	ushort timer; ///
 
 	// PSG Handling, not a DS register
-	ushort psgX;
-	short psgLast;
-	uint psgLastCount;
+	ushort psgX; ///
+	short psgLast; ///
+	uint psgLastCount; ///
 
 	// The following are taken from DeSmuME
-	double samplePosition;
-	double sampleIncrease;
+	double samplePosition; ///
+	double sampleIncrease; ///
 
 	// Loopstart Register
-	uint loopStart;
+	uint loopStart; ///
 
 	// Length Register
-	uint length;
+	uint length; ///
 
-	uint totalLength;
+	uint totalLength; ///
 
+	///
 	void ClearControlRegister() @safe {
 		this.volumeMul = this.volumeDiv = this.panning = this.waveDuty = this.repeatMode = this.format = 0;
 		this.enable = false;
 	}
+	///
 	void SetControlRegister(uint reg) @safe {
 		this.volumeMul = reg & 0x7F;
 		this.volumeDiv = (reg >> 8) & 0x03;
@@ -63,7 +65,7 @@ struct NDSSoundRegister
 	}
 }
 
-/*
+/**
  * From FeOS Sound System, this is temporary storage of what will go into
  * the Nintendo DS sound registers.  It is kept separate as the original code
  * from FeOS Sound System utilized this to hold data prior to passing it into
@@ -71,73 +73,83 @@ struct NDSSoundRegister
  */
 struct TempSndReg
 {
-	uint CR;
-	const(SWAV) *SOURCE;
-	ushort TIMER;
-	uint REPEAT_POINT, LENGTH;
+	uint CR; ///
+	const(SWAV) *SOURCE; ///
+	ushort TIMER; ///
+	uint REPEAT_POINT, LENGTH; ///
 }
 
+///
 struct Channel
 {
-	byte chnId = -1;
+	byte chnId = -1; ///
 
-	TempSndReg tempReg;
-	ChannelState state = ChannelState.none;
-	byte trackId = -1; // -1 = none
-	ubyte prio;
-	bool manualSweep;
+	TempSndReg tempReg; ///
+	ChannelState state = ChannelState.none; ///
+	byte trackId = -1; /// -1 = none
+	ubyte prio; ///
+	bool manualSweep; ///
 
-	ubyte[ChannelFlags.max + 1] flags;
-	byte pan; // -64 .. 63
-	short extAmpl;
+	ubyte[ChannelFlags.max + 1] flags; ///
+	byte pan; /// -64 .. 63
+	short extAmpl; ///
 
-	short velocity;
-	byte extPan;
-	ubyte key;
+	short velocity; ///
+	byte extPan; ///
+	ubyte key; ///
 
-	int ampl; // 7 fractionary bits
-	int extTune; // in 64ths of a semitone
+	int ampl; /// 7 fractionary bits
+	int extTune; /// in 64ths of a semitone
 
-	ubyte orgKey;
+	ubyte orgKey; ///
 
-	ubyte modType, modSpeed, modDepth, modRange;
-	ushort modDelay, modDelayCnt, modCounter;
+	ubyte modType; ///
+	ubyte modSpeed; ///
+	ubyte modDepth; ///
+	ubyte modRange; ///
+	ushort modDelay; ///
+	ushort modDelayCnt; ///
+	ushort modCounter; ///
 
-	uint sweepLen, sweepCnt;
-	short sweepPitch;
+	uint sweepLen; ///
+	uint sweepCnt; ///
+	short sweepPitch; ///
 
-	ubyte attackLvl;
-	ubyte sustainLvl = 0x7F;
-	ushort decayRate;
-	ushort releaseRate = 0xFFFF;
+	ubyte attackLvl; ///
+	ubyte sustainLvl = 0x7F; ///
+	ushort decayRate; ///
+	ushort releaseRate = 0xFFFF; ///
 
 	/*
 	 * These were originally global variables in FeOS Sound System, but
 	 * since they were linked to a certain channel anyways, I moved them
 	 * into this class.
 	 */
-	int noteLength = -1;
-	ushort vol;
+	int noteLength = -1; ///
+	ushort vol; ///
 
-	NDSSoundRegister reg;
+	NDSSoundRegister reg; ///
 
 	/*
 	 * Interpolation history buffer, which contains the maximum number of
 	 * samples required for any given interpolation mode. Doubled to
 	 * simplify the case of wrapping. Thanks to kode54 for providing this.
 	 */
-	uint sampleHistoryPtr;
-	short[64] sampleHistory;
+	uint sampleHistoryPtr; ///
+	short[64] sampleHistory; ///
 
+	///
 	void initialize() @safe {
 		this.clearHistory();
 	}
 
+	///
 	void Release() @safe {
 		this.noteLength = -1;
 		this.prio = 1;
 		this.state = ChannelState.release;
 	}
+	///
 	void Kill() @safe {
 		this.state = ChannelState.none;
 		this.trackId = -1;
@@ -147,6 +159,7 @@ struct Channel
 		this.noteLength = -1;
 		this.clearHistory();
 	}
+	///
 	void IncrementSample() @safe {
 		double samplePosition = this.reg.samplePosition + this.reg.sampleIncrease;
 
@@ -182,6 +195,7 @@ struct Channel
 				this.Kill();
 		}
 	}
+	///
 	void clearHistory() @safe {
 		this.sampleHistoryPtr = 0;
 		this.sampleHistory = 0;
@@ -190,6 +204,7 @@ struct Channel
 
 
 // Code from http://learningcppisfun.blogspot.com/2010/04/comparing-floating-point-numbers.html
+///
 bool fEqual(T)(T x, T y, int N = 1)
 {
 	T diff = abs(x - y);
@@ -197,6 +212,7 @@ bool fEqual(T)(T x, T y, int N = 1)
 	return diff <= tolerance * abs(x) && diff <= tolerance * abs(y);
 }
 
+///
 immutable ushort[] getpitchtbl = [
 	0x0000, 0x003B, 0x0076, 0x00B2, 0x00ED, 0x0128, 0x0164, 0x019F,
 	0x01DB, 0x0217, 0x0252, 0x028E, 0x02CA, 0x0305, 0x0341, 0x037D,
@@ -296,6 +312,7 @@ immutable ushort[] getpitchtbl = [
 	0xFC51, 0xFCC7, 0xFD3C, 0xFDB2, 0xFE28, 0xFE9E, 0xFF14, 0xFF8A
 ];
 
+///
 immutable ubyte[] getvoltbl = [
 	0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
 	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
@@ -346,6 +363,7 @@ immutable ubyte[] getvoltbl = [
 ];
 
 
+///
 immutable short[8][8] wavedutytbl =
 [
 	[ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, 0x7FFF ],

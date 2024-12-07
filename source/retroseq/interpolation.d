@@ -1,13 +1,16 @@
+///
 module retroseq.interpolation;
 
+///
 enum InterpolationMethod {
-	none,
-	linear,
-	cubic,
-	sinc,
-	gaussianSNES,
+	none, ///
+	linear, ///
+	cubic, ///
+	sinc, ///
+	gaussianSNES, ///
 }
 
+///
 byte interpolate(InterpolationMethod method, scope const byte[] samples, int position) @safe pure nothrow @nogc {
 	double[8] floatSamples = [samples[0] / cast(double)byte.max, samples[1] / cast(double)byte.max, samples[2] / cast(double)byte.max, samples[3] / cast(double)byte.max, samples[4] / cast(double)byte.max, samples[5] / cast(double)byte.max, samples[6] / cast(double)byte.max, samples[7] / cast(double)byte.max];
 	final switch(method) {
@@ -24,10 +27,12 @@ byte interpolate(InterpolationMethod method, scope const byte[] samples, int pos
 	}
 }
 
+///
 byte linearInterpolation(byte[2] samples, int position) @safe pure nothrow @nogc {
 	return cast(byte)((samples[0]* (0x100 - position) + samples[1] * position) >> 8);
 }
 
+///
 byte cubicInterpolation(byte[4] latest, ubyte index) nothrow @safe pure @nogc {
 	const(short)[] fwd = cubicTable[index .. index + 258];
 	const(short)[] rev = cubicTable[256 - index  .. 514 - index]; // mirror left half
@@ -45,10 +50,13 @@ byte cubicInterpolation(byte[4] latest, ubyte index) nothrow @safe pure @nogc {
 	return cast(byte)result;
 }
 
+///
 double gaussianSNESInterpolation(double[4] samples, ubyte index) nothrow @safe pure @nogc {
 	const double[4] gauss = [gaussTableSNES[256 - index], gaussTableSNES[511 - index], gaussTableSNES[index + 256], gaussTableSNES[index]];
 	return vectorMultiplySum(gauss,  samples);
 }
+
+///
 T vectorMultiplySum(T, size_t n)(const T[n] a, const T[n] b) {
     import std.algorithm.comparison : clamp;
     T[n] c = a;
@@ -59,6 +67,7 @@ T vectorMultiplySum(T, size_t n)(const T[n] a, const T[n] b) {
     }
 	return clamp(result, -1, 1);
 }
+///
 byte sincInterpolation(byte[8] latest, ushort index) nothrow @safe pure @nogc {
 	const(short)[] selection = sincTable[index .. index + 8];
 
@@ -79,9 +88,9 @@ byte sincInterpolation(byte[8] latest, ushort index) nothrow @safe pure @nogc {
 	return cast(byte)result;
 }
 
-immutable gaussTableSNES = generateGaussianTableSNES!512();
+immutable gaussTableSNES = generateGaussianTableSNES!512(); ///
 
-//Generate gaussian table for SNES - Based on original code by Ryphecha and Near
+/// Generate gaussian table for SNES - Based on original code by Ryphecha and Near
 double[length] generateGaussianTableSNES(size_t length)() @safe {
    import std.math : cos, PI, round, sin;
    double[length] result;
@@ -107,8 +116,8 @@ double[length] generateGaussianTableSNES(size_t length)() @safe {
    return result;
 }
 
-// The following tables belong to the public domain, and have been used by many emulators.
-// The means to generate them has been lost, however.
+/// The following tables belong to the public domain, and have been used by many emulators.
+/// The means to generate them has been lost, however.
 immutable short[514] cubicTable =
 [
    0,  -4,  -8, -12, -16, -20, -23, -27, -30, -34, -37, -41, -44, -47, -50, -53,
@@ -147,6 +156,7 @@ immutable short[514] cubicTable =
    0
 ];
 
+///
 immutable short[2048] sincTable = [
     39,  -315,   666, 15642,   666,  -315,    39,   -38,
     38,  -302,   613, 15642,   718,  -328,    41,   -38,

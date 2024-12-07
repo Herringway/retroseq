@@ -1,3 +1,4 @@
+///
 module nspcplay.samples;
 
 import nspcplay.common;
@@ -6,12 +7,14 @@ import std.bitmanip;
 import std.exception;
 import std.range;
 
+///
 enum BRRFilter {
-	filter0,
-	filter1,
-	filter2,
-	filter3,
+	filter0, ///
+	filter1, ///
+	filter2, ///
+	filter3, ///
 }
+///
 struct BRRBlock {
 	align(1):
 	mixin(bitfields!(
@@ -20,14 +23,16 @@ struct BRRBlock {
 		BRRFilter, "filter", 2,
 		ubyte, "range", 4,
 	));
-	ubyte[8] samples;
+	ubyte[8] samples; ///
+	///
 	this(ubyte[9] raw) @safe pure {
 		this.tupleof[0] = raw[0];
 		samples[] = raw[1 .. $];
 	}
 }
 
-Sample decodeSample(scope const ubyte[] buffer, ushort start, ushort loop) @safe {
+///
+Sample decodeSample(scope const ubyte[] buffer, ushort start, ushort loop) @safe pure {
 	Sample sample;
 	sample.start = start;
 	const blocks = getBRRBlocks(buffer, start);
@@ -66,8 +71,8 @@ Sample decodeSample(scope const ubyte[] buffer, ushort start, ushort loop) @safe
 	sample.loopLength *= loopsAdded;
 	return sample;
 }
-
-unittest {
+///
+@safe pure unittest {
 	with(decodeSample(cast(immutable(ubyte)[])import("wilhelm.brr"), 0, 0)) {
 		assert(start == 0);
 		assert(data.length == 12032);
@@ -80,6 +85,7 @@ unittest {
 	}
 }
 
+///
 void decodeBRRBlock(scope short[] buffer, short[2] lastSamples, const BRRBlock block) nothrow @safe pure {
 	int range = block.range;
 	int filter = block.filter;
@@ -127,7 +133,7 @@ void decodeBRRBlock(scope short[] buffer, short[2] lastSamples, const BRRBlock b
 		buffer[i] = cast(short) s;
 	}
 }
-
+///
 @safe pure unittest {
 	import core.exception : AssertError;
 	import std.stdio : writefln;
@@ -150,6 +156,7 @@ void decodeBRRBlock(scope short[] buffer, short[2] lastSamples, const BRRBlock b
 	assertBlock(BRRBlock([0x9E, 0x2B, 0xC3, 0xF0, 0x48, 0x43, 0xA6, 0x2F, 0x03]), [0x0400, cast(short)0xFD30, cast(short)0xEFB2, cast(short)0xEAFA, cast(short)0xE576, cast(short)0xE164, cast(short)0xE68E, cast(short)0xDB24, cast(short)0xDA70, cast(short)0xE072, cast(short)0xD9D0, cast(short)0xE102, cast(short)0xEB54, cast(short)0xF208, cast(short)0xF7B0, 0x0268]);
 }
 
+///
 private const(BRRBlock)[] getBRRBlocks(const scope ubyte[] spcMemory, ushort start) pure @safe {
 	const blocks = cast(const(BRRBlock)[])spcMemory[start .. start + ($ - start) / BRRBlock.sizeof * BRRBlock.sizeof];
 	foreach (idx, block; blocks) {
@@ -160,6 +167,7 @@ private const(BRRBlock)[] getBRRBlocks(const scope ubyte[] spcMemory, ushort sta
 	throw new Exception("Invalid BRR sample");
 }
 
+///
 short interpolate(Interpolation style, scope const short[] buf, int position) nothrow @safe pure {
 	final switch (style) {
 		case Interpolation.none:
@@ -175,13 +183,14 @@ short interpolate(Interpolation style, scope const short[] buf, int position) no
 	}
 }
 
+///
 short linearInterpolation(short[2] latest, ushort val) nothrow @safe pure {
 	int result = (4096 - val) * latest[0];
 	result += val * latest[1];
 	result >>= 12;
 	return cast(short)result;
 }
-
+///
 @safe pure unittest {
 	assert(linearInterpolation([0, 0], 0) == 0);
 	assert(linearInterpolation([0, 0], 4096) == 0);
@@ -190,6 +199,7 @@ short linearInterpolation(short[2] latest, ushort val) nothrow @safe pure {
 	assert(linearInterpolation([0x7000, 0], 2048) == 0x3800);
 }
 
+///
 short gaussianInterpolation(short[4] latest, ubyte index) nothrow @safe pure {
 	const(short)[] fwd = gauss[255 - index .. 512 - index];
 	const(short)[] rev = gauss[index .. index + 257]; // mirror left half of gaussian
@@ -207,13 +217,14 @@ short gaussianInterpolation(short[4] latest, ubyte index) nothrow @safe pure {
 	result &= ~1;
 	return cast(short)result;
 }
-
+///
 @safe pure unittest {
 	assert(gaussianInterpolation([0, 0, 0, 0], 0) == 0);
 	assert(gaussianInterpolation([0, 0, 0x100, 0x600], 0x55) == 0x6E);
 	assert(gaussianInterpolation([0, 0x100, 0x600, 0x400], 0) == 0x1BA);
 }
 
+///
 short cubicInterpolation(short[4] latest, ubyte index) nothrow @safe pure {
 	const(short)[] fwd = cubic[index .. index + 258];
 	const(short)[] rev = cubic[256 - index  .. 514 - index]; // mirror left half
@@ -230,12 +241,13 @@ short cubicInterpolation(short[4] latest, ubyte index) nothrow @safe pure {
 	}
 	return cast(short)result;
 }
-
+///
 @safe pure unittest {
 	assert(cubicInterpolation([0, 0, 0, 0], 0) == 0);
 	assert(cubicInterpolation([10, 100, 1000, 10000], 120) == -3);
 }
 
+///
 short sincInterpolation(short[8] latest, ushort index) nothrow @safe pure {
 	const(short)[] selection = sinc[index .. index + 8];
 
@@ -256,6 +268,7 @@ short sincInterpolation(short[8] latest, ushort index) nothrow @safe pure {
 	return cast(short)result;
 }
 
+///
 @safe pure unittest {
 	assert(sincInterpolation([0, 0, 0, 0, 0, 0, 0, 0], 0) == 0);
 	assert(sincInterpolation([1, 2, 3, 4, 5, 6, 7, 8], 9) == 3);

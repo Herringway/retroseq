@@ -1,3 +1,4 @@
+///
 module organya.organya;
 
 import core.time;
@@ -12,55 +13,58 @@ import organya.pixtone;
 
 public import retroseq.interpolation : InterpolationMethod;
 
-private enum maxTrack = 16;
-private enum maxMelody = 8;
+private enum maxTrack = 16; ///
+private enum maxMelody = 8; ///
 
-private enum panDummy = 0xFF;
-private enum volDummy = 0xFF;
-private enum keyDummy = 0xFF;
+private enum panDummy = 0xFF; ///
+private enum volDummy = 0xFF; ///
+private enum keyDummy = 0xFF; ///
 
-private enum allocNote = 4096;
+private enum allocNote = 4096; ///
 
 // Below are Organya song data structures
+
+///
 private struct NoteList {
-	NoteList *from;	// Previous address
-	NoteList *to;	// Next address
+	NoteList *from; /// Previous address
+	NoteList *to; /// Next address
 
-	int x;	// Position
-	ubyte length;	// Sound length
-	ubyte y = keyDummy;	// Sound height
-	ubyte volume = volDummy;	// Volume
-	ubyte pan = panDummy;
+	int x; /// Position
+	ubyte length; /// Sound length
+	ubyte y = keyDummy; /// Sound height
+	ubyte volume = volDummy; /// Volume
+	ubyte pan = panDummy; ///
 }
 
-// Track data * 8
+/// Track data * 8
 private struct TrackData {
-	ushort freq;	// Frequency (1000 is default)
-	ubyte waveNumber;
-	byte pipi;
+	ushort freq;	/// Frequency (1000 is default)
+	ubyte waveNumber; ///
+	byte pipi; ///
 
-	NoteList[] notePosition;
-	NoteList *noteList;
+	NoteList[] notePosition; ///
+	NoteList *noteList; ///
 }
 
-// Unique information held in songs
+/// Unique information held in songs
 public struct MusicInfo {
-	ushort wait;
-	ubyte line;	// Number of lines in one measure
-	ubyte dot;	// Number of dots per line
-	ushort allocatedNotes;
-	int repeatX;	// Repeat
-	int endX;	// End of song (Return to repeat)
-	TrackData[maxTrack] trackData;
+	ushort wait; ///
+	ubyte line; /// Number of lines in one measure
+	ubyte dot; /// Number of dots per line
+	ushort allocatedNotes; ///
+	int repeatX; /// Repeat
+	int endX; /// End of song (Return to repeat)
+	TrackData[maxTrack] trackData; ///
 }
 
-// Wave playing and loading
+/// Wave playing and loading
 private struct OctaveWave {
-	short waveSize;
-	short octavePar;
-	short octaveSize;
+	short waveSize; ///
+	short octavePar; ///
+	short octaveSize; ///
 }
 
+///
 private immutable OctaveWave[8] octaveWaves = [
 	{ 256,  1,  4 }, // 0 Oct
 	{ 256,  2,  8 }, // 1 Oct
@@ -73,14 +77,15 @@ private immutable OctaveWave[8] octaveWaves = [
 ];
 
 
-private immutable short[12] frequencyTable = [262, 277, 294, 311, 330, 349, 370, 392, 415, 440, 466, 494];
+private immutable short[12] frequencyTable = [262, 277, 294, 311, 330, 349, 370, 392, 415, 440, 466, 494]; ///
 
-private immutable short[13] panTable = [0, 43, 86, 129, 172, 215, 256, 297, 340, 383, 426, 469, 512];
+private immutable short[13] panTable = [0, 43, 86, 129, 172, 215, 256, 297, 340, 383, 426, 469, 512]; ///
 
 
-// 波形データをロード (Load waveform data)
+/// 波形データをロード (Load waveform data)
 private immutable byte[0x100][100] waveData = initWaveData(cast(immutable(ubyte)[])import("Wave.dat"));
 
+///
 private byte[0x100][100] initWaveData(const(ubyte)[] data) @safe {
 	byte[0x100][100] result;
 	foreach (x1, ref x2; result) {
@@ -91,25 +96,27 @@ private byte[0x100][100] initWaveData(const(ubyte)[] data) @safe {
 	return result;
 }
 
+///
 struct Organya {
-	private size_t[2][8][8] allocatedSounds;
-	private size_t[512] secondaryAllocatedSounds;
-	private Mixer mixer;
-	private MusicInfo info;
-	private const(PixtoneParameter)[] pixtoneParameters;
+	private size_t[2][8][8] allocatedSounds; ///
+	private size_t[512] secondaryAllocatedSounds; ///
+	private Mixer mixer; ///
+	private MusicInfo info; ///
+	private const(PixtoneParameter)[] pixtoneParameters; ///
 
 	// Play data
-	private int playPosition;
-	private NoteList*[maxTrack] np;
-	private int[maxMelody] nowLength;
+	private int playPosition; ///
+	private NoteList*[maxTrack] np; ///
+	private int[maxMelody] nowLength; ///
 
-	private int globalVolume = 100;
-	private int[maxTrack] trackVolume;
-	private bool fading = false;
-	private bool[maxTrack] mutedTracks;
-	private ubyte[maxTrack] playingSounds = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];	// 再生中の音 (Sound being played)
-	private ubyte[maxTrack] keyOn;	// キースイッチ (Key switch)
-	private ubyte[maxTrack] keyTwin;	// 今使っているキー(連続時のノイズ防止の為に二つ用意) (Currently used keys (prepared for continuous noise prevention))
+	private int globalVolume = 100; ///
+	private int[maxTrack] trackVolume; ///
+	private bool fading = false; ///
+	private bool[maxTrack] mutedTracks; ///
+	private ubyte[maxTrack] playingSounds = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]; /// 再生中の音 (Sound being played)
+	private ubyte[maxTrack] keyOn; /// キースイッチ (Key switch)
+	private ubyte[maxTrack] keyTwin; /// 今使っているキー(連続時のノイズ防止の為に二つ用意) (Currently used keys (prepared for continuous noise prevention))
+	///
 	public void initialize(uint outputFrequency, InterpolationMethod method) @safe {
 		info.allocatedNotes = allocNote;
 		info.dot = 4;
@@ -127,7 +134,7 @@ struct Organya {
 		noteAlloc(info.allocatedNotes);
 		mixer = Mixer(method, outputFrequency, &playData);
 	}
-	// 曲情報を取得 (Get song information)
+	/// 曲情報を取得 (Get song information)
 	public MusicInfo getMusicInfo() @safe {
 		MusicInfo mi;
 		mi.dot = info.dot;
@@ -144,7 +151,7 @@ struct Organya {
 		}
 		return mi;
 	}
-	// 指定の数だけNoteDataの領域を確保(初期化) (Allocate the specified number of NoteData areas (initialization))
+	/// 指定の数だけNoteDataの領域を確保(初期化) (Allocate the specified number of NoteData areas (initialization))
 	private void noteAlloc(ushort alloc) @safe {
 		int i,j;
 
@@ -163,7 +170,8 @@ struct Organya {
 		}
 	}
 
-	//// 以下は再生 (The following is playback)
+	// 以下は再生 (The following is playback)
+	///
 	private void playData() @safe nothrow {
 		// Handle fading out
 		if (fading && globalVolume) {
@@ -233,6 +241,7 @@ struct Organya {
 		}
 	}
 
+	///
 	private void setPlayPointer(int x) @safe nothrow {
 		for (int i = 0; i < maxTrack; i++) {
 			np[i] = info.trackData[i].noteList;
@@ -243,6 +252,7 @@ struct Organya {
 
 		playPosition = x;
 	}
+	///
 	public void loadMusic(const(ubyte)[] p) @safe
 		in(p, "No organya data")
 	{
@@ -356,19 +366,23 @@ struct Organya {
 		globalVolume = 100;
 		fading = 0;
 	}
+	///
 	public void setPosition(uint x) @safe {
 		setPlayPointer(x);
 		globalVolume = 100;
 		fading = false;
 	}
 
+	///
 	public uint getPosition() @safe {
 		return playPosition;
 	}
 
+	///
 	public void playMusic() @safe {
 		setMusicTimer(info.wait);
 	}
+	///
 	private void makeSoundObject8(const byte[] wavep, byte track, byte pipi) @safe {
 		uint i,j,k;
 		uint waveTable;	// WAVテーブルをさすポインタ (Pointer to WAV table)
@@ -415,6 +429,7 @@ struct Organya {
 			}
 		}
 	}
+	///
 	private void changeOrganFrequency(ubyte key, byte track, int a) @safe nothrow {
 		for (int j = 0; j < 8; j++) {
 			for (int i = 0; i < 2; i++) {
@@ -422,12 +437,14 @@ struct Organya {
 			}
 		}
 	}
+	///
 	private void changeOrganPan(ubyte key, ubyte pan, byte track) @safe nothrow {	// 512がMAXで256がﾉｰﾏﾙ (512 is MAX and 256 is normal)
 		if (playingSounds[track] != keyDummy) {
 			mixer.getSound(allocatedSounds[track][playingSounds[track] / 12][keyTwin[track]]).pan = (panTable[pan] - 0x100) * 10;
 		}
 	}
 
+	///
 	private void changeOrganVolume(int no, int volume, byte track) @safe nothrow {	// 300がMAXで300がﾉｰﾏﾙ (300 is MAX and 300 is normal)
 		if (playingSounds[track] != keyDummy) {
 			mixer.getSound(allocatedSounds[track][playingSounds[track] / 12][keyTwin[track]]).volume = cast(short)((volume - 0xFF) * 8);
@@ -435,6 +452,7 @@ struct Organya {
 	}
 
 	// サウンドの再生 (Play sound)
+	///
 	private void playOrganObject(ubyte key, int mode, byte track, int freq) @safe nothrow {
 		switch (mode) {
 			case 0:	// 停止 (Stop)
@@ -485,6 +503,7 @@ struct Organya {
 			default: break;
 		}
 	}
+	///
 	private void makeOrganyaWave(byte track, byte waveNumber, byte pipi) @safe {
 		enforce(waveNumber <= 100, "Wave number out of range");
 
@@ -494,20 +513,23 @@ struct Organya {
 	//■オルガーニャドラムス■■■■■■■■/////// (Organya drums)
 	/////////////////////
 
+	///
 	private void changeDrumFrequency(ubyte key, byte track) @safe nothrow {
 		mixer.getSound(secondaryAllocatedSounds[150 + track]).frequency = key * 800 + 100;
 	}
 
+	///
 	private void changeDrumPan(ubyte pan, byte track) @safe nothrow {
 		mixer.getSound(secondaryAllocatedSounds[150 + track]).pan = (panTable[pan] - 0x100) * 10;
 	}
 
+	///
 	private void changeDrumVolume(int volume, byte track) @safe nothrow
 	{
 		mixer.getSound(secondaryAllocatedSounds[150 + track]).volume = cast(short)((volume - 0xFF) * 8);
 	}
 
-	// サウンドの再生 (Play sound)
+	/// サウンドの再生 (Play sound)
 	private void playDrumObject(ubyte key, int mode, byte track) @safe nothrow {
 		switch (mode) {
 			case 0:	// 停止 (Stop)
@@ -530,12 +552,14 @@ struct Organya {
 			default: break;
 		}
 	}
+	///
 	public void changeVolume(int volume) @safe {
 		enforce((volume >= 0) && (volume <= 100), "Volume out of range");
 
 		globalVolume = volume;
 	}
 
+	///
 	public void stopMusic() @safe {
 		setMusicTimer(0);
 
@@ -549,13 +573,16 @@ struct Organya {
 		keyTwin = keyTwin.init;
 	}
 
+	///
 	public void setFadeout() @safe {
 		fading = true;
 	}
 
+	///
 	public void fillBuffer(scope short[2][] finalBuffer) nothrow @safe {
 		mixer.mixSounds(finalBuffer);
 	}
+	///
 	public void loadData(const(ubyte)[] data) @safe {
 		import std.file : read;
 		pixtoneParameters = cast(const(PixtoneParameter)[])(data[0 .. ($ / PixtoneParameter.sizeof) * PixtoneParameter.sizeof]);
@@ -648,10 +675,12 @@ struct Organya {
 		pixtoneSize += makePixToneObject(pixtoneParameters[137 .. 138], 6);
 		pixtoneSize += makePixToneObject(pixtoneParameters[138 .. 139], 7);
 	}
+	///
 	void setMusicTimer(uint milliseconds) @safe {
 		mixer.setCallbackFrequency(milliseconds.msecs);
 	}
 
+	///
 	private int makePixToneObject(const(PixtoneParameter)[] ptp, int no) @safe {
 		int sampleCount;
 		int i, j;
@@ -694,5 +723,5 @@ struct Organya {
 	}
 }
 
-private immutable pass = "Org-01";
-private immutable pass2 = "Org-02";	// Pipi
+private immutable pass = "Org-01"; ///
+private immutable pass2 = "Org-02"; /// Pipi

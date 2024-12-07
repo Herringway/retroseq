@@ -1,4 +1,5 @@
-﻿module pxtone.unit;
+///
+module pxtone.unit;
 // '12/03/03
 
 import pxtone.pxtn;
@@ -12,48 +13,51 @@ import pxtone.woice;
 import std.exception;
 
 // v1x (20byte) =================
+///
 struct UnitVersion1 {
-	char[pxtnMaxTuneUnitName] name;
-	ushort type;
-	ushort group;
+	char[pxtnMaxTuneUnitName] name; ///
+	ushort type; ///
+	ushort group; ///
 }
 
 ///////////////////
 // pxtnUNIT x3x
 ///////////////////
 
+///
 struct Unit {
-	ushort type;
-	ushort group;
+	ushort type; ///
+	ushort group; ///
 }
 
+///
 struct PxtnUnit {
 private:
-	bool bOperated = true;
-	bool bPlayed = true;
-	char[pxtnMaxTuneUnitName + 1] nameBuf = "no name";
-	int nameSize = "no name".length;
+	bool bOperated = true; ///
+	bool bPlayed = true; ///
+	char[pxtnMaxTuneUnitName + 1] nameBuf = "no name"; ///
+	int nameSize = "no name".length; ///
 
 	//	TUNEUNITTONESTRUCT
-	int keyNow;
-	int keyStart;
-	int keyMargin;
-	int portamentSamplePos;
-	int portamentSampleNum;
-	int[pxtnMaxChannel] panVols;
-	int[pxtnMaxChannel] panTimes;
-	int[pxtnBufferSizeTimePan][pxtnMaxChannel] panTimeBufs;
-	int volume;
-	int velocity;
-	int groupNumber;
-	float tuning = 0.0;
+	int keyNow; ///
+	int keyStart; ///
+	int keyMargin; ///
+	int portamentSamplePos; ///
+	int portamentSampleNum; ///
+	int[pxtnMaxChannel] panVols; ///
+	int[pxtnMaxChannel] panTimes; ///
+	int[pxtnBufferSizeTimePan][pxtnMaxChannel] panTimeBufs; ///
+	int volume; ///
+	int velocity; ///
+	int groupNumber; ///
+	float tuning = 0.0; ///
 
-	const(pxtnWoice)* woice;
+	const(pxtnWoice)* woice; ///
 
-	PxtnVoiceTone[pxtnMaxUnitControlVoice] vts;
+	PxtnVoiceTone[pxtnMaxUnitControlVoice] vts; ///
 
 public:
-
+	///
 	void toneInit() nothrow @safe {
 		groupNumber = EventDefault.groupNumber;
 		velocity = EventDefault.velocity;
@@ -68,12 +72,14 @@ public:
 		}
 	}
 
+	///
 	void toneClear() nothrow @safe {
 		for (int i = 0; i < pxtnMaxChannel; i++) {
 			panTimeBufs[i][0 .. pxtnBufferSizeTimePan] = 0;
 		}
 	}
 
+	///
 	void toneResetAnd2prm(int voiceIndex, int envRlsClock, float offsetFreq) nothrow @safe {
 		PxtnVoiceTone* pTone = &vts[voiceIndex];
 		pTone.lifeCount = 0;
@@ -108,24 +114,28 @@ public:
 		}
 	}
 
+	///
 	void toneKeyOn() nothrow @safe {
 		keyNow = keyStart + keyMargin;
 		keyStart = keyNow;
 		keyMargin = 0;
 	}
 
+	///
 	void toneZeroLives() nothrow @safe {
 		for (int i = 0; i < pxtnMaxChannel; i++) {
 			vts[i].lifeCount = 0;
 		}
 	}
 
+	///
 	void toneKey(int key) nothrow @safe {
 		keyStart = keyNow;
 		keyMargin = key - keyStart;
 		portamentSamplePos = 0;
 	}
 
+	///
 	void tonePanVolume(int ch, int pan) nothrow @safe {
 		panVols[0] = 64;
 		panVols[1] = 64;
@@ -138,6 +148,7 @@ public:
 		}
 	}
 
+	///
 	void tonePanTime(int ch, int pan, int sps) nothrow @safe {
 		panTimes[0] = 0;
 		panTimes[1] = 0;
@@ -159,26 +170,32 @@ public:
 		}
 	}
 
+	///
 	void toneVelocity(int val) nothrow @safe {
 		velocity = val;
 	}
 
+	///
 	void toneVolume(int val) nothrow @safe {
 		volume = val;
 	}
 
+	///
 	void tonePortament(int val) nothrow @safe {
 		portamentSampleNum = val;
 	}
 
+	///
 	void toneGroupNumber(int val) nothrow @safe {
 		groupNumber = val;
 	}
 
+	///
 	void toneTuning(float val) nothrow @safe {
 		tuning = val;
 	}
 
+	///
 	void toneSample(bool bMuteByUnit, int channels, int timePanIndex, int smoothSample) nothrow @safe {
 		if (!woice) {
 			return;
@@ -228,11 +245,13 @@ public:
 		}
 	}
 
+	///
 	void toneSupple(int[] groupSamples, int ch, int timePanIndex) const nothrow @safe {
 		int idx = (timePanIndex - panTimes[ch]) & (pxtnBufferSizeTimePan - 1);
 		groupSamples[groupNumber] += panTimeBufs[ch][idx];
 	}
 
+	///
 	int toneIncrementKey() nothrow @safe {
 		// prtament..
 		if (portamentSampleNum && keyMargin) {
@@ -250,6 +269,7 @@ public:
 		return keyNow;
 	}
 
+	///
 	void toneIncrementSample(float freq) nothrow @safe {
 		if (!woice) {
 			return;
@@ -289,6 +309,7 @@ public:
 		}
 	}
 
+	///
 	bool setWoice(const(pxtnWoice)* woice) nothrow @safe {
 		if (!woice) {
 			return false;
@@ -300,10 +321,12 @@ public:
 		return true;
 	}
 
+	///
 	const(pxtnWoice)* getWoice() const nothrow @safe {
 		return woice;
 	}
 
+	///
 	bool setNameBuf(scope const char[] name) nothrow @safe {
 		if (!name || name.length > pxtnMaxTuneUnitName) {
 			return false;
@@ -316,10 +339,12 @@ public:
 		return true;
 	}
 
+	///
 	const(char)[] getNameBuf() const return nothrow @safe {
 		return nameBuf[0 .. nameSize];
 	}
 
+	///
 	bool isNameBuf() const nothrow @safe {
 		if (nameSize > 0) {
 			return true;
@@ -327,26 +352,32 @@ public:
 		return false;
 	}
 
+	///
 	PxtnVoiceTone* getTone(int voiceIndex) return nothrow @safe {
 		return &vts[voiceIndex];
 	}
 
+	///
 	void setOperated(bool b) nothrow @safe {
 		bOperated = b;
 	}
 
+	///
 	void setPlayed(bool b) nothrow @safe {
 		bPlayed = b;
 	}
 
+	///
 	bool getOperated() const nothrow @safe {
 		return bOperated;
 	}
 
+	///
 	bool getPlayed() const nothrow @safe {
 		return bPlayed;
 	}
 
+	///
 	void read(ref PxtnDescriptor pDoc, out int pGroup) @safe {
 		Unit unit;
 		int size = 0;
@@ -359,6 +390,7 @@ public:
 		pGroup = unit.group;
 	}
 
+	///
 	void readOld(ref PxtnDescriptor pDoc, out int pGroup) @safe {
 		UnitVersion1 unit;
 		int size;

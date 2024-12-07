@@ -1,4 +1,5 @@
-﻿module pxtone.master;
+///
+module pxtone.master;
 // '12/03/03
 
 import pxtone.pxtn;
@@ -13,23 +14,26 @@ import pxtone.util;
 /////////////////////////////////
 
 // master info(8byte) ================
+///
 struct Master {
-	ushort dataNumber; // data-num is 3 ( clock / status / volume ）
-	ushort rrr;
-	uint eventNumber;
+	ushort dataNumber; /// data-num is 3 (clock / status / volume)
+	ushort rrr; ///
+	uint eventNumber; ///
 }
 
+///
 struct PxtnMaster {
 private:
-	int beatNum = EventDefault.beatNumber;
-	float beatTempo = EventDefault.beatTempo;
-	int beatClock = EventDefault.beatClock;
-	int measNum = 1;
-	int repeatMeas;
-	int lastMeas;
-	int volume;
+	int beatNum = EventDefault.beatNumber; ///
+	float beatTempo = EventDefault.beatTempo; ///
+	int beatClock = EventDefault.beatClock; ///
+	int measNum = 1; ///
+	int repeatMeas; ///
+	int lastMeas; ///
+	int volume; ///
 
 public:
+	///
 	void reset() nothrow @safe {
 		beatNum = EventDefault.beatNumber;
 		beatTempo = EventDefault.beatTempo;
@@ -39,12 +43,14 @@ public:
 		lastMeas = 0;
 	}
 
+	///
 	void set(int beatNum, float beatTempo, int beatClock) nothrow @safe {
 		this.beatNum = beatNum;
 		this.beatTempo = beatTempo;
 		this.beatClock = beatClock;
 	}
 
+	///
 	void get(out int pBeatNum, out float pBeatTempo, out int pBeatClock, out int pMeasNum) const nothrow @safe {
 		pBeatNum = this.beatNum;
 		pBeatTempo = this.beatTempo;
@@ -52,34 +58,42 @@ public:
 		pMeasNum = this.measNum;
 	}
 
+	///
 	int getBeatNum() const nothrow @safe {
 		return beatNum;
 	}
 
+	///
 	float getBeatTempo() const nothrow @safe {
 		return beatTempo;
 	}
 
+	///
 	int getBeatClock() const nothrow @safe {
 		return beatClock;
 	}
 
+	///
 	int getMeasNum() const nothrow @safe {
 		return measNum;
 	}
 
+	///
 	int getRepeatMeas() const nothrow @safe {
 		return repeatMeas;
 	}
 
+	///
 	int getLastMeas() const nothrow @safe {
 		return lastMeas;
 	}
 
+	///
 	int getLastClock() const nothrow @safe {
 		return lastMeas * beatClock * beatNum;
 	}
 
+	///
 	int getPlayMeas() const nothrow @safe {
 		if (lastMeas) {
 			return lastMeas;
@@ -87,6 +101,7 @@ public:
 		return measNum;
 	}
 
+	///
 	void setMeasNum(int measNum) nothrow @safe {
 		if (measNum < 1) {
 			measNum = 1;
@@ -100,6 +115,7 @@ public:
 		this.measNum = measNum;
 	}
 
+	///
 	void setRepeatMeas(int meas) nothrow @safe {
 		if (meas < 0) {
 			meas = 0;
@@ -107,6 +123,7 @@ public:
 		repeatMeas = meas;
 	}
 
+	///
 	void setLastMeas(int meas) nothrow @safe {
 		if (meas < 0) {
 			meas = 0;
@@ -114,6 +131,7 @@ public:
 		lastMeas = meas;
 	}
 
+	///
 	void setBeatClock(int beatClock) nothrow @safe {
 		if (beatClock < 0) {
 			beatClock = 0;
@@ -121,6 +139,7 @@ public:
 		this.beatClock = beatClock;
 	}
 
+	///
 	void adjustMeasNum(int clock) nothrow @safe {
 		int mNum;
 		int bNum;
@@ -138,10 +157,12 @@ public:
 		}
 	}
 
+	///
 	int getThisClock(int meas, int beat, int clock) const nothrow @safe {
 		return beatNum * beatClock * meas + beatClock * beat + clock;
 	}
 
+	///
 	void ioWrite(ref PxtnDescriptor pDoc, int rough) const @safe {
 		uint size = 15;
 		short bclock = cast(short)(beatClock / rough);
@@ -157,6 +178,7 @@ public:
 		pDoc.write(clockLast);
 	}
 
+	///
 	void ioRead(ref PxtnDescriptor pDoc) @safe {
 		short beatClock = 0;
 		byte beatNum = 0;
@@ -185,6 +207,7 @@ public:
 		setLastMeas(clockLast / (beatNum * beatClock));
 	}
 
+	///
 	int ioReadEventNumber(ref PxtnDescriptor pDoc) @safe {
 		uint size;
 		pDoc.read(size);
@@ -196,6 +219,7 @@ public:
 		return 5;
 	}
 
+	///
 	void ioReadOld(ref PxtnDescriptor pDoc) @safe {
 		Master mast;
 		int size = 0;
@@ -282,6 +306,7 @@ public:
 		setLastMeas(lastClock / (beatNum * beatClock));
 	}
 
+	///
 	int ioReadOldEventNumber(ref PxtnDescriptor pDoc) @safe {
 		Master mast;
 		int size;

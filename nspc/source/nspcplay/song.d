@@ -1,3 +1,4 @@
+///
 module nspcplay.song;
 
 import std.algorithm.comparison : among, max, min;
@@ -14,26 +15,27 @@ import nspcplay.samples;
 import nspcplay.sequence;
 import nspcplay.tags;
 
-private enum maxInstruments = 128;
-private enum maxSampleCount = 128;
+private enum maxInstruments = 128; ///
+private enum maxSampleCount = 128; ///
 
+///
 enum PhraseType {
-	pattern,
-	jumpLimited,
-	jump,
-	end,
-	fastForwardOn,
-	fastForwardOff,
+	pattern, ///
+	jumpLimited, ///
+	jump, ///
+	end, ///
+	fastForwardOn, ///
+	fastForwardOff, ///
 }
 ///
 struct NSPCFileHeader {
 	align(1):
 	static union Extra {
-		struct { //Variant.prototype, addmusick
-			ushort percussionBase;
-			ushort customInstruments; //addmusick only
+		struct { // Variant.prototype, addmusick
+			ushort percussionBase; ///
+			ushort customInstruments; /// addmusick only
 		}
-		ubyte[19] reserved;
+		ubyte[19] reserved; ///
 	}
 	/// Which version of NSPC to use
 	Variant variant;
@@ -53,10 +55,11 @@ struct NSPCFileHeader {
 	ubyte firCoefficientTableCount;
 }
 
+///
 struct Phrase {
-	PhraseType type;
-	ushort id;
-	ushort jumpTimes;
+	PhraseType type; ///
+	ushort id; ///
+	ushort jumpTimes; ///
 	void toString(S)(ref S sink) const {
 		import std.format : formattedWrite;
 		final switch (type) {
@@ -82,27 +85,29 @@ struct Phrase {
 	}
 }
 
+///
 struct Track {
-	const(Command)[] data;
+	const(Command)[] data; ///
 }
 
+///
 struct Song {
-	private NSPCFileHeader header;
-	Phrase[] order;
-	ushort[8][ushort] trackLists;
-	Track[ushort] tracks;
-	const(ubyte[8])[] firCoefficients = defaultFIRCoefficients;
-	ubyte[8] releaseTable;
+	private NSPCFileHeader header; ///
+	Phrase[] order; ///
+	ushort[8][ushort] trackLists; ///
+	Track[ushort] tracks; ///
+	const(ubyte[8])[] firCoefficients = defaultFIRCoefficients; ///
+	ubyte[8] releaseTable; ///
 	/// Alternative release table to use when switch command is used (AMK)
-	ubyte[8] altReleaseTable;
-	ubyte[16] volumeTable;
-	Variant variant;
-	const(Instrument)[] instruments;
-	Sample[128] samples;
-	ubyte[256] percussionNotes;
-	size_t percussionBase;
-	byte masterVolume = 0x70;
-	TagPair[] tags;
+	ubyte[8] altReleaseTable; ///
+	ubyte[16] volumeTable; ///
+	Variant variant; ///
+	const(Instrument)[] instruments; ///
+	Sample[128] samples; ///
+	ubyte[256] percussionNotes; ///
+	size_t percussionBase; ///
+	byte masterVolume = 0x70; ///
+	TagPair[] tags; ///
 	/// Load a single sequence pack at a given address
 	void loadSequencePack(const(ubyte)[] data, ushort base) @safe {
 		loadSequence(data, base);
@@ -112,11 +117,13 @@ struct Song {
 		ushort base = read!ushort(data, 2);
 		loadSequence(data, base);
 	}
+	///
 	private void loadSequence(const(ubyte)[] data, ushort base) @safe {
 		ubyte[65536] buffer;
 		loadAllSubpacks(buffer, data);
 		loadSequenceBuffer(buffer[], base);
 	}
+	///
 	void loadSequenceBuffer(scope const(ubyte)[] buffer, ushort base) @safe {
 		order = decompilePhrases(buffer[], base);
 		decompileSong(buffer[], this);
@@ -125,6 +132,7 @@ struct Song {
 	void loadInstruments(scope ubyte[] buffer, ushort instrumentBase, ushort sampleBase) @safe {
 		initializeInstruments(buffer, instrumentBase, sampleBase);
 	}
+	///
 	void loadInstruments(const(ubyte)[][] packs, ushort instrumentBase, ushort sampleBase) @safe {
 		ubyte[65536] buffer;
 		foreach (pack; packs) {
@@ -136,12 +144,14 @@ struct Song {
 	void loadInstrumentPack(scope ref ubyte[65536] buffer, const(ubyte)[] pack) @safe {
 		loadAllSubpacks(buffer[], pack);
 	}
+	///
 	void initializeInstruments(scope const ubyte[] buffer, ushort instrumentBase, ushort sampleBase) @safe {
 		NSPCFileHeader fakeHeader;
 		fakeHeader.instrumentBase = instrumentBase;
 		fakeHeader.sampleBase = sampleBase;
 		processInstruments(this, buffer, fakeHeader);
 	}
+	///
 	void loadNSPC(const NSPCFileHeader header, scope const ubyte[] data, ushort[] phrases = []) @safe {
 		debug(nspclogging) tracef("Loading NSPC - so: %X, i: %X, sa: %X, variant: %s", header.songBase, header.instrumentBase, header.sampleBase, header.variant);
 		this.header = header;
@@ -160,6 +170,7 @@ struct Song {
 		debug(nspclogging) tracef("FIR coefficients: %s", firCoefficients);
 
 	}
+	///
 	private void validatePhrases() @safe {
 		import std.algorithm.comparison : among;
 		bool endFound;
@@ -183,6 +194,7 @@ struct Song {
 		enforce!NSPCException(order.length > 0, "No phrases loaded");
 		enforce!NSPCException(order[$ - 1].type.among(PhraseType.end, PhraseType.jump), "Phrase list must have an end phrase");
 	}
+	///
 	private void validateInstrument(size_t id) @safe {
 		enforce!NSPCException(id < instruments.length, format!"Invalid instrument %s - Index out of bounds"(id));
 		const idata = instruments[id];
@@ -193,6 +205,7 @@ struct Song {
 			}
 		}
 	}
+	///
 	void validateTrack(scope const Track track, bool isSub, ref ubyte tmpPercussionBase) @safe {
 		const(Command)[] data = track.data;
 		bool endReached;
@@ -239,6 +252,7 @@ struct Song {
 			}
 		}
 	}
+	///
 	package size_t absoluteInstrumentID(size_t id, size_t base, bool percussion) const @safe pure nothrow {
 		if (id >= percussionID(variant)) {
 			percussion = true;
@@ -249,6 +263,7 @@ struct Song {
 		}
 		return id;
 	}
+	///
 	package ubyte defaultTempo() const @safe pure nothrow {
 		if (variant == Variant.konami) {
 			return 0x40;
@@ -259,21 +274,26 @@ struct Song {
 		return 0x20;
 	}
 	// I hope these two never need to be changed
+	///
 	package ubyte masterVolumeL() const @safe pure nothrow {
 		return masterVolume;
 	}
+	///
 	package ubyte masterVolumeR() const @safe pure nothrow {
 		return masterVolume;
 	}
+	///
 	package bool defaultEnchantedReadahead() const @safe pure nothrow {
 		return !variant.among(Variant.prototype, Variant.addmusick);
 	}
+	///
 	package ubyte defaultEnabledChannels() const @safe pure nothrow {
 		if (variant.among(Variant.prototype, Variant.addmusick)) {
 			return 0b11011111;
 		}
 		return 0b11111111;
 	}
+	///
 	void toString(S)(ref S sink) const {
 		import std.format : formattedWrite;
 		import std.range : put;
@@ -308,48 +328,57 @@ struct Song {
 			printSequence(subroutine);
 		}
 	}
+	///
 	private void _tmp() const {
 		import std.range : nullSink;
 		auto n = nullSink;
 		toString(n);
 	}
+	///
 	const(Sample)[] getSamples() const pure @safe nothrow return {
 		import std.algorithm.iteration : filter;
 		import std.array : array;
 		return samples[].filter!(x => x.isValid).array;
 	}
+	///
 	void replaceSample(size_t index, short[] data, int newLoop) @safe pure nothrow {
 		samples[index].data = data;
 		samples[index].loopLength = newLoop;
 	}
+	///
 	void replaceSample(size_t index, short[] data) @safe pure nothrow {
 		replaceSample(index, data, samples[index].loopLength);
 	}
+	///
 	bool isValid() const @safe pure nothrow {
 		return trackLists.length != 0;
 	}
 }
+///
 private struct PrototypeInstrument {
 	align(1):
-	ubyte sampleID;
-	ADSRGain adsrGain;
-	ubyte tuning;
+	ubyte sampleID; ///
+	ADSRGain adsrGain; ///
+	ubyte tuning; ///
+	///
 	Instrument opCast(T: Instrument)() const {
 		return Instrument(sampleID, adsrGain, tuning, 0);
 	}
 }
+///
 private struct PrototypePercussion {
 	align(1):
-	ubyte sampleID;
-	ADSRGain adsrGain;
-	ubyte tuning;
-	ubyte note;
+	ubyte sampleID; ///
+	ADSRGain adsrGain; ///
+	ubyte tuning; ///
+	ubyte note; ///
+	///
 	Instrument opCast(T: Instrument)() const {
 		return Instrument(sampleID, adsrGain, tuning, 0);
 	}
 }
 
-// note style tables, from 6F80
+/// note style tables, from 6F80
 package immutable ubyte[8][] releaseTables = [
 	[0x32, 0x65, 0x7F, 0x98, 0xB2, 0xCB, 0xE5, 0xFC],
 	[0x33, 0x66, 0x7F, 0x99, 0xB2, 0xCC, 0xE5, 0xFC], // HAL (Earthbound)
@@ -358,6 +387,7 @@ package immutable ubyte[8][] releaseTables = [
 	[0x7F, 0xA5, 0xB2, 0xBF, 0xCC, 0xD8, 0xE5, 0xFC], // Nintendo (Star Fox 2)
 	[0x33, 0x66, 0x80, 0x99, 0xB3, 0xCC, 0xE6, 0xFF], // Nintendo (Prototype)
 ];
+///
 package immutable ubyte[16][] volumeTables = [
 	[0x19, 0x32, 0x4C, 0x65, 0x72, 0x7F, 0x8C, 0x98, 0xA5, 0xB2, 0xBF, 0xCB, 0xD8, 0xE5, 0xF2, 0xFC],
 	[0x19, 0x33, 0x4C, 0x66, 0x72, 0x7F, 0x8C, 0x99, 0xA5, 0xB2, 0xBF, 0xCC, 0xD8, 0xE5, 0xF2, 0xFC], // HAL (Earthbound)
@@ -366,6 +396,7 @@ package immutable ubyte[16][] volumeTables = [
 	[0x00, 0x33, 0x4C, 0x66, 0x72, 0x7F, 0x8C, 0x99, 0xA5, 0xB2, 0xBF, 0xCC, 0xD8, 0xE5, 0xF2, 0xFC], // Nintendo (Star Fox 2)
 	[0x08, 0x12, 0x1B, 0x24, 0x2C, 0x35, 0x3E, 0x47, 0x51, 0x5A, 0x62, 0x6B, 0x7D, 0x8F, 0xA1, 0xB3], // Nintendo (Prototype)
 ];
+///
 package immutable ubyte[8][] defaultFIRCoefficients = [
 	[0x7F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
 	[0x58, 0xBF, 0xDB, 0xF0, 0xFE, 0x07, 0x0C, 0x0C],
@@ -373,6 +404,7 @@ package immutable ubyte[8][] defaultFIRCoefficients = [
 	[0x34, 0x33, 0x00, 0xD9, 0xE5, 0x01, 0xFC, 0xEB],
 ];
 
+///
 const(ubyte)[] loadAllSubpacks(scope ubyte[] buffer, return scope const(ubyte)[] pack) @safe {
 	ushort size, base;
 	while (true) {
@@ -418,6 +450,7 @@ Song loadNSPCFile(const(ubyte)[] data, ushort[] phrases = []) @safe {
 	song.loadNSPC(header, buffer[]);
 	return song;
 }
+///
 private Phrase[] decompilePhrases(scope const(ubyte)[] data, ushort startAddress) @safe {
 	// Get order length and repeat info (at this point, we don't know how
 	// many patterns there are, so the pattern pointers aren't validated yet)
@@ -441,6 +474,7 @@ private Phrase[] decompilePhrases(scope const(ubyte)[] data, ushort startAddress
 	enforce!NSPCException(phraseCount > 0, "No phrases in song");
 	return interpretPhrases(wpO[0 .. index + 1], startAddress);
 }
+///
 private Phrase[] interpretPhrases(const scope ushort[] addresses, ushort startAddress) @safe {
 	ushort phraseID(ushort address) {
 		ushort id;
@@ -489,6 +523,7 @@ private Phrase[] interpretPhrases(const scope ushort[] addresses, ushort startAd
 	}
 	return newPhrases;
 }
+///
 private void decompileSong(scope const(ubyte)[] data, ref Song song) @safe {
 	immutable copyData = data.idup;
 
@@ -515,6 +550,7 @@ private void decompileSong(scope const(ubyte)[] data, ref Song song) @safe {
 		}
 	}
 }
+///
 private Track decompileTrack(immutable(ubyte)[] data, ushort start, ref Song song, ref ubyte tmpPercussionBase, bool recurse) @safe {
 	Track track;
 	// Determine the end of the track.
@@ -543,6 +579,7 @@ private Track decompileTrack(immutable(ubyte)[] data, ushort start, ref Song son
 	song.validateTrack(track, false, tmpPercussionBase);
 	return track;
 }
+///
 private void processInstruments(ref Song song, scope const ubyte[] buffer, const NSPCFileHeader header) @safe {
 	decodeSamples(song, buffer, cast(const(ushort[2])[])(buffer[header.sampleBase .. header.sampleBase + maxSampleCount * 4]));
 	song.instruments = [];
@@ -575,6 +612,7 @@ private void processInstruments(ref Song song, scope const ubyte[] buffer, const
 		}
 	}
 }
+///
 private void decodeSamples(ref Song song, scope const ubyte[] buffer, const scope ushort[2][] ptrtable) nothrow @safe {
 	foreach (idx, ref sample; song.samples) {
 		const start = ptrtable[idx][0];
@@ -594,10 +632,12 @@ private void decodeSamples(ref Song song, scope const ubyte[] buffer, const scop
 	}
 }
 
+///
 struct Pack {
-	ushort size;
-	ushort address;
-	const(ubyte)[] data;
+	ushort size; ///
+	ushort address; ///
+	const(ubyte)[] data; ///
+	///
 	this(ushort addr, const(ubyte)[] data) @safe pure {
 		this.address = addr;
 		this.data = data;
@@ -606,15 +646,18 @@ struct Pack {
 	}
 }
 
+///
 struct NSPCWriter {
-	private static immutable ubyte[] packTerminator = [0, 0];
-	NSPCFileHeader[1] header_;
+	private static immutable ubyte[] packTerminator = [0, 0]; ///
+	NSPCFileHeader[1] header_; ///
+	///
 	ref header() @safe pure {
 		return header_[0];
 	}
-	const(Pack)[] packs;
-	const(ubyte[8])[] firCoefficients;
-	const(TagPair)[] tags;
+	const(Pack)[] packs; ///
+	const(ubyte[8])[] firCoefficients; ///
+	const(TagPair)[] tags; ///
+	///
 	void toBytes(W)(ref W writer) const {
 		import std.bitmanip : nativeToLittleEndian;
 		import std.range : put;
@@ -634,6 +677,7 @@ struct NSPCWriter {
 	}
 }
 
+///
 const(Pack)[] parsePacks(const(ubyte)[] input) {
 	const(Pack)[] result;
 	size_t offset = 0;

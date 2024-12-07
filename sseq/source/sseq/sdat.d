@@ -1,3 +1,4 @@
+///
 module sseq.sdat;
 
 import std.algorithm.sorting;
@@ -16,29 +17,33 @@ import sseq.sbnk;
 import sseq.sseq;
 import sseq.swar;
 
+///
 struct Song {
-	const(SSEQ)* sseq;
-	const(SBNK)* sbnk;
-	const(SWAR)*[4] swar;
+	const(SSEQ)* sseq; ///
+	const(SBNK)* sbnk; ///
+	const(SWAR)*[4] swar; ///
 }
 
+///
 struct SDAT
 {
+	///
 	private static struct Block {
 		align(1):
-		uint offset;
-		uint size;
+		uint offset; ///
+		uint size; ///
 	}
-	NDSStdHeader header;
-	INFOSection infoSection;
-	FATSection fatSection;
-	Nullable!SYMBSection symbSection;
-	const(ubyte)[] sdatData;
-	const(ubyte)[] symbSectionData;
-	const(ubyte)[] infoSectionData;
-	const(ubyte)[] fatSectionData;
-	const(ubyte)[] fileSectionData;
+	NDSStdHeader header; ///
+	INFOSection infoSection; ///
+	FATSection fatSection; ///
+	Nullable!SYMBSection symbSection; ///
+	const(ubyte)[] sdatData; ///
+	const(ubyte)[] symbSectionData; ///
+	const(ubyte)[] infoSectionData; ///
+	const(ubyte)[] fatSectionData; ///
+	const(ubyte)[] fileSectionData; ///
 
+	///
 	this(const(ubyte)[] data) @safe {
 		sdatData = data;
 		auto origData = data;
@@ -61,6 +66,7 @@ struct SDAT
 		readSection!INFOSection(infoSection, infoSectionData, info.offset, "INFO");
 		readSection!FATSection(fatSection, fatSectionData, fat.offset, "FAT ");
 	}
+	///
 	auto sseqs() {
 		static struct Result {
 			static struct SongEntry {
@@ -82,10 +88,12 @@ struct SDAT
 		}
 		return Result(infoSection, symbSection, symbSectionData, infoSectionData);
 	}
+	///
 	const(ubyte)[] readFile(size_t id) const @safe /*pure*/ {
 		const record = fatSection.file(fatSectionData, id);
 		return sdatData[record.offset .. record.offset + record.size];
 	}
+	///
 	Song getSSEQ(uint sseqToLoad) @safe {
 		Song song;
 		enforce(infoSection.SEQrecord(infoSectionData).length, "No SSEQ records found in SDAT");

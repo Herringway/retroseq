@@ -1,3 +1,4 @@
+///
 module m4a.m4a_tables;
 
 import retroseq.utility;
@@ -6,9 +7,9 @@ import m4a.internal;
 import m4a.m4a;
 import m4a.music_player;
 
-// Some of these functions have different signatures, so we need to make this
-// an array of void pointers or a struct. It's simpler to just make it an array
-// for now.
+/// Some of these functions have different signatures, so we need to make this
+/// an array of void pointers or a struct. It's simpler to just make it an array
+/// for now.
 immutable MPlayFunc[] gMPlayJumpTableTemplate =
 [
 	&MP2K_event_fine,
@@ -49,7 +50,7 @@ immutable MPlayFunc[] gMPlayJumpTableTemplate =
 	&SoundMainBTM,
 ];
 
-// This is a table of deltas between sample values in compressed PCM data.
+/// This is a table of deltas between sample values in compressed PCM data.
 immutable byte[] gDeltaEncodingTable =
 [
 	0,
@@ -70,6 +71,7 @@ immutable byte[] gDeltaEncodingTable =
 	-1,
 ];
 
+///
 immutable ubyte[] gScaleTable =
 [
 	0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA, 0xEB,
@@ -89,6 +91,7 @@ immutable ubyte[] gScaleTable =
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
 ];
 
+///
 immutable uint[] gFreqTable =
 [
 	2147483648u,
@@ -105,6 +108,7 @@ immutable uint[] gFreqTable =
 	4053909305u,
 ];
 
+///
 immutable ushort[] gPcmSamplesPerVBlankTable =
 [
 	96,
@@ -121,6 +125,7 @@ immutable ushort[] gPcmSamplesPerVBlankTable =
 	701,
 ];
 
+///
 immutable ubyte[] gCgbScaleTable =
 [
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
@@ -136,6 +141,7 @@ immutable ubyte[] gCgbScaleTable =
 	0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xAB,
 ];
 
+///
 immutable short[] gCgbFreqTable =
 [
 	-2004,
@@ -152,6 +158,7 @@ immutable short[] gCgbFreqTable =
 	-1062,
 ];
 
+///
 immutable ubyte[] gNoiseTable =
 [
 	0xD7, 0xD6, 0xD5, 0xD4,
@@ -171,6 +178,7 @@ immutable ubyte[] gNoiseTable =
 	0x03, 0x02, 0x01, 0x00,
 ];
 
+///
 immutable ubyte[] gCgb3Vol =
 [
 	0x00, 0x00,
@@ -180,6 +188,7 @@ immutable ubyte[] gCgb3Vol =
 	0x20, 0x20,
 ];
 
+///
 immutable ubyte[] gClockTable =
 [
 	0x00,
@@ -233,35 +242,35 @@ immutable ubyte[] gClockTable =
 	0x60,
 ];
 
-enum FINE = 0xb1;
-enum GOTO = 0xb2;
-enum PATT = 0xb3;
-enum PEND = 0xb4;
-enum REPT = 0xb5;
-enum MEMACC = 0xb9;
-enum PRIO = 0xba;
-enum TEMPO = 0xbb;
-enum KEYSH = 0xbc;
-enum VOICE = 0xbd;
-enum VOL = 0xbe;
-enum PAN = 0xbf;
-enum BEND = 0xc0;
-enum BENDR = 0xc1;
-enum LFOS = 0xc2;
-enum LFODL = 0xc3;
-enum MOD = 0xc4;
-enum MODT = 0xc5;
-enum TUNE = 0xc8;
+enum FINE = 0xb1; ///
+enum GOTO = 0xb2; ///
+enum PATT = 0xb3; ///
+enum PEND = 0xb4; ///
+enum REPT = 0xb5; ///
+enum MEMACC = 0xb9; ///
+enum PRIO = 0xba; ///
+enum TEMPO = 0xbb; ///
+enum KEYSH = 0xbc; ///
+enum VOICE = 0xbd; ///
+enum VOL = 0xbe; ///
+enum PAN = 0xbf; ///
+enum BEND = 0xc0; ///
+enum BENDR = 0xc1; ///
+enum LFOS = 0xc2; ///
+enum LFODL = 0xc3; ///
+enum MOD = 0xc4; ///
+enum MODT = 0xc5; ///
+enum TUNE = 0xc8; ///
 
-enum XCMD = 0xcd;
-enum xRELE = 0x07;
-enum xIECV = 0x08;
-enum xIECL = 0x09;
+enum XCMD = 0xcd; ///
+enum xRELE = 0x07; ///
+enum xIECV = 0x08; ///
+enum xIECL = 0x09; ///
 
-enum EOT = 0xce;
-enum TIE = 0xcf;
+enum EOT = 0xce; ///
+enum TIE = 0xcf; ///
 
-
+///
 immutable XcmdFunc[] gXcmdTable =
 [
 	&ply_xxx,

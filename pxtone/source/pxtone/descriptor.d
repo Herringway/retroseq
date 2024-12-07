@@ -1,3 +1,4 @@
+///
 module pxtone.descriptor;
 // '11/08/12 pxFile.h
 // '16/01/22 pxFile.h
@@ -11,29 +12,33 @@ import std.exception;
 import std.stdio;
 import std.traits;
 
+///
 enum PxSCE = false;
 
+///
 enum PxtnSeek {
-	set = 0,
-	cur,
-	end,
-	num
+	set = 0, ///
+	cur, ///
+	end, ///
+	num ///
 }
 
+///
 struct PxtnDescriptor {
 private:
-	ubyte[] buffer;
-	File file;
-	bool isFile;
-	bool readOnly;
-	int size;
-	int currentPosition;
+	ubyte[] buffer; ///
+	File file; ///
+	bool isFile; ///
+	bool readOnly; ///
+	int size; ///
+	int currentPosition; ///
 
+	///
 	bool isOpen() nothrow @safe {
 		return (buffer != null) || file.isOpen;
 	}
 public:
-
+	///
 	void setFileReadOnly(ref File fd) @safe {
 		enforce(fd.isOpen, new PxtoneException("File must be opened for reading"));
 
@@ -49,6 +54,7 @@ public:
 		currentPosition = 0;
 	}
 
+	///
 	void setFileWritable(ref File fd) @safe {
 		file = fd;
 		size = 0;
@@ -57,6 +63,7 @@ public:
 		currentPosition = 0;
 	}
 
+	///
 	void setMemoryReadOnly(ubyte[] buf) @safe {
 		enforce(buf.length >= 1, new PxtoneException("No data to read in buffer"));
 		buffer = buf;
@@ -65,6 +72,7 @@ public:
 		currentPosition = 0;
 	}
 
+	///
 	void seek(PxtnSeek mode, int val) @safe {
 		if (isFile) {
 			static immutable int[PxtnSeek.num] seekMapping = [SEEK_SET, SEEK_CUR, SEEK_END];
@@ -92,6 +100,7 @@ public:
 		}
 	}
 
+	///
 	void write(T)(const T p) @safe if (!is(T : U[], U)) {
 		union RawAccess {
 			T t;
@@ -99,6 +108,8 @@ public:
 		}
 		write(RawAccess(p).bytes);
 	}
+
+	///
 	void write(T)(scope const(T)[] p) @safe {
 		enforce(isOpen && isFile && !readOnly, new PxtoneException("File must be opened for writing"));
 
@@ -106,6 +117,7 @@ public:
 		size += p.length * T.sizeof;
 	}
 
+	///
 	void read(T)(T[] p) @safe {
 		enforce(isOpen, new PxtoneException("File must be opened for reading"));
 		enforce(readOnly, new PxtoneException("File must be opened for reading"));
@@ -120,6 +132,8 @@ public:
 			}
 		}
 	}
+
+	///
 	void read(T)(ref T p) @safe if (!is(T : U[], U)) {
 		enforce(isOpen, new PxtoneException("File must be opened for reading"));
 		enforce(readOnly, new PxtoneException("File must be opened for reading"));
@@ -134,6 +148,7 @@ public:
 	}
 
 	// ..uint
+	///
 	void writeVarInt(int val) @safe {
 		int dummy;
 		writeVarInt(val, dummy);
@@ -185,6 +200,7 @@ public:
 		size += bytes;
 	}
 	// 可変長読み込み（int  までを保証）
+	///
 	void readVarInt(T)(ref T p) {
 		enforce(isOpen && readOnly, new PxtoneException("File must be opened for reading"));
 
@@ -233,11 +249,13 @@ public:
 		p = (cast(int[]) b[0 .. 4])[0];
 	}
 
+	///
 	int getByteSize() const nothrow @safe {
 		return isFile ? size : cast(int)buffer.length;
 	}
 }
 
+///
 int getVarIntSize(int val) nothrow @safe {
 	uint us;
 
@@ -262,21 +280,25 @@ int getVarIntSize(int val) nothrow @safe {
 	return 6;
 }
 
+///
 private T trustedRead(T)(File file) @safe if (!hasIndirections!T) {
 	T[1] p;
 	file.trustedRead(p);
 	return p[0];
 }
 
+///
 private void trustedRead(T)(File file, T[] arr) @trusted if (!hasIndirections!T) {
 	file.rawRead(arr);
 }
 
+///
 private void trustedWrite(T)(File file, T val) @safe if (!hasIndirections!T) {
 	T[1] p = [val];
 	file.trustedWrite(p);
 }
 
+///
 private void trustedWrite(T)(File file, T[] arr) @trusted if (!hasIndirections!T) {
 	file.rawWrite(arr);
 }

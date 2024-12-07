@@ -1,6 +1,7 @@
+///
 module sseq.common;
 
-/*
+/**
  * The following function is used to convert an integer into a hexidecimal
  * string, the length being determined by the size of the integer.  8-bit
  * integers are in the format of 0x00, 16-bit integers are in the format of
@@ -18,29 +19,30 @@ string NumToHexString(T)(ref const T num)
 	return "0x" ~ hex;
 }
 
-/*
+/**
  * SDAT Record types
  * List of types taken from the Nitro Composer Specification
  * http://www.feshrine.net/hacking/doc/nds-sdat.html
  */
 enum RecordName
 {
-	REC_SEQ,
-	REC_SEQARC,
-	REC_BANK,
-	REC_WAVEARC,
-	REC_PLAYER,
-	REC_GROUP,
-	REC_PLAYER2,
-	REC_STRM
+	REC_SEQ, ///
+	REC_SEQARC, ///
+	REC_BANK, ///
+	REC_WAVEARC, ///
+	REC_PLAYER, ///
+	REC_GROUP, ///
+	REC_PLAYER2, ///
+	REC_STRM, ///
 }
 
+///
 bool VerifyHeader(size_t N)(ref byte[N] arr, const string header) @safe
 {
 	return arr[] == header;
 }
 
-/*
+/**
  * The remaining functions in this file come from the FeOS Sound System source code.
  */
 int Cnv_Attack(int attk) @safe
@@ -56,6 +58,7 @@ int Cnv_Attack(int attk) @safe
 	return attk >= 0x6D ? lut[0x7F - attk] : 0xFF - attk;
 }
 
+///
 int Cnv_Fall(int fall) @safe
 {
 	if (fall & 0x80) // Supposedly invalid value...
@@ -70,6 +73,7 @@ int Cnv_Fall(int fall) @safe
 		return (0x1E00 / (0x7E - fall)) & 0xFFFF;
 }
 
+///
 int Cnv_Scale(int scale)
 {
 	static const short[] lut =
@@ -97,6 +101,7 @@ int Cnv_Scale(int scale)
 	return lut[scale];
 }
 
+///
 int Cnv_Sust(int sust) @safe
 {
 	static const short[] lut =
@@ -124,6 +129,7 @@ int Cnv_Sust(int sust) @safe
 	return lut[sust];
 }
 
+///
 int Cnv_Sine(int arg) @safe
 {
 	static const int lut_size = 32;
@@ -143,6 +149,7 @@ int Cnv_Sine(int arg) @safe
 	return -lut[4 * lut_size - arg];
 }
 
+///
 int read8(ref const(ubyte)[] ppData) @safe
 {
 	int x = ppData[0];
@@ -150,6 +157,7 @@ int read8(ref const(ubyte)[] ppData) @safe
 	return x;
 }
 
+///
 int read16(ref const(ubyte)[] ppData) @safe
 {
 	int x = read8(ppData);
@@ -157,6 +165,7 @@ int read16(ref const(ubyte)[] ppData) @safe
 	return x;
 }
 
+///
 int read24(ref const(ubyte)[] ppData) @safe
 {
 	int x = read8(ppData);
@@ -165,6 +174,7 @@ int read24(ref const(ubyte)[] ppData) @safe
 	return x;
 }
 
+///
 int readvl(ref const(ubyte)[] ppData) @safe
 {
 	int x = 0;

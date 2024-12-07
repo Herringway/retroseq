@@ -1,3 +1,4 @@
+///
 module sseq.track;
 
 import sseq.channel;
@@ -8,25 +9,29 @@ import sseq.sbnk;
 
 import std.random;
 
+///
 enum StackType
 {
-	STACKTYPE_CALL,
-	STACKTYPE_LOOP
+	STACKTYPE_CALL, ///
+	STACKTYPE_LOOP, ///
 }
 
+///
 struct StackValue
 {
-	StackType type = StackType.STACKTYPE_CALL;
-	const(ubyte)[] dest = null;
+	StackType type = StackType.STACKTYPE_CALL; ///
+	const(ubyte)[] dest = null; ///
 }
 
+///
 struct Override
 {
-	bool overriding = false;
-	int cmd;
-	int value;
-	int extraValue;
+	bool overriding = false; ///
+	int cmd; ///
+	int value; ///
+	int extraValue; ///
 
+	///
 	int val(ref const(ubyte)[] pData, int function(ref const(ubyte)[]) @safe reader, bool returnExtra = false) @safe
 	{
 		if (this.overriding)
@@ -36,44 +41,53 @@ struct Override
 	}
 }
 
+///
 struct Track
 {
-	byte trackId = -1;
+	byte trackId = -1; ///
 
-	ubyte[TrackState.max + 1] state;
-	ubyte num, prio;
+	ubyte[TrackState.max + 1] state; ///
+	ubyte num, prio; ///
 
-	const(ubyte)[] trackData;
-	const(ubyte)[] trackDataCurrent;
-	StackValue[FSS_TRACKSTACKSIZE] stack;
-	ubyte stackPos;
-	ubyte[FSS_TRACKSTACKSIZE] loopCount;
-	Override overriding;
-	bool lastComparisonResult = true;
+	const(ubyte)[] trackData; ///
+	const(ubyte)[] trackDataCurrent; ///
+	StackValue[FSS_TRACKSTACKSIZE] stack; ///
+	ubyte stackPos; ///
+	ubyte[FSS_TRACKSTACKSIZE] loopCount; ///
+	Override overriding; ///
+	bool lastComparisonResult = true; ///
 
-	int wait;
-	ushort patch;
-	ubyte portaKey, portaTime;
-	short sweepPitch;
-	ubyte vol, expr;
-	byte pan; // -64..63
-	ubyte pitchBendRange;
-	byte pitchBend;
-	byte transpose;
+	int wait; ///
+	ushort patch; ///
+	ubyte portaKey, portaTime; ///
+	short sweepPitch; ///
+	ubyte vol, expr; ///
+	byte pan; /// -64..63
+	ubyte pitchBendRange; ///
+	byte pitchBend; ///
+	byte transpose; ///
 
-	ubyte a, d, s, r;
+	ubyte a; ///
+	ubyte d; ///
+	ubyte s; ///
+	ubyte r; ///
 
-	ubyte modType, modSpeed, modDepth, modRange;
-	ushort modDelay;
+	ubyte modType; ///
+	ubyte modSpeed; ///
+	ubyte modDepth; ///
+	ubyte modRange; ///
+	ushort modDelay; ///
 
-	ubyte[TrackUpdateFlags.max + 1] updateFlags;
+	ubyte[TrackUpdateFlags.max + 1] updateFlags; ///
 
+	///
 	void Init(ubyte handle, const(ubyte)[] dataPos, int n) @safe {
 		this.trackId = handle;
 		this.num = cast(ubyte)n;
 		this.trackData = dataPos;
 		this.ClearState();
 	}
+	///
 	void Zero() @safe {
 		this.trackId = -1;
 
@@ -103,6 +117,7 @@ struct Track
 
 		this.updateFlags = false;
 	}
+	///
 	void ClearState() @safe {
 		this.state = false;
 		this.state[TrackState.alloc] = true;
@@ -130,6 +145,7 @@ struct Track
 		this.modDelay = 0;
 		this.modDepth = 0;
 	}
+	///
 	void Free() @safe {
 		this.state = false;
 		this.updateFlags = false;

@@ -1,3 +1,4 @@
+///
 module pxtone.woiceptv;
 // '12/03/03
 
@@ -8,8 +9,9 @@ import pxtone.error;
 import pxtone.pulse.noise;
 import pxtone.woice;
 
-immutable int expectedVersion = 20060111; // support no-envelope
+immutable int expectedVersion = 20060111; /// support no-envelope
 
+///
 void writeWave(ref PxtnDescriptor pDoc, const(PxtnVoiceUnit)* voiceUnit, ref int pTotal) @safe {
 	int num, i, size;
 	byte sc;
@@ -66,6 +68,7 @@ void writeWave(ref PxtnDescriptor pDoc, const(PxtnVoiceUnit)* voiceUnit, ref int
 	}
 }
 
+///
 void writeEnvelope(ref PxtnDescriptor pDoc, const(PxtnVoiceUnit)* voiceUnit, ref int pTotal) @safe {
 	int num, i;
 
@@ -82,6 +85,7 @@ void writeEnvelope(ref PxtnDescriptor pDoc, const(PxtnVoiceUnit)* voiceUnit, ref
 	}
 }
 
+///
 void readWave(ref PxtnDescriptor pDoc, PxtnVoiceUnit* voiceUnit) @safe {
 	int i, num;
 	byte sc;
@@ -136,6 +140,7 @@ void readWave(ref PxtnDescriptor pDoc, PxtnVoiceUnit* voiceUnit) @safe {
 	}
 }
 
+///
 void readEnvelope(ref PxtnDescriptor pDoc, PxtnVoiceUnit* voiceUnit) @safe {
 	int num, i;
 

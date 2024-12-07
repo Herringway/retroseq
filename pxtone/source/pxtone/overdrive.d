@@ -1,61 +1,72 @@
-﻿module pxtone.overdrive;
+///
+module pxtone.overdrive;
 // '12/03/03
 
 import pxtone.pxtn;
 import pxtone.error;
 import pxtone.descriptor;
 
-private enum tuneOverdriveCutMax = 99.9f;
-private enum tuneOverdriveCutMin = 50.0f;
-private enum tuneOverdriveAmpMax = 8.0f;
-private enum tuneOverdriveAmpMin = 0.1f;
-private enum tuneOverdriveDefaultCut = 90.0f;
-private enum tuneOverdriveDefaultAmp = 2.0f;
+private enum tuneOverdriveCutMax = 99.9f; ///
+private enum tuneOverdriveCutMin = 50.0f; ///
+private enum tuneOverdriveAmpMax = 8.0f; ///
+private enum tuneOverdriveAmpMin = 0.1f; ///
+private enum tuneOverdriveDefaultCut = 90.0f; ///
+private enum tuneOverdriveDefaultAmp = 2.0f; ///
 
+///
 struct pxtnOverDrive {
-	bool played = true;
+	bool played = true; ///
 
-	int group;
-	float cut;
-	float amp;
+	int group; ///
+	float cut; ///
+	float amp; ///
 
-	int cut16BitTop;
+	int cut16BitTop; ///
 
+	///
 	float getCut() const nothrow @safe {
 		return cut;
 	}
 
+	///
 	float getAmp() const nothrow @safe {
 		return amp;
 	}
 
+	///
 	int getGroup() const nothrow @safe {
 		return group;
 	}
 
+	///
 	void set(float cut, float amp, int group) nothrow @safe {
 		this.cut = cut;
 		this.amp = amp;
 		this.group = group;
 	}
 
+	///
 	bool getPlayed() const nothrow @safe {
 		return played;
 	}
 
+	///
 	void setPlayed(bool b) nothrow @safe {
 		played = b;
 	}
 
+	///
 	bool switchPlayed() nothrow @safe {
 		played = played ? false : true;
 		return played;
 	}
 
+	///
 	void toneReady() nothrow @safe {
 		cut16BitTop = cast(int)(32767 * (100 - cut) / 100);
 	}
 
+	///
 	void toneSupple(int[] groupSamples) const nothrow @safe {
 		if (!played) {
 			return;
@@ -69,6 +80,7 @@ struct pxtnOverDrive {
 		groupSamples[group] = cast(int)(cast(float) work * amp);
 	}
 
+	///
 	void write(ref PxtnDescriptor pDoc) const @safe {
 		Overdrive over;
 		int size;
@@ -83,6 +95,7 @@ struct pxtnOverDrive {
 		pDoc.write(over);
 	}
 
+	///
 	void read(ref PxtnDescriptor pDoc) @safe {
 		Overdrive over;
 		int size = 0;
@@ -110,10 +123,11 @@ struct pxtnOverDrive {
 }
 
 // (8byte) =================
+///
 struct Overdrive {
-	ushort xxx;
-	ushort group;
-	float cut = 0.0;
-	float amp = 0.0;
-	float yyy = 0.0;
+	ushort xxx; ///
+	ushort group; ///
+	float cut = 0.0; ///
+	float amp = 0.0; ///
+	float yyy = 0.0; ///
 }

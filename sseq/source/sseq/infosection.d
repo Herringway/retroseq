@@ -1,12 +1,15 @@
+///
 module sseq.infosection;
 
 import sseq.common;
 
+///
 struct INFOSection {
 	align(1):
-	char[4] type;
-	uint blockSize;
-	uint[8] recordOffsets;
+	char[4] type; ///
+	uint blockSize; ///
+	uint[8] recordOffsets; ///
+	///
 	auto record(T)(const(ubyte)[] infoBlock, size_t idx) const @safe {
 		static struct Result {
 			private const(ubyte)[] data;
@@ -24,38 +27,44 @@ struct INFOSection {
 		}
 		return Result(infoBlock, recordOffsets[idx]);
 	}
+	///
 	auto SEQrecord(const(ubyte)[] infoBlock) const {
 		return record!INFOEntrySEQ(infoBlock, RecordName.REC_SEQ);
 	}
+	///
 	auto BANKrecord(const(ubyte)[] infoBlock) const {
 		return record!INFOEntryBANK(infoBlock, RecordName.REC_BANK);
 	}
+	///
 	auto WAVEARCrecord(const(ubyte)[] infoBlock) const {
 		return record!INFOEntryWAVEARC(infoBlock, RecordName.REC_WAVEARC);
 	}
 }
 
+///
 struct INFOEntrySEQ {
 	align(1):
-	ushort fileID;
-	ushort unknown2;
-	ushort bank;
-	ubyte vol;
-	ubyte cpr;
-	ubyte ppr;
-	ubyte ply;
-	ushort unknownA;
+	ushort fileID; ///
+	ushort unknown2; ///
+	ushort bank; ///
+	ubyte vol; ///
+	ubyte cpr; ///
+	ubyte ppr; ///
+	ubyte ply; ///
+	ushort unknownA; ///
 }
 
+///
 struct INFOEntryBANK {
 	align(1):
-	ushort fileID;
-	ushort unknown2;
-	ushort[4] waveArc;
+	ushort fileID; ///
+	ushort unknown2; ///
+	ushort[4] waveArc; ///
 }
 
+///
 struct INFOEntryWAVEARC {
 	align(1):
-	ushort fileID;
-	ushort unknown2;
+	ushort fileID; ///
+	ushort unknown2; ///
 }

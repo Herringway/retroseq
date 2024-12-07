@@ -1,4 +1,5 @@
-﻿module pxtone.noise;
+///
+module pxtone.noise;
 
 // '12/03/29
 
@@ -9,12 +10,14 @@ import pxtone.pulse.noise;
 import pxtone.pulse.pcm;
 import pxtone.error;
 
+///
 struct PxtoneNoise {
-	private PxtnPulseNoiseBuilder bldr;
-	private int channels = 2;
-	private int sps = 44100;
-	private int bps = 16;
+	private PxtnPulseNoiseBuilder bldr; ///
+	private int channels = 2; ///
+	private int sps = 44100; ///
+	private int bps = 16; ///
 
+	///
 	bool qualitySet(int channels, int sps, int bps) nothrow @safe {
 		switch (channels) {
 		case 1:
@@ -49,6 +52,7 @@ struct PxtoneNoise {
 		return false;
 	}
 
+	///
 	void qualityGet(out int pChannels, out int pSPS, out int pBPS) const nothrow @safe {
 		if (pChannels) {
 			pChannels = channels;
@@ -61,6 +65,7 @@ struct PxtoneNoise {
 		}
 	}
 
+	///
 	void generate(ref PxtnDescriptor pDoc, out void[] ppBuf, out int pSize) const @safe {
 		PxtnPulseNoise noise;
 

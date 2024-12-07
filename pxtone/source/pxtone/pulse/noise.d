@@ -1,4 +1,5 @@
-﻿module pxtone.pulse.noise;
+///
+module pxtone.pulse.noise;
 
 import pxtone.pxtn;
 
@@ -8,54 +9,58 @@ import pxtone.pulse.frequency;
 import pxtone.pulse.oscillator;
 import pxtone.pulse.pcm;
 
+///
 enum PxWaveType {
-	None = 0,
-	Sine,
-	Saw,
-	Rect,
-	Random,
-	Saw2,
-	Rect2,
+	None = 0, ///
+	Sine, ///
+	Saw, ///
+	Rect, ///
+	Random, ///
+	Saw2, ///
+	Rect2, ///
 
-	Tri,
-	Random2,
-	Rect3,
-	Rect4,
-	Rect8,
-	Rect16,
-	Saw3,
-	Saw4,
-	Saw6,
-	Saw8,
+	Tri, ///
+	Random2, ///
+	Rect3, ///
+	Rect4, ///
+	Rect8, ///
+	Rect16, ///
+	Saw3, ///
+	Saw4, ///
+	Saw6, ///
+	Saw8, ///
 
-	num,
+	num, ///
 }
 
+///
 struct PxNoiseDesignOscillator {
-	PxWaveType type;
-	float freq = 0.0;
-	float volume = 0.0;
-	float offset = 0.0;
-	bool bRev;
+	PxWaveType type; ///
+	float freq = 0.0; ///
+	float volume = 0.0; ///
+	float offset = 0.0; ///
+	bool bRev; ///
 }
 
+///
 struct PxNoiseDesignUnit {
-	bool bEnable;
-	int enveNum;
-	PxtnPoint[] enves;
-	int pan;
-	PxNoiseDesignOscillator main;
-	PxNoiseDesignOscillator freq;
-	PxNoiseDesignOscillator volu;
+	bool bEnable; ///
+	int enveNum; ///
+	PxtnPoint[] enves; ///
+	int pan; ///
+	PxNoiseDesignOscillator main; ///
+	PxNoiseDesignOscillator freq; ///
+	PxNoiseDesignOscillator volu; ///
 }
 
-private enum noiseDesignLimitSmpnum = (48000 * 10);
-private enum noiseDesignLimitEnveX = (1000 * 10);
-private enum noiseDesignLimitEnveY = (100);
-private enum noiseDesignLimitOscillatorFrequency = 44100.0f;
-private enum noiseDesignLimitOscillatorVolume = 200.0f;
-private enum noiseDesignLimitOscillatorOffset = 100.0f;
+private enum noiseDesignLimitSmpnum = (48000 * 10); ///
+private enum noiseDesignLimitEnveX = (1000 * 10); ///
+private enum noiseDesignLimitEnveY = (100); ///
+private enum noiseDesignLimitOscillatorFrequency = 44100.0f; ///
+private enum noiseDesignLimitOscillatorVolume = 200.0f; ///
+private enum noiseDesignLimitOscillatorOffset = 100.0f; ///
 
+///
 private void fixUnit(PxNoiseDesignOscillator* pOsc) nothrow @safe {
 	if (pOsc.type >= PxWaveType.num) {
 		pOsc.type = PxWaveType.None;
@@ -80,24 +85,29 @@ private void fixUnit(PxNoiseDesignOscillator* pOsc) nothrow @safe {
 	}
 }
 
+///
 private enum maxNoiseEditUnitNum = 4;
+///
 private enum maxNoiseEditEnvelopeNum = 3;
 
+///
 private enum noiseEditFlag {
-	envelope = 0x0004,
-	pan = 0x0008,
-	oscillatorMain = 0x0010,
-	oscillatorFreq = 0x0020,
-	oscillatorVolume = 0x0040,
-	//oscillatorPan = 0x0080, // not used
-	uncovered = 0xffffff83,
+	envelope = 0x0004, ///
+	pan = 0x0008, ///
+	oscillatorMain = 0x0010, ///
+	oscillatorFreq = 0x0020, ///
+	oscillatorVolume = 0x0040, ///
+	//oscillatorPan = 0x0080, /// not used
+	uncovered = 0xffffff83, ///
 }
 
-
+///
 private immutable identifierCode = "PTNOISE-";
 //currentVersion =  20051028 ; -v.0.9.2.3
+///
 private __gshared const uint currentVersion = 20120418; // 16 wave types.
 
+///
 private void writeOscillator(const(PxNoiseDesignOscillator)* pOsc, ref PxtnDescriptor pDoc, ref int pAdd) @safe {
 	int work;
 	work = cast(int) pOsc.type;
@@ -112,6 +122,7 @@ private void writeOscillator(const(PxNoiseDesignOscillator)* pOsc, ref PxtnDescr
 	pDoc.writeVarInt(work, pAdd);
 }
 
+///
 private void readOscillator(PxNoiseDesignOscillator* pOsc, ref PxtnDescriptor pDoc) @safe {
 	int work;
 	pDoc.readVarInt(work);
@@ -129,6 +140,7 @@ private void readOscillator(PxNoiseDesignOscillator* pOsc, ref PxtnDescriptor pD
 	pOsc.offset = cast(float) work / 10;
 }
 
+///
 private uint makeFlags(const(PxNoiseDesignUnit)* pU) nothrow @safe {
 	uint flags = 0;
 	flags |= noiseEditFlag.envelope;
@@ -147,6 +159,7 @@ private uint makeFlags(const(PxNoiseDesignUnit)* pU) nothrow @safe {
 	return flags;
 }
 
+///
 private int compareOscillator(const(PxNoiseDesignOscillator)* pOsc1, const(PxNoiseDesignOscillator)* pOsc2) nothrow @safe {
 	if (pOsc1.type != pOsc2.type) {
 		return 1;
@@ -166,17 +179,19 @@ private int compareOscillator(const(PxNoiseDesignOscillator)* pOsc1, const(PxNoi
 	return 0;
 }
 
+///
 struct PxtnPulseNoise {
 private:
-	int smpNum44k;
-	int unitNum;
-	PxNoiseDesignUnit[] units;
+	int smpNum44k; ///
+	int unitNum; ///
+	PxNoiseDesignUnit[] units; ///
 
 public:
+	///
 	 ~this() nothrow @safe {
 		release();
 	}
-
+	///
 	void write(ref PxtnDescriptor pDoc, ref int pAdd) const @safe {
 		bool bRet = false;
 		int u, e, seek, numSeek, flags;
@@ -241,7 +256,7 @@ public:
 			throw new PxtoneException("");
 		}
 	}
-
+	///
 	void read(ref PxtnDescriptor pDoc) @safe {
 		uint flags = 0;
 		char unitNum = 0;
@@ -316,6 +331,7 @@ public:
 		}
 	}
 
+	///
 	void release() nothrow @safe {
 		if (units) {
 			units = null;
@@ -323,6 +339,7 @@ public:
 		}
 	}
 
+	///
 	bool allocate(int unitNum, int envelopeNum) nothrow @safe {
 		bool bRet = false;
 
@@ -352,6 +369,7 @@ public:
 		return bRet;
 	}
 
+	///
 	bool copy(ref PxtnPulseNoise pDst) const nothrow @safe {
 		bool bRet = false;
 
@@ -389,6 +407,7 @@ public:
 		return bRet;
 	}
 
+	///
 	int compare(const(PxtnPulseNoise)* pSrc) const nothrow @safe {
 		if (!pSrc) {
 			return -1;
@@ -433,6 +452,7 @@ public:
 		return 0;
 	}
 
+	///
 	void fix() nothrow @safe {
 		PxNoiseDesignUnit* pUnit;
 		int i, e;
@@ -471,22 +491,27 @@ public:
 		}
 	}
 
+	///
 	void setSmpNum44k(int num) nothrow @safe {
 		smpNum44k = num;
 	}
 
+	///
 	int getUnitNum() const nothrow @safe {
 		return unitNum;
 	}
 
+	///
 	int getSmpNum44k() const nothrow @safe {
 		return smpNum44k;
 	}
 
+	///
 	float getSec() const nothrow @safe {
 		return cast(float) smpNum44k / 44100;
 	}
 
+	///
 	PxNoiseDesignUnit* getUnit(int u) nothrow @safe {
 		if (!units || u < 0 || u >= unitNum) {
 			return null;

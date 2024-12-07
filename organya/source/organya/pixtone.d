@@ -1,35 +1,40 @@
+///
 module organya.pixtone;
 
 import std.random;
 import std.math;
 import organya.organya;
 
+///
 private align(1) struct PixtoneParameter2 {
 align(1):
-	int model;
-	double num;
-	int top;
-	int offset;
+	int model; ///
+	double num; ///
+	int top; ///
+	int offset; ///
 }
 
+///
 align(1) struct PixtoneParameter {
 align(1):
-	int use;
-	int size;
-	PixtoneParameter2 oMain;
-	PixtoneParameter2 oPitch;
-	PixtoneParameter2 oVolume;
-	int initial;
-	int pointAx;
-	int pointAy;
-	int pointBx;
-	int pointBy;
-	int pointCx;
-	int pointCy;
+	int use; ///
+	int size; ///
+	PixtoneParameter2 oMain; ///
+	PixtoneParameter2 oPitch; ///
+	PixtoneParameter2 oVolume; ///
+	int initial; ///
+	int pointAx; ///
+	int pointAy; ///
+	int pointBx; ///
+	int pointBy; ///
+	int pointCx; ///
+	int pointCy; ///
 }
 
+///
 private immutable waveModelTable = makeWaveTables();
 
+///
 private byte[0x100][6] makeWaveTables() @safe {
 	byte[0x100][6] table;
 	int i;
@@ -83,6 +88,7 @@ private byte[0x100][6] makeWaveTables() @safe {
 	return table;
 }
 
+///
 void MakePixelWaveData(const PixtoneParameter ptp, ubyte[] pData) @safe {
 	int i;
 	int a, b, c, d;

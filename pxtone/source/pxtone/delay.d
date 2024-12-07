@@ -1,4 +1,5 @@
-﻿module pxtone.delay;
+///
+module pxtone.delay;
 
 import pxtone.pxtn;
 
@@ -6,56 +7,64 @@ import pxtone.descriptor;
 import pxtone.error;
 import pxtone.max;
 
+///
 enum DelayUnit {
-	Beat = 0,
-	Meas,
-	Second,
-	num,
+	Beat = 0, ///
+	Meas, ///
+	Second, ///
+	num, ///
 }
 
 // (12byte) =================
+///
 struct Delay {
-	ushort unit;
-	ushort group;
-	float rate = 0.0;
-	float freq = 0.0;
+	ushort unit; ///
+	ushort group; ///
+	float rate = 0.0; ///
+	float freq = 0.0; ///
 }
 
+///
 struct PxtnDelay {
 private:
-	bool bPlayed = true;
-	DelayUnit unit = DelayUnit.Beat;
-	int group = 0;
-	float rate = 33.0;
-	float freq = 3.0f;
+	bool bPlayed = true; ///
+	DelayUnit unit = DelayUnit.Beat; ///
+	int group = 0; ///
+	float rate = 33.0; ///
+	float freq = 3.0f; ///
 
-	int sampleNum = 0;
-	int offset = 0;
-	int[][pxtnMaxChannel] bufs = null;
-	int rateS32 = 0;
+	int sampleNum = 0; ///
+	int offset = 0; ///
+	int[][pxtnMaxChannel] bufs = null; ///
+	int rateS32 = 0; ///
 
 public:
-
+	///
 	 ~this() nothrow @safe {
 		toneRelease();
 	}
 
+	///
 	DelayUnit getUnit() const nothrow @safe {
 		return unit;
 	}
 
+	///
 	int getGroup() const nothrow @safe {
 		return group;
 	}
 
+	///
 	float getRate() const nothrow @safe {
 		return rate;
 	}
 
+	///
 	float getFreq() const nothrow @safe {
 		return freq;
 	}
 
+	///
 	void set(DelayUnit unit, float freq, float rate, int group) nothrow @safe {
 		this.unit = unit;
 		this.group = group;
@@ -63,24 +72,29 @@ public:
 		this.freq = freq;
 	}
 
+	///
 	bool getPlayed() const nothrow @safe {
 		return bPlayed;
 	}
 
+	///
 	void setPlayed(bool b) nothrow @safe {
 		bPlayed = b;
 	}
 
+	///
 	bool switchPlayed() nothrow @safe {
 		bPlayed = !bPlayed;
 		return bPlayed;
 	}
 
+	///
 	void toneRelease() nothrow @safe {
 		bufs = null;
 		sampleNum = 0;
 	}
 
+	///
 	void toneReady(int beatNum, float beatTempo, int sps) @safe {
 		toneRelease();
 
@@ -111,6 +125,7 @@ public:
 		}
 	}
 
+	///
 	void toneSupple(int ch, int[] groupSamples) nothrow @safe {
 		if (!sampleNum) {
 			return;
@@ -122,6 +137,7 @@ public:
 		bufs[ch][offset] = groupSamples[group];
 	}
 
+	///
 	void toneIncrement() nothrow @safe {
 		if (!sampleNum) {
 			return;
@@ -131,6 +147,7 @@ public:
 		}
 	}
 
+	///
 	void toneClear() nothrow @safe {
 		if (!sampleNum) {
 			return;

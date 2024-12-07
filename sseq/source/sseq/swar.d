@@ -1,3 +1,4 @@
+///
 module sseq.swar;
 
 import retroseq.utility;
@@ -7,26 +8,30 @@ import sseq.infosection;
 import sseq.ndsstdheader;
 import sseq.common;
 
+///
 struct SWAR
 {
+	///
 	static struct DataHeader {
 		align(1):
-		char[4] type;
-		uint fileSize;
-		ubyte[32] reserved;
-		uint blockCount;
+		char[4] type; ///
+		uint fileSize; ///
+		ubyte[32] reserved; ///
+		uint blockCount; ///
 	}
-	NDSStdHeader header;
-	DataHeader dataHeader;
-	const(char)[] filename;
-	const(ubyte)[] data;
-	SWAV[uint] swavs;
+	NDSStdHeader header; ///
+	DataHeader dataHeader; ///
+	const(char)[] filename; ///
+	const(ubyte)[] data; ///
+	SWAV[uint] swavs; ///
 
-	INFOEntryWAVEARC info;
+	INFOEntryWAVEARC info; ///
 
+	///
 	this(const char[] fn) @safe {
 		filename = fn;
 	}
+	///
 	void loadSWAVs() @safe {
 		const offsets = cast(const(uint)[])data[0 .. uint.sizeof * dataHeader.blockCount];
 		foreach (idx, offset; offsets) {
@@ -41,6 +46,7 @@ struct SWAR
 		}
 
 	}
+	///
 	const(SWAV)* opIndex(size_t idx) const @safe {
 		return cast(uint)idx in swavs;
 	}

@@ -1,15 +1,19 @@
-﻿module pxtone.pulse.frequency;
+///
+module pxtone.pulse.frequency;
 
-private enum octaveNum = 16; // octave num.
-private enum keyPerOctave = 12; // key per octave
-private enum frequencyPerKey = 0x10; // sample per key
+private enum octaveNum = 16; /// octave num.
+private enum keyPerOctave = 12; /// key per octave
+private enum frequencyPerKey = 0x10; /// sample per key
 
-private enum basicFrequencyIndex = ((octaveNum / 2) * keyPerOctave * frequencyPerKey);
-private enum tableSize = (octaveNum * keyPerOctave * frequencyPerKey);
+private enum basicFrequencyIndex = ((octaveNum / 2) * keyPerOctave * frequencyPerKey); ///
+private enum tableSize = (octaveNum * keyPerOctave * frequencyPerKey); ///
 
+///
 struct PxtnPulseFrequency {
+	///
 	static immutable float[] freqTable = genTables();
 
+	///
 	float get(int key) const nothrow @safe {
 		int i;
 
@@ -22,6 +26,7 @@ struct PxtnPulseFrequency {
 		return freqTable[i];
 	}
 
+	///
 	float get2(int key) nothrow @safe {
 		int i = key >> 4;
 		if (i < 0) {
@@ -32,12 +37,14 @@ struct PxtnPulseFrequency {
 		return freqTable[i];
 	}
 
+	///
 	const(float)[] getDirect(int* pSize) nothrow @safe {
 		*pSize = tableSize;
 		return freqTable;
 	}
 }
 
+///
 private double getDivideOctaveRate(int divi) nothrow @safe {
 	double parameter = 1.0;
 	double work;
@@ -77,6 +84,7 @@ private double getDivideOctaveRate(int divi) nothrow @safe {
 
 	return parameter;
 }
+///
 private float[] genTables() @safe {
 	float[] freqTable;
 	static immutable double[octaveNum] octTable = [0.00390625, //0  -8

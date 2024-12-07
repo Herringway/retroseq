@@ -1,55 +1,63 @@
+///
 module m4a.cgb_audio;
 
 import m4a.cgb_tables;
 import m4a.internal;
 
+///
 struct AudioCGB {
-	ushort ch1Freq;
-	ubyte ch1SweepCounter;
-	ubyte ch1SweepCounterI;
-	ubyte ch1SweepDir;
-	ubyte ch1SweepShift;
-	ubyte[4] Vol;
-	ubyte[4] VolI;
-	ubyte[4] Len;
-	ubyte[4] LenI;
-	ubyte[4] LenOn;
-	ubyte[4] EnvCounter;
-	ubyte[4] EnvCounterI;
-	ubyte[4] EnvDir;
-	ubyte[4] DAC;
-	float[32] WAVRAM = 0;
-	ushort [2] ch4LFSR = [0x8000, 0x80];
+	ushort ch1Freq; ///
+	ubyte ch1SweepCounter; ///
+	ubyte ch1SweepCounterI; ///
+	ubyte ch1SweepDir; ///
+	ubyte ch1SweepShift; ///
+	ubyte[4] Vol; ///
+	ubyte[4] VolI; ///
+	ubyte[4] Len; ///
+	ubyte[4] LenI; ///
+	ubyte[4] LenOn; ///
+	ubyte[4] EnvCounter; ///
+	ubyte[4] EnvCounterI; ///
+	ubyte[4] EnvDir; ///
+	ubyte[4] DAC; ///
+	float[32] WAVRAM = 0; ///
+	ushort [2] ch4LFSR = [0x8000, 0x80]; ///
 
-	float[4] soundChannelPos = [0, 1, 0, 0];
-	const(short)[] PU1Table = PU0;
-	const(short)[] PU2Table = PU0;
-	uint apuFrame;
-	uint sampleRate;
-	ushort[2] lfsrMax = [0x8000, 0x80];
-	float ch4Samples = 0;
-	ubyte apuCycle;
+	float[4] soundChannelPos = [0, 1, 0, 0]; ///
+	const(short)[] PU1Table = PU0; ///
+	const(short)[] PU2Table = PU0; ///
+	uint apuFrame; ///
+	uint sampleRate; ///
+	ushort[2] lfsrMax = [0x8000, 0x80]; ///
+	float ch4Samples = 0; ///
+	ubyte apuCycle; ///
+	///
 	void initialize(uint rate) @safe pure {
 		this = this.init;
 		sampleRate = rate;
 	}
+	///
 	void set_sweep(ubyte sweep) @safe pure {
 		ch1SweepDir = (sweep & 0x08) >> 3;
 		ch1SweepCounter = ch1SweepCounterI = (sweep & 0x70) >> 4;
 		ch1SweepShift = (sweep & 0x07);
 	}
+	///
 	void set_wavram(ubyte[] wavePointer) @safe pure {
 		for (ubyte wavi = 0; wavi < 0x10; wavi++) {
 			WAVRAM[(wavi << 1)] = ((wavePointer[wavi] & 0xF0) >> 4) / 7.5f - 1.0f;
 			WAVRAM[(wavi << 1) + 1] = ((wavePointer[wavi] & 0x0F)) / 7.5f - 1.0f;
 		}
 	}
+	///
 	void toggle_length(ubyte channel, ubyte state) @safe pure {
 		LenOn[channel] = state;
 	}
+	///
 	void set_length(ubyte channel, ubyte length) @safe pure {
 		Len[channel] = LenI[channel] = length;
 	}
+	///
 	void set_envelope(ubyte channel, ubyte envelope) @safe pure {
 		if (channel == 2) {
 			switch ((envelope & 0xE0)) {
@@ -77,6 +85,7 @@ struct AudioCGB {
 			EnvCounter[channel] = EnvCounterI[channel] = (envelope & 0x07);
 		}
 	}
+	///
 	void trigger_note(ubyte channel) @safe pure {
 		Vol[channel] = VolI[channel];
 		Len[channel] = LenI[channel];
@@ -88,6 +97,7 @@ struct AudioCGB {
 			ch4LFSR[1] = 0x80;
 		}
 	}
+	///
 	void audio_generate(SoundMixerState *soundInfo, ushort samplesPerFrame, float[2][] outBuffer) @safe pure {
 		switch (soundInfo.reg.NR11 & 0xC0) {
 			case 0x00:

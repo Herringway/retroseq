@@ -1,77 +1,94 @@
+///
 module nspcplay.tags;
 
 import std.experimental.logger;
 
+///
 struct APETagHeaderFooter {
 	align(1):
-	char[8] magic = "APETAGEX";
-	uint version_ = 2000;
-	uint tagSize;
-	uint tagItems;
-	Flags globalFlags;
-	ulong reserved;
+	char[8] magic = "APETAGEX"; ///
+	uint version_ = 2000; ///
+	uint tagSize; ///
+	uint tagItems; ///
+	Flags globalFlags; ///
+	ulong reserved; ///
 }
 
+///
 enum Encoding {
-	utf8 = 0,
-	binary = 1,
-	external = 2,
-	reserved = 3
+	utf8 = 0, ///
+	binary = 1, ///
+	external = 2, ///
+	reserved = 3, ///
 }
 
+///
 align(1) struct Flags {
 	align(1):
-	uint flags;
+	uint flags; ///
+	///
 	bool header() const @safe pure {
 		return !!(flags & (1 << 29));
 	}
+	///
 	void header(bool newValue) @safe pure {
 		flags |= (newValue << 29);
 	}
+	///
 	bool tagHeader() const @safe pure {
 		return !!(flags & (1 << 31));
 	}
+	///
 	bool tagFooter() const @safe pure {
 		return !!(flags & (1 << 30));
 	}
+	///
 	void tagHeader(bool newValue) @safe pure {
 		flags |= (newValue << 31);
 	}
+	///
 	void tagFooter(bool newValue) @safe pure {
 		flags |= (newValue << 30);
 	}
+	///
 	Encoding encoding() const @safe pure {
 		return cast(Encoding)((flags >> 1) & 3);
 	}
 }
 
+///
 struct TagHeader {
 	align(1):
-	uint size;
-	Flags flags;
-	ubyte[0] key;
+	uint size; ///
+	Flags flags; ///
+	ubyte[0] key; ///
 }
 
+///
 struct TagPair {
-	const(char)[] key;
-	private bool _binary;
-	private const(ubyte)[] _value;
+	const(char)[] key; ///
+	private bool _binary; ///
+	private const(ubyte)[] _value; ///
+	///
 	this(string key, string value) @safe pure {
 		this.key = key;
 		this._binary = false;
 		this._value = cast(const(ubyte)[])value;
 	}
+	///
 	this(string key, const(ubyte)[] value) @safe pure {
 		this.key = key;
 		this._binary = true;
 		this._value = value;
 	}
+	///
 	const(char)[] str() const @safe pure {
 		if (_binary) {
 			return "";
 		}
 		return cast(const(char)[])_value;
 	}
+	///
 	const(ubyte)[] binary() const @safe pure {
 		if (!_binary) {
 			return [];
@@ -80,6 +97,7 @@ struct TagPair {
 	}
 }
 
+///
 TagPair[] readTags(const scope ubyte[] data) @safe pure {
 	import std.algorithm.searching : countUntil;
 	static TagPair[] readTagData(const scope ubyte[] data) {
@@ -115,6 +133,7 @@ TagPair[] readTags(const scope ubyte[] data) @safe pure {
 	return [];
 }
 
+///
 const(ubyte)[] tagsToBytes(scope const(TagPair)[] tags) @safe pure {
 	APETagHeaderFooter[1] footer;
 	const(ubyte)[] result;
@@ -140,7 +159,7 @@ const(ubyte)[] tagsToBytes(scope const(TagPair)[] tags) @safe pure {
 	result ~= cast(const(ubyte)[])footer[];
 	return result;
 }
-
+///
 @safe pure unittest {
 	static immutable ubyte[] sample = [0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x61, 0x6C, 0x62, 0x75, 0x6D, 0x00, 0x4A, 0x75, 0x73, 0x74, 0x20, 0x61, 0x20, 0x74, 0x65, 0x73, 0x74, 0x02, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x74, 0x69, 0x74, 0x6C, 0x65, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x61, 0x72, 0x74, 0x69, 0x73, 0x74, 0x00, 0x41, 0x50, 0x45, 0x54, 0x41, 0x47, 0x45, 0x58, 0xD0, 0x07, 0x00, 0x00, 0x58, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
 	const tags = readTags(sample);

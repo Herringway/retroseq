@@ -1,0 +1,59 @@
+---
+name: Docs
+
+"on":
+  push:
+    branches:
+      - main
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+jobs:
+  docs:
+    strategy:
+      matrix:
+        dc:
+          - dmd-latest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: dmd-latest
+      - name: 'Build'
+        run: |
+          dub build -b ddox
+          touch docs/.nojekyll
+          mv docs docs_main
+          dub build -b ddox :m4a
+          mv docs docs_m4a
+          dub build -b ddox :nspc
+          mv docs docs_nspc
+          dub build -b ddox :organya
+          mv docs docs_organya
+          dub build -b ddox :piyopiyo
+          mv docs docs_piyopiyo
+          dub build -b ddox :pxtone
+          mv docs docs_pxtone
+          dub build -b ddox :sseq
+          mv docs docs_sseq
+          mv docs_main docs
+          mv docs_m4a docs/m4a
+          mv docs_nspc docs/nspc
+          mv docs_organya docs/organya
+          mv docs_piyopiyo docs/piyopiyo
+          mv docs_pxtone docs/pxtone
+          mv docs_sseq docs/sseq
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'docs'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

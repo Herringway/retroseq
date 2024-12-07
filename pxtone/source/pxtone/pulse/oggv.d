@@ -1,4 +1,5 @@
-﻿module pxtone.pulse.oggv;
+///
+module pxtone.pulse.oggv;
 
 version (WithOggVorbis):
 import core.stdc.config;
@@ -12,17 +13,21 @@ import pxtone.pulse.pcm;
 import std.exception;
 import std.stdio;
 
+///
 struct OVMEM {
-	const(ubyte)[] pBuf; // ogg vorbis-data on memory.s
-	int size; //
-	int pos; // reading position.
+	const(ubyte)[] pBuf; /// ogg vorbis-data on memory.s
+	int size; ///
+	int pos; /// reading position.
 }
 
 // 4 callbacks below:
 
+///
 private extern (C) size_t vorbisReadCallback(void* p, size_t size, size_t nmemb, void* user) nothrow @trusted {
 	return vorbisReadCallback((cast(ubyte*)p)[0 .. size * nmemb], size, nmemb, cast(OVMEM*)user);
 }
+
+///
 private size_t vorbisReadCallback(ubyte[] p, size_t size, size_t nmemb, OVMEM* pom) nothrow @safe {
 	if (!pom) {
 		return -1;
@@ -48,9 +53,12 @@ private size_t vorbisReadCallback(ubyte[] p, size_t size, size_t nmemb, OVMEM* p
 	return nmemb;
 }
 
+///
 private extern (C) int vorbisSeekCallback(void* pom, long offset, int mode) nothrow @trusted {
 	return vorbisSeekCallback(cast(OVMEM*)pom, offset, mode);
 }
+
+///
 private int vorbisSeekCallback(OVMEM* pom, long offset, int mode) nothrow @safe {
 	int newpos;
 
@@ -84,9 +92,12 @@ private int vorbisSeekCallback(OVMEM* pom, long offset, int mode) nothrow @safe 
 	return 0;
 }
 
+///
 private extern (C) c_long vorbisTellCallback(void* user) nothrow @trusted {
 	return vorbisTellCallback(cast(OVMEM*)user);
 }
+
+///
 private c_long vorbisTellCallback(OVMEM* pom) nothrow @safe {
 	if (!pom) {
 		return -1;
@@ -94,9 +105,11 @@ private c_long vorbisTellCallback(OVMEM* pom) nothrow @safe {
 	return pom.pos;
 }
 
+///
 private extern (C) int vorbisCloseCallback(void* user) nothrow @trusted {
 	return vorbisCloseCallback(cast(OVMEM*)user);
 }
+///
 private int vorbisCloseCallback(OVMEM* pom) nothrow @safe {
 	if (!pom) {
 		return -1;
@@ -108,14 +121,16 @@ private int vorbisCloseCallback(OVMEM* pom) nothrow @safe {
 // global
 /////////////////
 
+///
 struct PxtnPulseOggv {
 private:
-	int ch;
-	int sps2;
-	int smpNum;
-	int size;
-	ubyte[] pData;
+	int ch; ///
+	int sps2; ///
+	int smpNum; ///
+	int size; ///
+	ubyte[] pData; ///
 
+	///
 	private bool setInformation() @safe {
 		bool bRet = false;
 
@@ -154,10 +169,12 @@ private:
 	}
 
 public:
+	///
 	 ~this() nothrow @safe {
 		release();
 	}
 
+	///
 	void decode(out PxtnPulsePCM pPCM) const @safe {
 		OggVorbis_File vf;
 		vorbis_info* vi;
@@ -207,6 +224,7 @@ public:
 		trustedOvClear(vf);
 	}
 
+	///
 	void release() nothrow @safe {
 		pData = null;
 		ch = 0;
@@ -215,6 +233,7 @@ public:
 		size = 0;
 	}
 
+	///
 	bool getInfo(int* pCh, int* pSPS, int* pSmpNum) nothrow @safe {
 		if (!pData) {
 			return false;
@@ -233,6 +252,7 @@ public:
 		return true;
 	}
 
+	///
 	int getSize() const nothrow @safe {
 		if (!pData) {
 			return 0;
@@ -240,10 +260,12 @@ public:
 		return cast(int)(int.sizeof * 4 + size);
 	}
 
+	///
 	void oggWrite(ref PxtnDescriptor desc) const @safe {
 		desc.write(pData);
 	}
 
+	///
 	void oggRead(ref PxtnDescriptor desc) @safe {
 		size = desc.getByteSize();
 		if (!(size)) {
@@ -260,6 +282,7 @@ public:
 		}
 	}
 
+	///
 	void pxtnWrite(ref PxtnDescriptor pDoc) const @safe {
 		if (!pData) {
 			throw new PxtoneException("No data");
@@ -272,6 +295,7 @@ public:
 		pDoc.write(pData);
 	}
 
+	///
 	void pxtnRead(ref PxtnDescriptor pDoc) @safe {
 		pDoc.read(ch);
 		pDoc.read(sps2);
@@ -290,6 +314,7 @@ public:
 		pDoc.read(pData);
 	}
 
+	///
 	bool copy(ref PxtnPulseOggv pDst) const nothrow @safe {
 		pDst.release();
 		if (!pData) {
@@ -311,6 +336,7 @@ public:
 	}
 }
 
+///
 private void trustedOvOpenCallbacks(T)(scope ref T datasource, scope ref OggVorbis_File vf, scope ubyte[] initial, ov_callbacks callbacks) @trusted {
 	switch(ov_open_callbacks(cast(void*)&datasource, &vf, cast(char*)initial.ptr, cast(int)initial.length, callbacks)) {
 		case 0: break;
@@ -329,6 +355,7 @@ private void trustedOvOpenCallbacks(T)(scope ref T datasource, scope ref OggVorb
 	}
 }
 
+///
 private c_long trustedOvRead(scope ref OggVorbis_File vf, scope byte[] buffer, bool bigEndianPacking, int wordSize, bool signed, ref int bitstream) @trusted {
 	auto result = ov_read(&vf, buffer.ptr, cast(int)buffer.length, bigEndianPacking, wordSize, signed, &bitstream);
 	enforce!PxtoneException(result != OV_HOLE, "Vorbis data interrupted");
@@ -337,18 +364,22 @@ private c_long trustedOvRead(scope ref OggVorbis_File vf, scope byte[] buffer, b
 	enforce!PxtoneException(result >= 0, "Unknown Vorbis error");
 	return result;
 }
+
+///
 private vorbis_info* trustedOvInfo(scope ref OggVorbis_File vf, int link) @trusted {
 	auto result = ov_info(&vf, link);
 	enforce(result !is null);
 	return result;
 }
 
+///
 private long trustedOvPCMTotal(scope ref OggVorbis_File vf, int link) @trusted {
 	auto result = ov_pcm_total(&vf, link);
 	enforce(result != OV_EINVAL);
 	return result;
 }
 
+///
 private void trustedOvClear(scope ref OggVorbis_File vf) @trusted {
 	enforce(ov_clear(&vf) == 0);
 }

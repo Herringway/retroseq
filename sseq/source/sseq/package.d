@@ -1,3 +1,4 @@
+///
 module sseq;
 
 public import sseq.channel;
