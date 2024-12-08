@@ -9,6 +9,8 @@ import sseq.channel;
 import sseq.sdat;
 import sseq.consts;
 
+import retroseq.fixedpoint;
+
 import std.algorithm;
 import std.math;
 import std.random;
@@ -20,7 +22,7 @@ struct Player
 	ubyte nTracks; ///
 	ushort tempo; ///
 	ushort tempoCount; ///
-	ushort tempoRate; ///8.8 fixed point
+	FixedPoint2!(16, 8) tempoRate; ///
 	short masterVol; ///
 	short sseqVol; ///
 
@@ -61,7 +63,7 @@ struct Player
 	void ClearState() {
 		this.tempo = 120;
 		this.tempoCount = 0;
-		this.tempoRate = 0x100;
+		this.tempoRate = 1.0;
 		this.masterVol = 0; // this is actually the highest level
 		this.variables = -1;
 		this.secondsIntoPlayback = 0;
@@ -154,7 +156,7 @@ struct Player
 				runTrack(this.trackIds[i]);
 				//this.tracks[this.trackIds[i]].Run();
 		}
-		this.tempoCount += (cast(int)(this.tempo) * cast(int)(this.tempoRate)) >> 8;
+		this.tempoCount += cast(int)(this.tempo * this.tempoRate);
 	}
 	///
 	void runTrack(int trackID) @safe {
