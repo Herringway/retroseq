@@ -649,11 +649,7 @@ struct Pack {
 ///
 struct NSPCWriter {
 	private static immutable ubyte[] packTerminator = [0, 0]; ///
-	NSPCFileHeader[1] header_; ///
-	///
-	ref header() @safe pure {
-		return header_[0];
-	}
+	NSPCFileHeader header; ///
 	const(Pack)[] packs; ///
 	const(ubyte[8])[] firCoefficients; ///
 	const(TagPair)[] tags; ///
@@ -661,7 +657,7 @@ struct NSPCWriter {
 	void toBytes(W)(ref W writer) const {
 		import std.bitmanip : nativeToLittleEndian;
 		import std.range : put;
-		put(writer, cast(const(ubyte)[])header_[]);
+		put(writer, (cast(const(ubyte)[NSPCFileHeader.sizeof])header)[]);
 		foreach (pack; packs) {
 			put(writer, nativeToLittleEndian(pack.size)[]);
 			put(writer, nativeToLittleEndian(pack.address)[]);
