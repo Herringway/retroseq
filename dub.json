@@ -22,7 +22,6 @@
 		"extract",
 		"mknspc"
 	],
-	"stringImportPaths": [ "exampledata" ],
 	"configurations": [
 		{
 			"name": "default"
