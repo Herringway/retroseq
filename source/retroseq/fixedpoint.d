@@ -49,7 +49,7 @@ union FixedPoint2(size_t size, size_t scaling) {
 	}
 	///
 	FixedPoint2 opBinaryRight(string op, T)(T value) const if (op.among(supportedOps) && (isFloatingPoint!T || isIntegral!T)) {
-		return FixedPoint2(mixin("(cast(T)this)", op, "value"));
+		return opBinary!(op)(value);
 	}
 	///
 	FixedPoint2 opBinary(string op, size_t otherSize, size_t otherScaling)(FixedPoint2!(otherSize, otherScaling) value) const if (op.among(supportedOps)) {
