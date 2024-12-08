@@ -1,7 +1,9 @@
 ///
 module sseq.sdat;
 
+import std.algorithm.iteration;
 import std.algorithm.sorting;
+import std.array;
 import std.conv;
 import std.exception;
 import std.typecons;
@@ -72,21 +74,44 @@ struct SDAT
 			static struct SongEntry {
 				uint id;
 				const(char)[] name;
+				const(ubyte)[] sseqData;
+				const(ubyte)[] sbnkData;
+				const(ubyte)[][4] swarData;
 			}
 			private INFOSection infoSection;
+			private FATSection fatSection;
+			private const(ubyte)[] sdatData;
 			private Nullable!SYMBSection symbSection;
 			private const(ubyte)[] symbSectionData;
+			private const(ubyte)[] fatSectionData;
 			private const(ubyte)[] infoSectionData;
-			private size_t idx;
+			private size_t idx = 1;
 			bool empty() const => idx >= infoSection.SEQrecord(infoSectionData).length;
-			SongEntry front() const => SongEntry(cast(uint)idx, symbSection.isNull ? "" : symbSection.get.record(symbSectionData, RecordName.REC_SEQ)[idx]);
+			SongEntry front() const {
+				const sseqInfo = infoSection.SEQrecord(infoSectionData)[idx];
+				const sbnkInfo = infoSection.BANKrecord(infoSectionData)[sseqInfo.bank];
+				return SongEntry(
+					cast(uint)idx,
+					symbSection.isNull ? "" : symbSection.get.record(symbSectionData, RecordName.REC_SEQ)[idx],
+					readFile(sseqInfo.fileID),
+					readFile(sbnkInfo.fileID),
+					sbnkInfo.waveArc[].map!(x => x == 0xFFFF ? [] : readFile(infoSection.WAVEARCrecord(infoSectionData)[x].fileID)).array[0 .. 4],
+				);
+			}
 			void popFront() {
 				do {
 					 idx++;
 				} while((idx < infoSection.SEQrecord(infoSectionData).length) && !infoSection.SEQrecord(infoSectionData).isValid(idx));
 			}
+			private const(ubyte)[] readFile(size_t id) const @safe /*pure*/ {
+				if (id >= fatSection.fileCount) {
+					return [];
+				}
+				const record = fatSection.file(fatSectionData, id);
+				return sdatData[record.offset .. record.offset + record.size];
+			}
 		}
-		return Result(infoSection, symbSection, symbSectionData, infoSectionData);
+		return Result(infoSection, fatSection, sdatData, symbSection, symbSectionData, fatSectionData, infoSectionData);
 	}
 	///
 	const(ubyte)[] readFile(size_t id) const @safe /*pure*/ {

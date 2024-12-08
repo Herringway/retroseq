@@ -6,6 +6,7 @@ import std.algorithm.iteration;
 import std.algorithm.searching;
 import std.conv;
 import std.digest : toHexString;
+import std.digest.md : md5Of;
 import std.experimental.logger;
 import std.exception;
 import std.file;
@@ -131,7 +132,11 @@ int main(string[] args) {
 	if (args.length == 2) {
 		auto sdat = SDAT(data);
 		foreach (sseq; sdat.sseqs) {
-			infof("%s: %s", sseq.id, sseq.name);
+			if (verbose) {
+				writefln!"%s: %s (SSEQ: %s, SBNK: %s, SWAVs: [%(%s, %)])"(sseq.id, sseq.name, toHexString(md5Of(sseq.sseqData)), toHexString(md5Of(sseq.sbnkData)), sseq.swarData[].filter!(x => x != []).map!(x => toHexString(md5Of(x))));
+			} else {
+				writefln!"%s: %s"(sseq.id, sseq.name);
+			}
 		}
 		return 0;
 	}
