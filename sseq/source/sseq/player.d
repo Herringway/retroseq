@@ -156,7 +156,7 @@ struct Player
 				runTrack(this.trackIds[i]);
 				//this.tracks[this.trackIds[i]].Run();
 		}
-		this.tempoCount += cast(int)(this.tempo * this.tempoRate);
+		this.tempoCount += cast(int)(this.tempo) * cast(int)(this.tempoRate);
 	}
 	///
 	void runTrack(int trackID) @safe {
