@@ -65,7 +65,7 @@ int main(string[] args) {
 
 	trace("Loading organya file");
 	// Load file
-	org.loadMusic(file);
+	org.loadSong(createSong(file));
 
 	// Prepare to play music
 	if (!initAudio(&sdlSampleFunctionWrapper!sampleFunction, channels, sampleRate, &org)) {

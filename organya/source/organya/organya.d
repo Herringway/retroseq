@@ -98,16 +98,21 @@ private byte[0x100][100] initWaveData(const(ubyte)[] data) @safe {
 }
 
 ///
+struct OrganyaSong {
+	MusicInfo info;
+}
+
+///
 struct Organya {
 	private size_t[2][8][8] allocatedSounds; ///
 	private size_t[512] secondaryAllocatedSounds; ///
+	private const(OrganyaSong)[] song;
 	private Mixer mixer; ///
-	private MusicInfo info; ///
 	private const(PixtoneObject)[] pixtoneObjects = defaultPixtoneObjects; /// Pixtone objects to use for instrumentation. Only used during initialization.
 
 	// Play data
 	private int playPosition; ///
-	private NoteList*[maxTrack] np; ///
+	private const(NoteList)*[maxTrack] np; ///
 	private int[maxMelody] nowLength; ///
 
 	private int globalVolume = 100; ///
@@ -118,21 +123,12 @@ struct Organya {
 	private ubyte[maxTrack] keyOn; /// キースイッチ (Key switch)
 	private ubyte[maxTrack] keyTwin; /// 今使っているキー(連続時のノイズ防止の為に二つ用意) (Currently used keys (prepared for continuous noise prevention))
 	///
+	private const(MusicInfo) info() const @safe nothrow {
+		assert(song.length == 1, "No song loaded");
+		return song[0].info;
+	}
+	///
 	public void initialize(uint outputFrequency, InterpolationMethod method) @safe {
-		info.allocatedNotes = allocNote;
-		info.dot = 4;
-		info.line = 4;
-		info.wait = 128;
-		info.repeatX = info.dot * info.line * 0;
-		info.endX = info.dot * info.line * 255;
-
-		for (int i = 0; i < maxTrack; i++) {
-			info.trackData[i].freq = 1000;
-			info.trackData[i].waveNumber = 0;
-			info.trackData[i].pipi = 0;
-		}
-
-		noteAlloc(info.allocatedNotes);
 		mixer = Mixer(method, outputFrequency, &playData);
 		foreach (obj; pixtoneObjects) {
 			makePixToneObject(obj.params, obj.id);
@@ -154,24 +150,6 @@ struct Organya {
 			mi.trackData[i].pipi = info.trackData[i].pipi;
 		}
 		return mi;
-	}
-	/// 指定の数だけNoteDataの領域を確保(初期化) (Allocate the specified number of NoteData areas (initialization))
-	private void noteAlloc(ushort alloc) @safe {
-		int i,j;
-
-		for (j = 0; j < maxTrack; j++) {
-			info.trackData[j].waveNumber = 0;
-			info.trackData[j].noteList = null;
-			info.trackData[j].notePosition = new NoteList[](alloc);
-
-			for (i = 0; i < alloc; i++) {
-				info.trackData[j].notePosition[i] = NoteList.init;
-			}
-		}
-
-		for (j = 0; j < maxMelody; j++) {
-			makeOrganyaWave(cast(byte)j, info.trackData[j].waveNumber, info.trackData[j].pipi);
-		}
 	}
 
 	// 以下は再生 (The following is playback)
@@ -256,113 +234,12 @@ struct Organya {
 
 		playPosition = x;
 	}
-	///
-	public void loadMusic(const(ubyte)[] p) @safe
-		in(p, "No organya data")
-	{
-		static ushort readLE16(ref const(ubyte)[] p) { scope(exit) p = p[2 .. $]; return ((p[1] << 8) | p[0]); }
-		static uint readLE32(ref const(ubyte)[] p) { scope(exit) p = p[4 .. $]; return ((p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0]); }
-
-		NoteList[] np;
-		int i,j;
-		char ver = 0;
-		ushort[maxTrack] noteCounts;
-
-		enforce(p != null, "No data to load");
-
-		if(p[0 .. 6] == pass) {
-			ver = 1;
-		}
-		if(p[0 .. 6] == pass2) {
-			ver = 2;
-		}
-		p = p[6 .. $];
-
-		enforce(ver != 0, "Invalid version");
-
-		// 曲の情報を設定 (Set song information)
-		info.wait = readLE16(p);
-		info.line = p[0];
-		p = p[1 .. $];
-		info.dot = p[0];
-		p = p[1 .. $];
-		info.repeatX = readLE32(p);
-		info.endX = readLE32(p);
-
-		for (i = 0; i < maxTrack; i++) {
-			info.trackData[i].freq = readLE16(p);
-
-			info.trackData[i].waveNumber = p[0];
-			p = p[1 .. $];
-
-			if (ver == 1) {
-				info.trackData[i].pipi = 0;
-			} else {
-				info.trackData[i].pipi = p[0];
-			}
-
-			p = p[1 .. $];
-
-			noteCounts[i] = readLE16(p);
-		}
-
-		// 音符のロード (Loading notes)
-		for (j = 0; j < maxTrack; j++) {
-			// 最初の音符はfromがNULLとなる (The first note has from as NULL)
-			if (noteCounts[j] == 0) {
-				info.trackData[j].noteList = null;
-				continue;
-			}
-
-			// リストを作る (Make a list)
-			np = info.trackData[j].notePosition;
-			info.trackData[j].noteList = &info.trackData[j].notePosition[0];
-			assert(np);
-			np[0].from = null;
-			np[0].to = &np[1];
-
-			for (i = 1; i < noteCounts[j] - 1; i++) {
-				np[i].from = &np[i - 1];
-				np[i].to = &np[i + 1];
-			}
-
-			// 最後の音符のtoはNULL (The last note to is NULL)
-			np[$ - 1].to = null;
-
-			// 内容を代入 (Assign content)
-			np = info.trackData[j].notePosition;	// Ｘ座標 (X coordinate)
-			for (i = 0; i < noteCounts[j]; i++) {
-				np[i].x = readLE32(p);
-			}
-
-			np = info.trackData[j].notePosition;	// Ｙ座標 (Y coordinate)
-			for (i = 0; i < noteCounts[j]; i++) {
-				np[i].y = p[0];
-				p = p[1 .. $];
-			}
-
-			np = info.trackData[j].notePosition;	// 長さ (Length)
-			for (i = 0; i < noteCounts[j]; i++) {
-				np[i].length = p[0];
-				p = p[1 .. $];
-			}
-
-			np = info.trackData[j].notePosition;	// ボリューム (Volume)
-			for (i = 0; i < noteCounts[j]; i++) {
-				np[i].volume = p[0];
-				p = p[1 .. $];
-			}
-
-			np = info.trackData[j].notePosition;	// パン (Pan)
-			for (i = 0; i < noteCounts[j]; i++) {
-				np[i].pan = p[0];
-				p = p[1 .. $];
-			}
-		}
+	public void loadSong(const OrganyaSong song) @safe {
+		this.song = [song];
 
 		// データを有効に (Enable data)
-		for (j = 0; j < maxMelody; j++) {
-			makeOrganyaWave(cast(byte)j,info.trackData[j].waveNumber, info.trackData[j].pipi);
+		for (int j = 0; j < maxMelody; j++) {
+			makeOrganyaWave(cast(byte)j, song.info.trackData[j].waveNumber, song.info.trackData[j].pipi);
 		}
 
 		setPlayPointer(0);	// 頭出し (Cue)
@@ -636,6 +513,136 @@ struct Organya {
 
 		return sampleCount;
 	}
+}
+
+
+///
+public static OrganyaSong createSong(const(ubyte)[] p) @safe pure
+	in(p, "No organya data")
+{
+	OrganyaSong song;
+	static ushort readLE16(ref const(ubyte)[] p) { scope(exit) p = p[2 .. $]; return ((p[1] << 8) | p[0]); }
+	static uint readLE32(ref const(ubyte)[] p) { scope(exit) p = p[4 .. $]; return ((p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0]); }
+
+	song.info.allocatedNotes = allocNote;
+	song.info.dot = 4;
+	song.info.line = 4;
+	song.info.wait = 128;
+	song.info.repeatX = song.info.dot * song.info.line * 0;
+	song.info.endX = song.info.dot * song.info.line * 255;
+
+	for (int i = 0; i < maxTrack; i++) {
+		song.info.trackData[i].freq = 1000;
+		song.info.trackData[i].waveNumber = 0;
+		song.info.trackData[i].pipi = 0;
+	}
+
+	for (int j = 0; j < maxTrack; j++) {
+		song.info.trackData[j].waveNumber = 0;
+		song.info.trackData[j].noteList = null;
+		song.info.trackData[j].notePosition = new NoteList[](song.info.allocatedNotes);
+
+		for (int i = 0; i < song.info.allocatedNotes; i++) {
+			song.info.trackData[j].notePosition[i] = NoteList.init;
+		}
+	}
+
+	NoteList[] np;
+	char ver = 0;
+	ushort[maxTrack] noteCounts;
+
+	enforce(p != null, "No data to load");
+
+	if(p[0 .. 6] == pass) {
+		ver = 1;
+	}
+	if(p[0 .. 6] == pass2) {
+		ver = 2;
+	}
+	p = p[6 .. $];
+
+	enforce(ver != 0, "Invalid version");
+
+	// 曲の情報を設定 (Set song information)
+	song.info.wait = readLE16(p);
+	song.info.line = p[0];
+	p = p[1 .. $];
+	song.info.dot = p[0];
+	p = p[1 .. $];
+	song.info.repeatX = readLE32(p);
+	song.info.endX = readLE32(p);
+
+	for (int i = 0; i < maxTrack; i++) {
+		song.info.trackData[i].freq = readLE16(p);
+
+		song.info.trackData[i].waveNumber = p[0];
+		p = p[1 .. $];
+
+		if (ver == 1) {
+			song.info.trackData[i].pipi = 0;
+		} else {
+			song.info.trackData[i].pipi = p[0];
+		}
+
+		p = p[1 .. $];
+
+		noteCounts[i] = readLE16(p);
+	}
+
+	// 音符のロード (Loading notes)
+	for (int j = 0; j < maxTrack; j++) {
+		// 最初の音符はfromがNULLとなる (The first note has from as NULL)
+		if (noteCounts[j] == 0) {
+			song.info.trackData[j].noteList = null;
+			continue;
+		}
+
+		// リストを作る (Make a list)
+		np = song.info.trackData[j].notePosition;
+		song.info.trackData[j].noteList = &song.info.trackData[j].notePosition[0];
+		assert(np);
+		np[0].from = null;
+		np[0].to = &np[1];
+
+		for (int i = 1; i < noteCounts[j] - 1; i++) {
+			np[i].from = &np[i - 1];
+			np[i].to = &np[i + 1];
+		}
+
+		// 最後の音符のtoはNULL (The last note to is NULL)
+		np[$ - 1].to = null;
+
+		// 内容を代入 (Assign content)
+		np = song.info.trackData[j].notePosition;	// Ｘ座標 (X coordinate)
+		for (int i = 0; i < noteCounts[j]; i++) {
+			np[i].x = readLE32(p);
+		}
+
+		np = song.info.trackData[j].notePosition;	// Ｙ座標 (Y coordinate)
+		for (int i = 0; i < noteCounts[j]; i++) {
+			np[i].y = p[0];
+			p = p[1 .. $];
+		}
+
+		np = song.info.trackData[j].notePosition;	// 長さ (Length)
+		for (int i = 0; i < noteCounts[j]; i++) {
+			np[i].length = p[0];
+			p = p[1 .. $];
+		}
+
+		np = song.info.trackData[j].notePosition;	// ボリューム (Volume)
+		for (int i = 0; i < noteCounts[j]; i++) {
+			np[i].volume = p[0];
+			p = p[1 .. $];
+		}
+
+		np = song.info.trackData[j].notePosition;	// パン (Pan)
+		for (int i = 0; i < noteCounts[j]; i++) {
+			np[i].pan = p[0];
+			p = p[1 .. $];
+		}
+	}
+	return song;
 }
 
 private immutable pass = "Org-01"; ///
