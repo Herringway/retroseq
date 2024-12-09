@@ -63,9 +63,6 @@ int main(string[] args) {
 	trace("Initializing Organya");
 	org.initialize(sampleRate, interpolation);
 
-	trace("Loading organya data");
-	org.loadData(cast(ubyte[])read("pixtone.tbl"));
-
 	trace("Loading organya file");
 	// Load file
 	org.loadMusic(file);

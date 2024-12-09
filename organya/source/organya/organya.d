@@ -9,6 +9,7 @@ import std.math;
 
 import retroseq.interpolation;
 import retroseq.mixer;
+import organya.params;
 import organya.pixtone;
 
 public import retroseq.interpolation : InterpolationMethod;
@@ -102,7 +103,7 @@ struct Organya {
 	private size_t[512] secondaryAllocatedSounds; ///
 	private Mixer mixer; ///
 	private MusicInfo info; ///
-	private const(PixtoneParameter)[] pixtoneParameters; ///
+	private const(PixtoneObject)[] pixtoneObjects = defaultPixtoneObjects; /// Pixtone objects to use for instrumentation. Only used during initialization.
 
 	// Play data
 	private int playPosition; ///
@@ -133,6 +134,9 @@ struct Organya {
 
 		noteAlloc(info.allocatedNotes);
 		mixer = Mixer(method, outputFrequency, &playData);
+		foreach (obj; pixtoneObjects) {
+			makePixToneObject(obj.params, obj.id);
+		}
 	}
 	/// 曲情報を取得 (Get song information)
 	public MusicInfo getMusicInfo() @safe {
@@ -582,98 +586,9 @@ struct Organya {
 	public void fillBuffer(scope short[2][] finalBuffer) nothrow @safe {
 		mixer.mixSounds(finalBuffer);
 	}
-	///
-	public void loadData(const(ubyte)[] data) @safe {
-		import std.file : read;
-		pixtoneParameters = cast(const(PixtoneParameter)[])(data[0 .. ($ / PixtoneParameter.sizeof) * PixtoneParameter.sizeof]);
-		int pixtoneSize = 0;
-		pixtoneSize += makePixToneObject(pixtoneParameters[0 .. 2], 32);
-		pixtoneSize += makePixToneObject(pixtoneParameters[2 .. 4], 33);
-		pixtoneSize += makePixToneObject(pixtoneParameters[4 .. 6], 34);
-		pixtoneSize += makePixToneObject(pixtoneParameters[6 .. 7], 15);
-		pixtoneSize += makePixToneObject(pixtoneParameters[7 .. 8], 24);
-		pixtoneSize += makePixToneObject(pixtoneParameters[8 .. 9], 23);
-		pixtoneSize += makePixToneObject(pixtoneParameters[9 .. 11], 50);
-		pixtoneSize += makePixToneObject(pixtoneParameters[11 .. 13], 51);
-		pixtoneSize += makePixToneObject(pixtoneParameters[33 .. 34], 1);
-		pixtoneSize += makePixToneObject(pixtoneParameters[38 .. 39], 2);
-		pixtoneSize += makePixToneObject(pixtoneParameters[56 .. 57], 29);
-		pixtoneSize += makePixToneObject(pixtoneParameters[61 .. 62], 43);
-		pixtoneSize += makePixToneObject(pixtoneParameters[62 .. 65], 44);
-		pixtoneSize += makePixToneObject(pixtoneParameters[65 .. 66], 45);
-		pixtoneSize += makePixToneObject(pixtoneParameters[66 .. 67], 46);
-		pixtoneSize += makePixToneObject(pixtoneParameters[68 .. 69], 47);
-		pixtoneSize += makePixToneObject(pixtoneParameters[49 .. 52], 35);
-		pixtoneSize += makePixToneObject(pixtoneParameters[52 .. 55], 39);
-		pixtoneSize += makePixToneObject(pixtoneParameters[13 .. 15], 52);
-		pixtoneSize += makePixToneObject(pixtoneParameters[28 .. 30], 53);
-		pixtoneSize += makePixToneObject(pixtoneParameters[15 .. 17], 70);
-		pixtoneSize += makePixToneObject(pixtoneParameters[17 .. 19], 71);
-		pixtoneSize += makePixToneObject(pixtoneParameters[19 .. 21], 72);
-		pixtoneSize += makePixToneObject(pixtoneParameters[30 .. 31], 5);
-		pixtoneSize += makePixToneObject(pixtoneParameters[32 .. 33], 11);
-		pixtoneSize += makePixToneObject(pixtoneParameters[35 .. 36], 4);
-		pixtoneSize += makePixToneObject(pixtoneParameters[46 .. 48], 25);
-		pixtoneSize += makePixToneObject(pixtoneParameters[48 .. 49], 27);
-		pixtoneSize += makePixToneObject(pixtoneParameters[54 .. 56], 28);
-		pixtoneSize += makePixToneObject(pixtoneParameters[39 .. 40], 14);
-		pixtoneSize += makePixToneObject(pixtoneParameters[23 .. 25], 16);
-		pixtoneSize += makePixToneObject(pixtoneParameters[25 .. 28], 17);
-		pixtoneSize += makePixToneObject(pixtoneParameters[34 .. 35], 18);
-		pixtoneSize += makePixToneObject(pixtoneParameters[36 .. 38], 20);
-		pixtoneSize += makePixToneObject(pixtoneParameters[31 .. 32], 22);
-		pixtoneSize += makePixToneObject(pixtoneParameters[41 .. 43], 26);
-		pixtoneSize += makePixToneObject(pixtoneParameters[43 .. 44], 21);
-		pixtoneSize += makePixToneObject(pixtoneParameters[44 .. 46], 12);
-		pixtoneSize += makePixToneObject(pixtoneParameters[57 .. 59], 38);
-		pixtoneSize += makePixToneObject(pixtoneParameters[59 .. 60], 31);
-		pixtoneSize += makePixToneObject(pixtoneParameters[60 .. 61], 42);
-		pixtoneSize += makePixToneObject(pixtoneParameters[69 .. 70], 48);
-		pixtoneSize += makePixToneObject(pixtoneParameters[70 .. 72], 49);
-		pixtoneSize += makePixToneObject(pixtoneParameters[72 .. 73], 100);
-		pixtoneSize += makePixToneObject(pixtoneParameters[73 .. 76], 101);
-		pixtoneSize += makePixToneObject(pixtoneParameters[76 .. 78], 54);
-		pixtoneSize += makePixToneObject(pixtoneParameters[78 .. 80], 102);
-		pixtoneSize += makePixToneObject(pixtoneParameters[80 .. 82], 103);
-		pixtoneSize += makePixToneObject(pixtoneParameters[81 .. 82], 104);
-		pixtoneSize += makePixToneObject(pixtoneParameters[82 .. 83], 105);
-		pixtoneSize += makePixToneObject(pixtoneParameters[83 .. 85], 106);
-		pixtoneSize += makePixToneObject(pixtoneParameters[85 .. 86], 107);
-		pixtoneSize += makePixToneObject(pixtoneParameters[86 .. 87], 30);
-		pixtoneSize += makePixToneObject(pixtoneParameters[87 .. 88], 108);
-		pixtoneSize += makePixToneObject(pixtoneParameters[88 .. 89], 109);
-		pixtoneSize += makePixToneObject(pixtoneParameters[89 .. 90], 110);
-		pixtoneSize += makePixToneObject(pixtoneParameters[90 .. 91], 111);
-		pixtoneSize += makePixToneObject(pixtoneParameters[91 .. 92], 112);
-		pixtoneSize += makePixToneObject(pixtoneParameters[92 .. 93], 113);
-		pixtoneSize += makePixToneObject(pixtoneParameters[93 .. 95], 114);
-		pixtoneSize += makePixToneObject(pixtoneParameters[95 .. 97], 150);
-		pixtoneSize += makePixToneObject(pixtoneParameters[97 .. 99], 151);
-		pixtoneSize += makePixToneObject(pixtoneParameters[99 .. 100], 152);
-		pixtoneSize += makePixToneObject(pixtoneParameters[100 .. 101], 153);
-		pixtoneSize += makePixToneObject(pixtoneParameters[101 .. 103], 154);
-		pixtoneSize += makePixToneObject(pixtoneParameters[111 .. 113], 155);
-		pixtoneSize += makePixToneObject(pixtoneParameters[103 .. 105], 56);
-		pixtoneSize += makePixToneObject(pixtoneParameters[105 .. 107], 40);
-		pixtoneSize += makePixToneObject(pixtoneParameters[105 .. 107], 41);
-		pixtoneSize += makePixToneObject(pixtoneParameters[107 .. 109], 37);
-		pixtoneSize += makePixToneObject(pixtoneParameters[109 .. 111], 57);
-		pixtoneSize += makePixToneObject(pixtoneParameters[113 .. 116], 115);
-		pixtoneSize += makePixToneObject(pixtoneParameters[116 .. 117], 104);
-		pixtoneSize += makePixToneObject(pixtoneParameters[117 .. 120], 116);
-		pixtoneSize += makePixToneObject(pixtoneParameters[120 .. 122], 58);
-		pixtoneSize += makePixToneObject(pixtoneParameters[122 .. 124], 55);
-		pixtoneSize += makePixToneObject(pixtoneParameters[124 .. 126], 117);
-		pixtoneSize += makePixToneObject(pixtoneParameters[126 .. 127], 59);
-		pixtoneSize += makePixToneObject(pixtoneParameters[127 .. 128], 60);
-		pixtoneSize += makePixToneObject(pixtoneParameters[128 .. 129], 61);
-		pixtoneSize += makePixToneObject(pixtoneParameters[129 .. 131], 62);
-		pixtoneSize += makePixToneObject(pixtoneParameters[131 .. 133], 63);
-		pixtoneSize += makePixToneObject(pixtoneParameters[133 .. 135], 64);
-		pixtoneSize += makePixToneObject(pixtoneParameters[135 .. 136], 65);
-		pixtoneSize += makePixToneObject(pixtoneParameters[136 .. 137], 3);
-		pixtoneSize += makePixToneObject(pixtoneParameters[137 .. 138], 6);
-		pixtoneSize += makePixToneObject(pixtoneParameters[138 .. 139], 7);
+	/// Overrides the instrumentation with custom pixtone objects. Be sure to call this BEFORE initialization!
+	public void loadData(const(PixtoneObject)[] data) @safe {
+		pixtoneObjects = data;
 	}
 	///
 	void setMusicTimer(uint milliseconds) @safe {

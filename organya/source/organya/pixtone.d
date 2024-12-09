@@ -5,8 +5,12 @@ import std.random;
 import std.math;
 import organya.organya;
 
+struct PixtoneObject {
+	int id;
+	PixtoneParameter[] params;
+}
 ///
-private align(1) struct PixtoneParameter2 {
+align(1) struct PixtoneParameter2 {
 align(1):
 	int model; ///
 	double num; ///
