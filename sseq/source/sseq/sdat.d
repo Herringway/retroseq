@@ -69,7 +69,7 @@ struct SDAT
 		readSection!FATSection(fatSection, fatSectionData, fat.offset, "FAT ");
 	}
 	///
-	auto sseqs() {
+	auto sseqs() const {
 		static struct Result {
 			static struct SongEntry {
 				uint id;
