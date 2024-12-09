@@ -222,10 +222,10 @@ struct Organya {
 
 	///
 	private void setPlayPointer(int x) @safe nothrow {
-		for (int i = 0; i < tracks.length; i++) {
-			tracks[i].np = info.trackData[i].noteList;
-			while (tracks[i].np != null && tracks[i].np.x < x) {
-				tracks[i].np = tracks[i].np.to;	// 見るべき音符を設定 (Set note to watch)
+		foreach (idx, ref track; tracks) {
+			track.np = info.trackData[idx].noteList;
+			while (track.np != null && track.np.x < x) {
+				track.np = track.np.to; // 見るべき音符を設定 (Set note to watch)
 			}
 		}
 
@@ -261,49 +261,33 @@ struct Organya {
 		setMusicTimer(info.wait);
 	}
 	///
-	private void makeSoundObject8(const byte[] wavep, byte track, byte pipi) @safe {
-		uint i,j,k;
-		uint waveTable;	// WAVテーブルをさすポインタ (Pointer to WAV table)
-		uint waveSize;	// 256;
-		uint dataSize;
-		ubyte[] wp;
-		ubyte[] wpSub;
-		int work;
-
-		for (j = 0; j < 8; j++) {
-			for (k = 0; k < 2; k++) {
-				waveSize = octaveWaves[j].waveSize;
+	private void makeSoundObject8(const byte[] wavep, byte track, byte pipi) @safe pure {
+		foreach (octave, ref octaveData; allocatedSounds[track]) {
+			foreach (ref allocatedSound; octaveData) {
+				uint waveSize = octaveWaves[octave].waveSize;
+				uint dataSize = waveSize;
 
 				if (pipi) {
-					dataSize = waveSize * octaveWaves[j].octaveSize;
-				} else {
-					dataSize = waveSize;
+					dataSize *= octaveWaves[octave].octaveSize;
 				}
 
-				wp = new ubyte[](dataSize);
+				auto wp = new ubyte[](dataSize);
 
+				// WAVテーブルをさすポインタ (Pointer to WAV table)
+				uint waveTable = 0;
 
-				// Get wave data
-				wpSub = wp;
-				waveTable = 0;
-
-				for (i = 0; i < dataSize; i++) {
-					work = wavep[waveTable];
-					work += 0x80;
-
-					wpSub[0] = cast(ubyte)work;
+				foreach (ref sample; wp) {
+					sample = cast(ubyte)(wavep[waveTable] + 0x80);
 
 					waveTable += 0x100 / waveSize;
 					if (waveTable > 0xFF) {
 						waveTable -= 0x100;
 					}
-
-					wpSub = wpSub[1 .. $];
 				}
 
-				allocatedSounds[track][j][k] = mixer.createSound(22050, wp[0 .. dataSize]);
+				allocatedSound = mixer.createSound(22050, wp);
 
-				mixer.getSound(allocatedSounds[track][j][k]).seek(0);
+				mixer.getSound(allocatedSound).seek(0);
 			}
 		}
 	}
