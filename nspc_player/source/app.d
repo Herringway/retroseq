@@ -1,5 +1,4 @@
 import nspcplay;
-import nspcplay.util;
 
 import std.algorithm.comparison;
 import std.algorithm.iteration;
@@ -19,6 +18,7 @@ import std.utf;
 import bindbc.sdl : SDL_AudioCallback, SDL_AudioDeviceID;
 
 import retroseq.utility;
+import retroseq.wav;
 
 import midi;
 
@@ -199,7 +199,7 @@ int main(string[] args) {
 
 
 	if (!dumpBRRFiles && (outfile != "")) {
-		dumpWav(nspc, sampleRate, channels, outfile);
+		dumpNSPCWav(nspc, sampleRate, channels, outfile);
 	} else if (printSong) {
 		writeln("Instruments:");
 		foreach (idx, instrument; song.instruments) {
@@ -235,7 +235,7 @@ int main(string[] args) {
 					smpl.loops ~= loop;
 				}
 
-				nspcplay.util.wav.dumpWav(sample.data, sampleRate, 1, filename, smpl);
+				dumpWav(sample.data, sampleRate, 1, filename, smpl);
 				infof("Writing %s samples to %s", sample.data.length, filename);
 			}
 		}
@@ -294,7 +294,7 @@ int main(string[] args) {
 	return 0;
 }
 
-void dumpWav(ref NSPCPlayer player, uint sampleRate, ushort channels, string filename) {
+void dumpNSPCWav(ref NSPCPlayer player, uint sampleRate, ushort channels, string filename) {
 	player.looping = false;
 	short[2][] samples;
 	while (player.isPlaying) {
@@ -302,5 +302,5 @@ void dumpWav(ref NSPCPlayer player, uint sampleRate, ushort channels, string fil
 		samples ~= player.fillBuffer(buffer[]);
 	}
 	SampleChunk smpl;
-	nspcplay.util.wav.dumpWav(samples, sampleRate, channels, filename, smpl);
+	dumpWav(samples, sampleRate, channels, filename, smpl);
 }
