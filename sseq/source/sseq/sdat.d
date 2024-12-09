@@ -113,6 +113,50 @@ struct SDAT
 		}
 		return Result(infoSection, fatSection, sdatData, symbSection, symbSectionData, fatSectionData, infoSectionData);
 	}
+	auto swars() const {
+		static struct Result {
+			private INFOSection infoSection;
+			private FATSection fatSection;
+			private const(ubyte)[] sdatData;
+			private Nullable!SYMBSection symbSection;
+			private const(ubyte)[] symbSectionData;
+			private const(ubyte)[] fatSectionData;
+			private const(ubyte)[] infoSectionData;
+			static struct SWAREntry {
+				const(char)[] name;
+				const(ubyte)[] data;
+				SWAR processed;
+			}
+			size_t idx = 1;
+			SWAREntry front() const {
+				SWAR processed;
+				auto data = readFile(infoSection.WAVEARCrecord(infoSectionData)[idx].fileID);
+				if (data == []) {
+					return SWAREntry(symbSection.get.record(symbSectionData, RecordName.REC_WAVEARC)[idx], data);
+				}
+				auto swarFile = data;
+				processed.header = swarFile.pop!NDSStdHeader();
+				processed.dataHeader = swarFile.pop!(SWAR.DataHeader)();
+				processed.data = swarFile;
+				processed.loadSWAVs();
+				return SWAREntry(symbSection.get.record(symbSectionData, RecordName.REC_WAVEARC)[idx], data, processed);
+			}
+			void popFront() {
+				idx++;
+			}
+			bool empty() const {
+				return idx >= symbSection.get.record(symbSectionData, RecordName.REC_WAVEARC).length;
+			}
+			private const(ubyte)[] readFile(size_t id) const @safe /*pure*/ {
+				if (id >= fatSection.fileCount) {
+					return [];
+				}
+				const record = fatSection.file(fatSectionData, id);
+				return sdatData[record.offset .. record.offset + record.size];
+			}
+		}
+		return Result(infoSection, fatSection, sdatData, symbSection, symbSectionData, fatSectionData, infoSectionData);
+	}
 	///
 	const(ubyte)[] readFile(size_t id) const @safe /*pure*/ {
 		const record = fatSection.file(fatSectionData, id);

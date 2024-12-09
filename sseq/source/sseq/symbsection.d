@@ -24,6 +24,7 @@ struct SYMBSection
 			const(char)[] opIndex(size_t idx) {
 				return (cast(const(char)[])data[entries[idx] .. $]).fromStringz;
 			}
+			size_t length() const @safe pure => entries.length;
 		}
 		return Result(symbBlock, recordOffsets[idx]);
 	}
