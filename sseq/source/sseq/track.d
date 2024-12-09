@@ -8,6 +8,7 @@ import sseq.player;
 import sseq.sbnk;
 
 import std.random;
+import std.typecons;
 
 ///
 enum StackType
@@ -79,6 +80,8 @@ struct Track
 	ushort modDelay; ///
 
 	ubyte[TrackUpdateFlags.max + 1] updateFlags; ///
+
+	Nullable!uint maxLoops; /// Maximum number of loops for this track
 
 	///
 	void Init(ubyte handle, const(ubyte)[] dataPos, int n) @safe {

@@ -14,6 +14,7 @@ import retroseq.fixedpoint;
 import std.algorithm;
 import std.math;
 import std.random;
+import std.typecons;
 
 ///
 struct Player
@@ -35,6 +36,19 @@ struct Player
 
 	uint sampleRate; ///
 	Interpolation interpolation; ///
+
+	Nullable!uint _maxLoops; /// Maximum number of gotos to perform before ending playback - null for unlimited gotos.
+	void maxLoops(uint count) @safe pure {
+		_maxLoops = count;
+		foreach (ref track; tracks[0 .. nTracks]) {
+			if (track.state[TrackState.alloc]) {
+				track.maxLoops = count;
+			}
+		}
+	}
+	Nullable!uint maxLoops() const @safe pure {
+		return _maxLoops;
+	}
 
 	///
 	bool Setup(const Song song) {
@@ -139,6 +153,7 @@ struct Player
 			Track* thisTrk = &this.tracks[i];
 			if (!thisTrk.state[TrackState.alloc])
 			{
+				thisTrk.maxLoops = maxLoops;
 				thisTrk.Zero();
 				thisTrk.state[TrackState.alloc] = true;
 				thisTrk.updateFlags = false;
@@ -158,9 +173,28 @@ struct Player
 		}
 		this.tempoCount += cast(int)(this.tempo) * cast(int)(this.tempoRate);
 	}
+	bool isPlaying() const @safe pure {
+		foreach (track; tracks[0 .. nTracks]) {
+			if (!track.state[TrackState.end]) {
+				return true;
+			}
+		}
+		return false;
+	}
 	///
 	void runTrack(int trackID) @safe {
 		auto track = &this.tracks[trackID];
+		bool limitLoop() {
+			if (!track.maxLoops.isNull) {
+				if (track.maxLoops.get == 0) {
+					return true;
+				}
+				if (track.maxLoops.get-- <= 1) {
+					return true;
+				}
+			}
+			return false;
+		}
 		// Indicate "heartbeat" for this track
 		track.updateFlags[TrackUpdateFlags.len] = true;
 
@@ -226,6 +260,9 @@ struct Player
 						break;
 
 					case SseqCommand.SSEQ_CMD_GOTO:
+						if (limitLoop()) {
+							goto case SseqCommand.SSEQ_CMD_END;
+						}
 						track.trackDataCurrent = this.song.sseq.data[read24(track.trackDataCurrent) .. $];
 						break;
 
@@ -297,6 +334,9 @@ struct Player
 						break;
 
 					case SseqCommand.SSEQ_CMD_LOOPEND:
+						if (limitLoop()) {
+							goto case SseqCommand.SSEQ_CMD_END;
+						}
 						if (track.stackPos && track.stack[track.stackPos - 1].type == StackType.STACKTYPE_LOOP)
 						{
 							const(ubyte)[] rPos = track.stack[track.stackPos - 1].dest;
