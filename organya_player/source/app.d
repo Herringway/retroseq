@@ -12,6 +12,8 @@ import std.string;
 import std.utf;
 import bindbc.sdl : SDL_AudioCallback, SDL_AudioDeviceID;
 
+import retroseq.utility;
+
 bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* userdata = null) {
 	SDL_AudioDeviceID dev;
 	import bindbc.sdl;
@@ -37,9 +39,8 @@ bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* use
 	return true;
 }
 
-extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
-	Organya* org = cast(Organya*) user;
-	org.fillBuffer(cast(short[2][])(buf[0 .. bufSize]));
+void sampleFunction(ref Organya org, short[2][] buf) nothrow {
+	org.fillBuffer(buf);
 }
 
 int main(string[] args) {
@@ -70,7 +71,7 @@ int main(string[] args) {
 	org.loadMusic(file);
 
 	// Prepare to play music
-	if (!initAudio(&_sampling_func, channels, sampleRate, &org)) {
+	if (!initAudio(&sdlSampleFunctionWrapper!sampleFunction, channels, sampleRate, &org)) {
 		return 1;
 	}
 	trace("SDL audio init success");

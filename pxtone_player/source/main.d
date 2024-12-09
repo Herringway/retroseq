@@ -10,6 +10,8 @@ import std.string;
 import std.utf;
 import bindbc.sdl : SDL_AudioCallback, SDL_AudioDeviceID;
 
+import retroseq.utility;
+
 enum _CHANNEL_NUM = 2;
 enum _SAMPLE_PER_SECOND = 48000;
 enum _BUFFER_PER_SEC = (0.3f);
@@ -48,9 +50,8 @@ bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* use
 	return true;
 }
 
-extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
-	PxtnService* pxtn = cast(PxtnService*) user;
-	pxtn.moo(cast(short[])(buf[0 .. bufSize]));
+void sampleFunction(ref PxtnService pxtn, short[] buf) nothrow @safe {
+	pxtn.moo(buf);
 }
 
 int main(string[] args) {
@@ -77,7 +78,7 @@ int main(string[] args) {
 
 	// Prepare to play music
 	pxtn.mooPreparation();
-	if (!initAudio(&_sampling_func, _CHANNEL_NUM, _SAMPLE_PER_SECOND, &pxtn)) {
+	if (!initAudio(&sdlSampleFunctionWrapper!sampleFunction, _CHANNEL_NUM, _SAMPLE_PER_SECOND, &pxtn)) {
 		return 1;
 	}
 	trace("SDL audio init success");

@@ -19,6 +19,8 @@ import std.string;
 import std.utf;
 import bindbc.sdl : SDL_AudioCallback, SDL_AudioDeviceID;
 
+import retroseq.utility;
+
 extern(C) int kbhit();
 extern(C) int getch();
 
@@ -74,17 +76,8 @@ bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* use
 	return true;
 }
 
-extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
-	static bool done;
-	if (done) {
-		return;
-	}
-	try {
-		RunMixerFrame(*cast(M4APlayer*)user, cast(float[2][])buf[0 .. bufSize]);
-	} catch (Throwable e) {
-		assumeWontThrow(writeln(e));
-		done = true;
-	}
+void sampleFunction(ref M4APlayer m4a, float[2][] buf) {
+	RunMixerFrame(m4a, buf);
 }
 int main(string[] args) {
 	int sampleRate = 48000;
@@ -135,7 +128,7 @@ int main(string[] args) {
 	player.songNumStart(cast(ushort)song);
 
 	// Prepare to play music
-	if (!initAudio(&_sampling_func, 2, sampleRate, &player)) {
+	if (!initAudio(&sdlSampleFunctionWrapper!sampleFunction, 2, sampleRate, &player)) {
 		return 1;
 	}
 	info("SDL audio init success");

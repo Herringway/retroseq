@@ -18,6 +18,8 @@ import std.string;
 import std.utf;
 import bindbc.sdl : SDL_AudioCallback, SDL_AudioDeviceID;
 
+import retroseq.utility;
+
 import midi;
 
 extern(C) int kbhit();
@@ -48,14 +50,8 @@ bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* use
 	return true;
 }
 
-extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
-	NSPCPlayer* nspc = cast(NSPCPlayer*) user;
-	try {
-		nspc.fillBuffer(cast(short[2][])(buf[0 .. bufSize]));
-	} catch (Error e) {
-		assumeWontThrow(writeln(e));
-		throw e;
-	}
+void sampleFunction(ref NSPCPlayer nspc, short[2][] buf) nothrow {
+	nspc.fillBuffer(buf);
 }
 __gshared int midiChannel = 0;
 
@@ -245,7 +241,7 @@ int main(string[] args) {
 		}
 	} else {
 		// Prepare to play music
-		if (!initAudio(&_sampling_func, channels, sampleRate, &nspc)) {
+		if (!initAudio(&sdlSampleFunctionWrapper!sampleFunction, channels, sampleRate, &nspc)) {
 			return 1;
 		}
 		trace("SDL audio init success");

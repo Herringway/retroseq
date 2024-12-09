@@ -20,6 +20,8 @@ import std.utf;
 import bindbc.sdl : SDL_AudioCallback, SDL_AudioDeviceID;
 import libgamefs.nintendo.ds.nds;
 
+import retroseq.utility;
+
 extern(C) int kbhit();
 extern(C) int getch();
 
@@ -70,19 +72,13 @@ struct SSEQPlayer {
 }
 
 void sampleFunction(ref SSEQPlayer player, short[2][] buffer) @safe {
+	scope(failure) {
+		player.stopped = true;
+	}
 	if (player.stopped) {
 		return;
 	}
 	player.player.GenerateSamples(buffer);
-}
-
-extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
-	try {
-		sampleFunction(*cast(SSEQPlayer*)user, cast(short[2][])buf[0 .. bufSize]);
-	} catch (Throwable e) {
-		assumeWontThrow(writeln(e));
-		(cast(SSEQPlayer*)user).stopped = true;
-	}
 }
 
 int main(string[] args) {

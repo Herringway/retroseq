@@ -12,6 +12,8 @@ import std.string;
 import std.utf;
 import bindbc.sdl : SDL_AudioCallback, SDL_AudioDeviceID;
 
+import retroseq.utility;
+
 bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* userdata = null) @trusted {
 	SDL_AudioDeviceID dev;
 	import bindbc.sdl;
@@ -37,9 +39,6 @@ bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* use
 	return true;
 }
 
-extern (C) void _sampling_func(void* user, ubyte* buf, int bufSize) nothrow {
-	sampleFunc(*cast(PiyoPiyo*)user, cast(short[2][])(buf[0 .. bufSize]));
-}
 void sampleFunc(ref PiyoPiyo piyo, short[2][] buf) nothrow @safe {
 	piyo.fillBuffer(buf);
 }
@@ -77,7 +76,7 @@ int main(string[] args) {
 	piyo.loadMusic(file);
 
 	// Prepare to play music
-	if (!initAudio(&_sampling_func, channels, sampleRate, &piyo)) {
+	if (!initAudio(&sdlSampleFunctionWrapper!sampleFunc, channels, sampleRate, &piyo)) {
 		return 1;
 	}
 	trace("SDL audio init success");

@@ -18,3 +18,14 @@ const(T)[] sliceMax(T)(const(ubyte)[] input, size_t start) @safe pure {
 void Funcify(alias Method, T)(ref T newThis, Parameters!Method params) {
 	__traits(getMember, newThis, __traits(identifier, Method))(params);
 }
+
+/// Wrapper for SDL callbacks
+extern (C) void sdlSampleFunctionWrapper(alias Function)(void* user, ubyte* buf, int bufSize) nothrow if (isDynamicArray!(Parameters!Function[1])) {
+	import std.exception : assumeWontThrow;
+	import std.stdio : writeln;
+	try {
+		Function(*cast(Parameters!Function[0]*)user, cast(Parameters!Function[1])buf[0 .. bufSize]);
+	} catch (Throwable e) {
+		assumeWontThrow(writeln(e));
+	}
+}

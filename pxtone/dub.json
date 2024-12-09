@@ -3,6 +3,9 @@
 	"license": "BSL-1.0",
 	"name": "pxtone",
 	"targetType": "library",
+	"dependencies": {
+		"retroseq": "*"
+	},
 	"configurations": [
 		{
 			"name": "no-vorbis"

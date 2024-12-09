@@ -6,5 +6,8 @@
 	"description": "SNES NSPC format",
 	"license": "BSL-1",
 	"stringImportPaths": ["exampledata"],
+	"dependencies": {
+		"retroseq": "*"
+	},
 	"name": "nspc"
 }
