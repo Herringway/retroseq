@@ -103,6 +103,16 @@ struct OrganyaSong {
 }
 
 ///
+struct TrackState {
+	const(NoteList)* np;
+	int volume;
+	bool muted;
+	ubyte playingSounds = 0xFF; /// 再生中の音 (Sound being played)
+	ubyte keyOn; /// キースイッチ (Key switch)
+	ubyte keyTwin; /// 今使っているキー(連続時のノイズ防止の為に二つ用意) (Currently used keys (prepared for continuous noise prevention))
+}
+
+///
 struct Organya {
 	private size_t[2][8][8] allocatedSounds; ///
 	private size_t[512] secondaryAllocatedSounds; ///
@@ -112,16 +122,20 @@ struct Organya {
 
 	// Play data
 	private int playPosition; ///
-	private const(NoteList)*[maxTrack] np; ///
 	private int[maxMelody] nowLength; ///
 
 	private int globalVolume = 100; ///
-	private int[maxTrack] trackVolume; ///
 	private bool fading = false; ///
-	private bool[maxTrack] mutedTracks; ///
-	private ubyte[maxTrack] playingSounds = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]; /// 再生中の音 (Sound being played)
-	private ubyte[maxTrack] keyOn; /// キースイッチ (Key switch)
-	private ubyte[maxTrack] keyTwin; /// 今使っているキー(連続時のノイズ防止の為に二つ用意) (Currently used keys (prepared for continuous noise prevention))
+	TrackState[maxTrack] tracks; ///
+
+	///
+	private inout(TrackState)[] melodyTracks() inout @safe nothrow return {
+		return tracks[0 .. maxMelody];
+	}
+	///
+	private inout(TrackState)[] drumTracks() inout @safe nothrow return {
+		return tracks[maxMelody .. $];
+	}
 	///
 	private const(MusicInfo) info() const @safe nothrow {
 		assert(song.length == 1, "No song loaded");
@@ -164,21 +178,21 @@ struct Organya {
 		}
 
 		// メロディの再生 (Play melody)
-		for (int i = 0; i < maxMelody; i++) {
-			if (np[i] != null && playPosition == np[i].x) {
-				if (!mutedTracks[i] && np[i].y != keyDummy) {	// 音が来た。 (The sound has come.)
-					playOrganObject(np[i].y, -1, cast(byte)i, info.trackData[i].freq);
-					nowLength[i] = np[i].length;
+		for (int i = 0; i < melodyTracks.length; i++) {
+			if (melodyTracks[i].np != null && playPosition == melodyTracks[i].np.x) {
+				if (!melodyTracks[i].muted && melodyTracks[i].np.y != keyDummy) {	// 音が来た。 (The sound has come.)
+					playOrganObject(melodyTracks[i].np.y, -1, cast(byte)i, info.trackData[i].freq);
+					nowLength[i] = melodyTracks[i].np.length;
 				}
 
-				if (np[i].pan != panDummy) {
-					changeOrganPan(np[i].y, np[i].pan, cast(byte)i);
+				if (melodyTracks[i].np.pan != panDummy) {
+					changeOrganPan(melodyTracks[i].np.y, melodyTracks[i].np.pan, cast(byte)i);
 				}
-				if (np[i].volume != volDummy) {
-					trackVolume[i] = np[i].volume;
+				if (melodyTracks[i].np.volume != volDummy) {
+					melodyTracks[i].volume = melodyTracks[i].np.volume;
 				}
 
-				np[i] = np[i].to;	// 次の音符を指す (Points to the next note)
+				melodyTracks[i].np = melodyTracks[i].np.to;	// 次の音符を指す (Points to the next note)
 			}
 
 			if (nowLength[i] == 0) {
@@ -189,30 +203,30 @@ struct Organya {
 				nowLength[i]--;
 			}
 
-			if (np[i]) {
-				changeOrganVolume(np[i].y, trackVolume[i] * globalVolume / 0x7F, cast(byte)i);
+			if (melodyTracks[i].np) {
+				changeOrganVolume(melodyTracks[i].np.y, melodyTracks[i].volume * globalVolume / 0x7F, cast(byte)i);
 			}
 		}
 
 		// ドラムの再生 (Drum playback)
-		for (int i = maxMelody; i < maxTrack; i++) {
-			if (np[i] != null && playPosition == np[i].x) {	// 音が来た。 (The sound has come.)
-				if (np[i].y != keyDummy && !mutedTracks[i]) {	// ならす (Tame)
-					playDrumObject(np[i].y, 1, cast(byte)(i - maxMelody));
+		for (int i = 0; i < drumTracks.length; i++) {
+			if (drumTracks[i].np != null && playPosition == drumTracks[i].np.x) {	// 音が来た。 (The sound has come.)
+				if (drumTracks[i].np.y != keyDummy && !drumTracks[i].muted) {	// ならす (Tame)
+					playDrumObject(drumTracks[i].np.y, 1, cast(byte)i);
 				}
 
-				if (np[i].pan != panDummy) {
-					changeDrumPan(np[i].pan, cast(byte)(i - maxMelody));
+				if (drumTracks[i].np.pan != panDummy) {
+					changeDrumPan(drumTracks[i].np.pan, cast(byte)i);
 				}
-				if (np[i].volume != volDummy) {
-					trackVolume[i] = np[i].volume;
+				if (drumTracks[i].np.volume != volDummy) {
+					drumTracks[i].volume = drumTracks[i].np.volume;
 				}
 
-				np[i] = np[i].to;	// 次の音符を指す (Points to the next note)
+				drumTracks[i].np = drumTracks[i].np.to;	// 次の音符を指す (Points to the next note)
 			}
 
-			if (np[i])
-				changeDrumVolume(trackVolume[i] * globalVolume / 0x7F, cast(byte)(i - maxMelody));
+			if (drumTracks[i].np)
+				changeDrumVolume(drumTracks[i].volume * globalVolume / 0x7F, cast(byte)i);
 		}
 
 		// Looping
@@ -225,10 +239,10 @@ struct Organya {
 
 	///
 	private void setPlayPointer(int x) @safe nothrow {
-		for (int i = 0; i < maxTrack; i++) {
-			np[i] = info.trackData[i].noteList;
-			while (np[i] != null && np[i].x < x) {
-				np[i] = np[i].to;	// 見るべき音符を設定 (Set note to watch)
+		for (int i = 0; i < tracks.length; i++) {
+			tracks[i].np = info.trackData[i].noteList;
+			while (tracks[i].np != null && tracks[i].np.x < x) {
+				tracks[i].np = tracks[i].np.to;	// 見るべき音符を設定 (Set note to watch)
 			}
 		}
 
@@ -320,15 +334,15 @@ struct Organya {
 	}
 	///
 	private void changeOrganPan(ubyte key, ubyte pan, byte track) @safe nothrow {	// 512がMAXで256がﾉｰﾏﾙ (512 is MAX and 256 is normal)
-		if (playingSounds[track] != keyDummy) {
-			mixer.getSound(allocatedSounds[track][playingSounds[track] / 12][keyTwin[track]]).pan = (panTable[pan] - 0x100) * 10;
+		if (tracks[track].playingSounds != keyDummy) {
+			mixer.getSound(allocatedSounds[track][tracks[track].playingSounds / 12][tracks[track].keyTwin]).pan = (panTable[pan] - 0x100) * 10;
 		}
 	}
 
 	///
 	private void changeOrganVolume(int no, int volume, byte track) @safe nothrow {	// 300がMAXで300がﾉｰﾏﾙ (300 is MAX and 300 is normal)
-		if (playingSounds[track] != keyDummy) {
-			mixer.getSound(allocatedSounds[track][playingSounds[track] / 12][keyTwin[track]]).volume = cast(short)((volume - 0xFF) * 8);
+		if (tracks[track].playingSounds != keyDummy) {
+			mixer.getSound(allocatedSounds[track][tracks[track].playingSounds / 12][tracks[track].keyTwin]).volume = cast(short)((volume - 0xFF) * 8);
 		}
 	}
 
@@ -337,9 +351,9 @@ struct Organya {
 	private void playOrganObject(ubyte key, int mode, byte track, int freq) @safe nothrow {
 		switch (mode) {
 			case 0:	// 停止 (Stop)
-				if (playingSounds[track] != 0xFF) {
-					mixer.getSound(allocatedSounds[track][playingSounds[track] / 12][keyTwin[track]]).stop();
-					mixer.getSound(allocatedSounds[track][playingSounds[track] / 12][keyTwin[track]]).seek(0);
+				if (tracks[track].playingSounds != 0xFF) {
+					mixer.getSound(allocatedSounds[track][tracks[track].playingSounds / 12][tracks[track].keyTwin]).stop();
+					mixer.getSound(allocatedSounds[track][tracks[track].playingSounds / 12][tracks[track].keyTwin]).seek(0);
 				}
 				break;
 
@@ -347,37 +361,37 @@ struct Organya {
 				break;
 
 			case 2:	// 歩かせ停止 (Stop playback)
-				if (playingSounds[track] != 0xFF) {
-					mixer.getSound(allocatedSounds[track][playingSounds[track] / 12][keyTwin[track]]).play(false);
-					playingSounds[track] = 0xFF;
+				if (tracks[track].playingSounds != 0xFF) {
+					mixer.getSound(allocatedSounds[track][tracks[track].playingSounds / 12][tracks[track].keyTwin]).play(false);
+					tracks[track].playingSounds = 0xFF;
 				}
 				break;
 
 			case -1:
-				if (playingSounds[track] == 0xFF) {	// 新規鳴らす (New sound)
+				if (tracks[track].playingSounds == 0xFF) {	// 新規鳴らす (New sound)
 					changeOrganFrequency(key % 12, track, freq);	// 周波数を設定して (Set the frequency)
-					mixer.getSound(allocatedSounds[track][key / 12][keyTwin[track]]).play(true);
-					playingSounds[track] = key;
-					keyOn[track] = 1;
+					mixer.getSound(allocatedSounds[track][key / 12][tracks[track].keyTwin]).play(true);
+					tracks[track].playingSounds = key;
+					tracks[track].keyOn = 1;
 				}
-				else if (keyOn[track] == 1 && playingSounds[track] == key) {	// 同じ音 (Same sound)
+				else if (tracks[track].keyOn == 1 && tracks[track].playingSounds == key) {	// 同じ音 (Same sound)
 					// 今なっているのを歩かせ停止 (Stop playback now)
-					mixer.getSound(allocatedSounds[track][playingSounds[track] / 12][keyTwin[track]]).play(false);
-					keyTwin[track]++;
-					if (keyTwin[track] > 1) {
-						keyTwin[track] = 0;
+					mixer.getSound(allocatedSounds[track][tracks[track].playingSounds / 12][tracks[track].keyTwin]).play(false);
+					tracks[track].keyTwin++;
+					if (tracks[track].keyTwin > 1) {
+						tracks[track].keyTwin = 0;
 					}
-					mixer.getSound(allocatedSounds[track][key / 12][keyTwin[track]]).play(true);
+					mixer.getSound(allocatedSounds[track][key / 12][tracks[track].keyTwin]).play(true);
 				}
 				else {	// 違う音を鳴らすなら (If you make a different sound)
-					mixer.getSound(allocatedSounds[track][playingSounds[track] / 12][keyTwin[track]]).play(false);	// 今なっているのを歩かせ停止 (Stop playback now)
-					keyTwin[track]++;
-					if (keyTwin[track] > 1) {
-						keyTwin[track] = 0;
+					mixer.getSound(allocatedSounds[track][tracks[track].playingSounds / 12][tracks[track].keyTwin]).play(false);	// 今なっているのを歩かせ停止 (Stop playback now)
+					tracks[track].keyTwin++;
+					if (tracks[track].keyTwin > 1) {
+						tracks[track].keyTwin = 0;
 					}
 					changeOrganFrequency(key % 12, track, freq);	// 周波数を設定して (Set the frequency)
-					mixer.getSound(allocatedSounds[track][key / 12][keyTwin[track]]).play(true);
-					playingSounds[track] = key;
+					mixer.getSound(allocatedSounds[track][key / 12][tracks[track].keyTwin]).play(true);
+					tracks[track].playingSounds = key;
 				}
 
 				break;
@@ -449,9 +463,7 @@ struct Organya {
 			playOrganObject(0, 2, cast(byte)i, 0);
 		}
 
-		playingSounds[] = 255;
-		keyOn = keyOn.init;
-		keyTwin = keyTwin.init;
+		tracks[] = TrackState.init;
 	}
 
 	///
