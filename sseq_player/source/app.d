@@ -17,16 +17,18 @@ import std.range;
 import std.stdio;
 import std.string;
 import std.utf;
-import bindbc.sdl : SDL_AudioCallback, SDL_AudioDeviceID;
+import bindbc.sdl : SDL_AudioCallback, SDL_AudioDeviceID, SDL_LockAudioDevice, SDL_UnlockAudioDevice;
 import libgamefs.nintendo.ds.nds;
 
+import retroseq.wav;
 import retroseq.utility;
 
 extern(C) int kbhit();
 extern(C) int getch();
 
+SDL_AudioDeviceID dev;
+bool sdlInitialized;
 bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* userdata = null) {
-	SDL_AudioDeviceID dev;
 	import bindbc.sdl;
 
 	enforce(loadSDL() == sdlSupport);
@@ -47,6 +49,7 @@ bool initAudio(SDL_AudioCallback fun, ubyte channels, uint sampleRate, void* use
 		return false;
 	}
 	SDL_PauseAudioDevice(dev, 0);
+	sdlInitialized = true;
 	return true;
 }
 
@@ -63,30 +66,46 @@ struct SSEQPlayer {
 		player.Timer();
 	}
 	void stop() {
+		if (sdlInitialized) {
+			SDL_LockAudioDevice(dev);
+		}
 		stopped = true;
 		player.Stop(true);
+		if (sdlInitialized) {
+			SDL_UnlockAudioDevice(dev);
+		}
 	}
 	bool isPlaying() {
-		return !stopped;
+		if (stopped) {
+			return false;
+		}
+		if (!player.isPlaying) {
+			stop();
+			return false;
+		}
+		return true;
 	}
 }
 
-void sampleFunction(ref SSEQPlayer player, short[2][] buffer) @safe {
+short[2][] sampleFunction(ref SSEQPlayer player, short[2][] buffer) @safe {
 	scope(failure) {
 		player.stopped = true;
 	}
 	if (player.stopped) {
-		return;
+		return [];
 	}
 	player.player.GenerateSamples(buffer);
+	return buffer;
 }
 
 int main(string[] args) {
 	bool verbose;
+	string outputFile;
 	int sampleRate = 44100;
 	Interpolation interpolation;
 
 	auto help = getopt(args,
+		"o|output-file", "Writes to output file instead", &outputFile,
 		"f|samplerate", "Sets sample rate (Hz)", &sampleRate,
 		"i|interpolation", "Interpolation method", &interpolation,
 		"v|verbose", "Print more verbose information", &verbose,
@@ -139,25 +158,35 @@ int main(string[] args) {
 	auto player = SSEQPlayer(data, args[2].to!uint);
 	player.player.interpolation = interpolation;
 	// Prepare to play music
-	if (!initAudio(&_sampling_func, 2, sampleRate, &player)) {
-		return 1;
-	}
-	info("SDL audio init success");
-
-	infof("Now playing %s", player.song.sseq.filename);
-	infof("Sequence: %s, Bank: %s, wave archives: %s", player.song.sseq.filename, player.song.sbnk.filename, player.song.swar[].filter!(x => !!x).map!(x => x.filename));
-
-	writeln("Press enter to exit");
-	while(true) {
-		if (kbhit()) {
-			getch(); //make sure the key press is actually consumed
-			break;
+	if (outputFile != "") {
+		player.player.maxLoops = 1;
+		short[2][] samples;
+		while (player.isPlaying) {
+			short[2][4096] buffer;
+			samples ~= player.sampleFunction(buffer[]);
 		}
-		if (!player.isPlaying) {
-			break;
-		}
-	}
-	player.stop();
+		dumpWav(samples, sampleRate, 2, outputFile);
 
+	} else {
+		if (!initAudio(&sdlSampleFunctionWrapper!sampleFunction, 2, sampleRate, &player)) {
+			return 1;
+		}
+		info("SDL audio init success");
+
+		infof("Now playing %s", player.song.sseq.filename);
+		infof("Sequence: %s, Bank: %s, wave archives: %s", player.song.sseq.filename, player.song.sbnk.filename, player.song.swar[].filter!(x => !!x).map!(x => x.filename));
+
+		writeln("Press enter to exit");
+		while(true) {
+			if (kbhit()) {
+				getch(); //make sure the key press is actually consumed
+				break;
+			}
+			if (!player.isPlaying) {
+				break;
+			}
+		}
+		player.stop();
+	}
 	return 0;
 }
