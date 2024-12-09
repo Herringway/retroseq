@@ -136,8 +136,8 @@ struct Organya {
 	private inout(TrackState)[] drumTracks() inout @safe nothrow return {
 		return tracks[maxMelody .. $];
 	}
-	///
-	private const(MusicInfo) info() const @safe nothrow {
+	/// 曲情報を取得 (Get song information)
+	public const(MusicInfo) info() const @safe pure nothrow {
 		assert(song.length == 1, "No song loaded");
 		return song[0].info;
 	}
@@ -147,23 +147,6 @@ struct Organya {
 		foreach (obj; pixtoneObjects) {
 			makePixToneObject(obj.params, obj.id);
 		}
-	}
-	/// 曲情報を取得 (Get song information)
-	public MusicInfo getMusicInfo() @safe {
-		MusicInfo mi;
-		mi.dot = info.dot;
-		mi.line = info.line;
-		mi.allocatedNotes = info.allocatedNotes;
-		mi.wait = info.wait;
-		mi.repeatX = info.repeatX;
-		mi.endX = info.endX;
-
-		for (int i = 0; i < maxTrack; i++) {
-			mi.trackData[i].freq = info.trackData[i].freq;
-			mi.trackData[i].waveNumber = info.trackData[i].waveNumber;
-			mi.trackData[i].pipi = info.trackData[i].pipi;
-		}
-		return mi;
 	}
 
 	// 以下は再生 (The following is playback)
