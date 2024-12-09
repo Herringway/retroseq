@@ -39,9 +39,9 @@ private struct NoteList {
 
 /// Track data * 8
 private struct TrackData {
-	ushort freq;	/// Frequency (1000 is default)
-	ubyte waveNumber; ///
-	byte pipi; ///
+	ushort freq = 1000;	/// Frequency (1000 is default)
+	ubyte waveNumber = 0; ///
+	byte pipi = 0; ///
 
 	NoteList[] notePosition; ///
 	NoteList *noteList; ///
@@ -110,6 +110,7 @@ struct TrackState {
 	ubyte playingSounds = 0xFF; /// 再生中の音 (Sound being played)
 	ubyte keyOn; /// キースイッチ (Key switch)
 	ubyte keyTwin; /// 今使っているキー(連続時のノイズ防止の為に二つ用意) (Currently used keys (prepared for continuous noise prevention))
+	int nowLength; ///
 }
 
 ///
@@ -122,7 +123,6 @@ struct Organya {
 
 	// Play data
 	private int playPosition; ///
-	private int[maxMelody] nowLength; ///
 
 	private int globalVolume = 100; ///
 	private bool fading = false; ///
@@ -161,55 +161,55 @@ struct Organya {
 		}
 
 		// メロディの再生 (Play melody)
-		for (int i = 0; i < melodyTracks.length; i++) {
-			if (melodyTracks[i].np != null && playPosition == melodyTracks[i].np.x) {
-				if (!melodyTracks[i].muted && melodyTracks[i].np.y != keyDummy) {	// 音が来た。 (The sound has come.)
-					playOrganObject(melodyTracks[i].np.y, -1, cast(byte)i, info.trackData[i].freq);
-					nowLength[i] = melodyTracks[i].np.length;
+		foreach (trackIdx, ref track; melodyTracks) {
+			if (track.np != null && playPosition == track.np.x) {
+				if (!track.muted && track.np.y != keyDummy) {	// 音が来た。 (The sound has come.)
+					playOrganObject(track.np.y, -1, cast(byte)trackIdx, info.trackData[trackIdx].freq);
+					track.nowLength = track.np.length;
 				}
 
-				if (melodyTracks[i].np.pan != panDummy) {
-					changeOrganPan(melodyTracks[i].np.y, melodyTracks[i].np.pan, cast(byte)i);
+				if (track.np.pan != panDummy) {
+					changeOrganPan(track.np.y, track.np.pan, cast(byte)trackIdx);
 				}
-				if (melodyTracks[i].np.volume != volDummy) {
-					melodyTracks[i].volume = melodyTracks[i].np.volume;
+				if (track.np.volume != volDummy) {
+					track.volume = track.np.volume;
 				}
 
-				melodyTracks[i].np = melodyTracks[i].np.to;	// 次の音符を指す (Points to the next note)
+				track.np = track.np.to;	// 次の音符を指す (Points to the next note)
 			}
 
-			if (nowLength[i] == 0) {
-				playOrganObject(0, 2, cast(byte)i, info.trackData[i].freq);
+			if (track.nowLength == 0) {
+				playOrganObject(0, 2, cast(byte)trackIdx, info.trackData[trackIdx].freq);
 			}
 
-			if (nowLength[i] > 0) {
-				nowLength[i]--;
+			if (track.nowLength > 0) {
+				track.nowLength--;
 			}
 
-			if (melodyTracks[i].np) {
-				changeOrganVolume(melodyTracks[i].np.y, melodyTracks[i].volume * globalVolume / 0x7F, cast(byte)i);
+			if (track.np) {
+				changeOrganVolume(track.np.y, track.volume * globalVolume / 0x7F, cast(byte)trackIdx);
 			}
 		}
 
 		// ドラムの再生 (Drum playback)
-		for (int i = 0; i < drumTracks.length; i++) {
-			if (drumTracks[i].np != null && playPosition == drumTracks[i].np.x) {	// 音が来た。 (The sound has come.)
-				if (drumTracks[i].np.y != keyDummy && !drumTracks[i].muted) {	// ならす (Tame)
-					playDrumObject(drumTracks[i].np.y, 1, cast(byte)i);
+		foreach (trackIdx, ref track; drumTracks) {
+			if (track.np != null && playPosition == track.np.x) {	// 音が来た。 (The sound has come.)
+				if (track.np.y != keyDummy && !track.muted) {	// ならす (Tame)
+					playDrumObject(track.np.y, 1, cast(byte)trackIdx);
 				}
 
-				if (drumTracks[i].np.pan != panDummy) {
-					changeDrumPan(drumTracks[i].np.pan, cast(byte)i);
+				if (track.np.pan != panDummy) {
+					changeDrumPan(track.np.pan, cast(byte)trackIdx);
 				}
-				if (drumTracks[i].np.volume != volDummy) {
-					drumTracks[i].volume = drumTracks[i].np.volume;
+				if (track.np.volume != volDummy) {
+					track.volume = track.np.volume;
 				}
 
-				drumTracks[i].np = drumTracks[i].np.to;	// 次の音符を指す (Points to the next note)
+				track.np = track.np.to;	// 次の音符を指す (Points to the next note)
 			}
 
-			if (drumTracks[i].np)
-				changeDrumVolume(drumTracks[i].volume * globalVolume / 0x7F, cast(byte)i);
+			if (track.np)
+				changeDrumVolume(track.volume * globalVolume / 0x7F, cast(byte)trackIdx);
 		}
 
 		// Looping
@@ -235,8 +235,8 @@ struct Organya {
 		this.song = [song];
 
 		// データを有効に (Enable data)
-		for (int j = 0; j < maxMelody; j++) {
-			makeOrganyaWave(cast(byte)j, song.info.trackData[j].waveNumber, song.info.trackData[j].pipi);
+		foreach (trackIdx, const track; song.info.trackData[0 .. maxMelody]) {
+			makeOrganyaWave(cast(byte)trackIdx, track.waveNumber, track.pipi);
 		}
 
 		setPlayPointer(0);	// 頭出し (Cue)
@@ -293,9 +293,9 @@ struct Organya {
 	}
 	///
 	private void changeOrganFrequency(ubyte key, byte track, int a) @safe nothrow {
-		for (int j = 0; j < 8; j++) {
-			for (int i = 0; i < 2; i++) {
-				mixer.getSound(allocatedSounds[track][j][i]).frequency = cast(uint)(((octaveWaves[j].waveSize * frequencyTable[key]) * octaveWaves[j].octavePar) / 8 + (a - 1000));	// 1000を+αのデフォルト値とする (1000 is the default value for + α)
+		foreach (octaveIdx, const octaveData; allocatedSounds[track]) {
+			foreach (const allocatedSound; octaveData) {
+				mixer.getSound(allocatedSound).frequency = cast(uint)(((octaveWaves[octaveIdx].waveSize * frequencyTable[key]) * octaveWaves[octaveIdx].octavePar) / 8 + (a - 1000));	// 1000を+αのデフォルト値とする (1000 is the default value for + α)
 			}
 		}
 	}
@@ -426,8 +426,8 @@ struct Organya {
 		setMusicTimer(0);
 
 		// Stop notes
-		for (int i = 0; i < maxMelody; i++) {
-			playOrganObject(0, 2, cast(byte)i, 0);
+		foreach (byte track; 0 .. maxMelody) {
+			playOrganObject(0, 2, track, 0);
 		}
 
 		tracks[] = TrackState.init;
@@ -452,43 +452,28 @@ struct Organya {
 	}
 
 	///
-	private int makePixToneObject(const(PixtoneParameter)[] ptp, int no) @safe {
-		int sampleCount;
-		int i, j;
-		ubyte[] pcmBuffer;
-		ubyte[] mixedPCMBuffer;
+	private int makePixToneObject(const(PixtoneParameter)[] parameters, int no) @safe {
+		int sampleCount = 0;
 
-		sampleCount = 0;
-
-		for (i = 0; i < ptp.length; i++) {
-			if (ptp[i].size > sampleCount) {
-				sampleCount = ptp[i].size;
-			}
+		foreach (param; parameters) {
+			sampleCount = max(param.size, sampleCount);
 		}
 
-		pcmBuffer = mixedPCMBuffer = null;
-
-		pcmBuffer = new ubyte[](sampleCount);
-		mixedPCMBuffer = new ubyte[](sampleCount);
+		ubyte[] pcmBuffer = new ubyte[](sampleCount);
+		ubyte[] mixedPCMBuffer = new ubyte[](sampleCount);
 
 		pcmBuffer[0 .. sampleCount] = 0x80;
 		mixedPCMBuffer[0 .. sampleCount] = 0x80;
 
-		for (i = 0; i < ptp.length; i++) {
-			MakePixelWaveData(ptp[i], pcmBuffer);
+		foreach (param; parameters) {
+			MakePixelWaveData(param, pcmBuffer);
 
-			for (j = 0; j < ptp[i].size; j++) {
-				if (pcmBuffer[j] + mixedPCMBuffer[j] - 0x100 < -0x7F) {
-					mixedPCMBuffer[j] = 0;
-				} else if (pcmBuffer[j] + mixedPCMBuffer[j] - 0x100 > 0x7F) {
-					mixedPCMBuffer[j] = 0xFF;
-				} else {
-					mixedPCMBuffer[j] = cast(ubyte)(mixedPCMBuffer[j] + pcmBuffer[j] - 0x80);
-				}
+			foreach (offset, ref sample; mixedPCMBuffer[0 .. param.size]) {
+				sample = cast(ubyte)clamp(sample + pcmBuffer[offset] - 0x80, 0, ubyte.max);
 			}
 		}
 
-		secondaryAllocatedSounds[no] = mixer.createSound(22050, mixedPCMBuffer[0 .. sampleCount]);
+		secondaryAllocatedSounds[no] = mixer.createSound(22050, mixedPCMBuffer);
 
 		return sampleCount;
 	}
@@ -510,20 +495,8 @@ public static OrganyaSong createSong(const(ubyte)[] p) @safe pure
 	song.info.repeatX = song.info.dot * song.info.line * 0;
 	song.info.endX = song.info.dot * song.info.line * 255;
 
-	for (int i = 0; i < maxTrack; i++) {
-		song.info.trackData[i].freq = 1000;
-		song.info.trackData[i].waveNumber = 0;
-		song.info.trackData[i].pipi = 0;
-	}
-
-	for (int j = 0; j < maxTrack; j++) {
-		song.info.trackData[j].waveNumber = 0;
-		song.info.trackData[j].noteList = null;
-		song.info.trackData[j].notePosition = new NoteList[](song.info.allocatedNotes);
-
-		for (int i = 0; i < song.info.allocatedNotes; i++) {
-			song.info.trackData[j].notePosition[i] = NoteList.init;
-		}
+	foreach (ref track; song.info.trackData) {
+		track.notePosition = new NoteList[](song.info.allocatedNotes);
 	}
 
 	NoteList[] np;
@@ -551,39 +524,39 @@ public static OrganyaSong createSong(const(ubyte)[] p) @safe pure
 	song.info.repeatX = readLE32(p);
 	song.info.endX = readLE32(p);
 
-	for (int i = 0; i < maxTrack; i++) {
-		song.info.trackData[i].freq = readLE16(p);
+	foreach (trackIdx, ref track; song.info.trackData) {
+		track.freq = readLE16(p);
 
-		song.info.trackData[i].waveNumber = p[0];
+		track.waveNumber = p[0];
 		p = p[1 .. $];
 
 		if (ver == 1) {
-			song.info.trackData[i].pipi = 0;
+			track.pipi = 0;
 		} else {
-			song.info.trackData[i].pipi = p[0];
+			track.pipi = p[0];
 		}
 
 		p = p[1 .. $];
 
-		noteCounts[i] = readLE16(p);
+		noteCounts[trackIdx] = readLE16(p);
 	}
 
 	// 音符のロード (Loading notes)
-	for (int j = 0; j < maxTrack; j++) {
+	foreach (trackIdx, ref track; song.info.trackData) {
 		// 最初の音符はfromがNULLとなる (The first note has from as NULL)
-		if (noteCounts[j] == 0) {
-			song.info.trackData[j].noteList = null;
+		if (noteCounts[trackIdx] == 0) {
+			track.noteList = null;
 			continue;
 		}
 
 		// リストを作る (Make a list)
-		np = song.info.trackData[j].notePosition;
-		song.info.trackData[j].noteList = &song.info.trackData[j].notePosition[0];
+		np = track.notePosition;
+		track.noteList = &track.notePosition[0];
 		assert(np);
 		np[0].from = null;
 		np[0].to = &np[1];
 
-		for (int i = 1; i < noteCounts[j] - 1; i++) {
+		for (int i = 1; i < noteCounts[trackIdx] - 1; i++) {
 			np[i].from = &np[i - 1];
 			np[i].to = &np[i + 1];
 		}
@@ -592,31 +565,31 @@ public static OrganyaSong createSong(const(ubyte)[] p) @safe pure
 		np[$ - 1].to = null;
 
 		// 内容を代入 (Assign content)
-		np = song.info.trackData[j].notePosition;	// Ｘ座標 (X coordinate)
-		for (int i = 0; i < noteCounts[j]; i++) {
+		np = track.notePosition;	// Ｘ座標 (X coordinate)
+		for (int i = 0; i < noteCounts[trackIdx]; i++) {
 			np[i].x = readLE32(p);
 		}
 
-		np = song.info.trackData[j].notePosition;	// Ｙ座標 (Y coordinate)
-		for (int i = 0; i < noteCounts[j]; i++) {
+		np = track.notePosition;	// Ｙ座標 (Y coordinate)
+		for (int i = 0; i < noteCounts[trackIdx]; i++) {
 			np[i].y = p[0];
 			p = p[1 .. $];
 		}
 
-		np = song.info.trackData[j].notePosition;	// 長さ (Length)
-		for (int i = 0; i < noteCounts[j]; i++) {
+		np = track.notePosition;	// 長さ (Length)
+		for (int i = 0; i < noteCounts[trackIdx]; i++) {
 			np[i].length = p[0];
 			p = p[1 .. $];
 		}
 
-		np = song.info.trackData[j].notePosition;	// ボリューム (Volume)
-		for (int i = 0; i < noteCounts[j]; i++) {
+		np = track.notePosition;	// ボリューム (Volume)
+		for (int i = 0; i < noteCounts[trackIdx]; i++) {
 			np[i].volume = p[0];
 			p = p[1 .. $];
 		}
 
-		np = song.info.trackData[j].notePosition;	// パン (Pan)
-		for (int i = 0; i < noteCounts[j]; i++) {
+		np = track.notePosition;	// パン (Pan)
+		for (int i = 0; i < noteCounts[trackIdx]; i++) {
 			np[i].pan = p[0];
 			p = p[1 .. $];
 		}
