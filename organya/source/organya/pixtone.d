@@ -45,49 +45,46 @@ private byte[0x100][6] makeWaveTables() @safe {
 
 	int a;
 	// Sine wave
-	for (i = 0; i < 0x100; ++i) {
-		table[0][i] = cast(byte)(sin((i * 6.283184) / 256.0) * 64.0);
+	foreach (idx, ref sample; table[0]) {
+		sample = cast(byte)(sin((idx * 6.283184) / 256.0) * 64.0);
 	}
 
 	// Triangle wave
-	for (a = 0, i = 0; i < 0x40; ++i) {
+	foreach (idx, ref sample; table[1][0 .. 0x40]) {
 		// Upwards
-		table[1][i] = cast(byte)((a * 0x40) / 0x40);
-		++a;
+		sample = cast(byte)((idx * 0x40) / 0x40);
 	}
-	for (a = 0; i < 0xC0; ++i) {
+	foreach (idx, ref sample; table[1][0x40 .. 0xC0]) {
 		// Downwards
-		table[1][i] = cast(byte)(0x40 - ((a * 0x40) / 0x40));
-		++a;
+		sample = cast(byte)(0x40 - ((idx * 0x40) / 0x40));
 	}
-	for (a = 0; i < 0x100; ++i) {
+	foreach (idx, ref sample; table[1][0xC0 .. $]) {
 		// Back up
-		table[1][i] = cast(byte)(((a * 0x40) / 0x40) - 0x40);
-		++a;
+		sample = cast(byte)(((idx * 0x40) / 0x40) - 0x40);
 	}
 
 	// Saw up wave
-	for (i = 0; i < 0x100; ++i) {
-		table[2][i] = cast(byte)((i / 2) - 0x40);
+	foreach (idx, ref sample; table[2]) {
+		sample = cast(byte)((idx / 2) - 0x40);
 	}
 
 	// Saw down wave
-	for (i = 0; i < 0x100; ++i) {
-		table[3][i] = cast(byte)(0x40 - (i / 2));
+	foreach (idx, ref sample; table[3]) {
+		sample = cast(byte)(0x40 - (idx / 2));
 	}
 
 	// Square wave
-	for (i = 0; i < 0x80; ++i) {
-		table[4][i] = 0x40;
+	foreach (ref sample; table[4][0 .. 0x80]) {
+		sample = 0x40;
 	}
-	for (; i < 0x100; ++i) {
-		table[4][i] = -0x40;
+	foreach (ref sample; table[4][0x80 .. $]) {
+		sample = -0x40;
 	}
 
 	// White noise wave
 	Random rng;
-	for (i = 0; i < 0x100; ++i) {
-		table[5][i] = cast(byte) uniform(0, 127, rng);
+	foreach (ref sample; table[5]) {
+		sample = cast(byte) uniform(0, 127, rng);
 	}
 	return table;
 }
@@ -160,12 +157,12 @@ void MakePixelWaveData(const PixtoneParameter ptp, ubyte[] pData) @safe {
 		d3 = 256.0 / (ptp.size / ptp.oVolume.num);
 	}
 
-	for (i = 0; i < ptp.size; ++i) {
+	foreach (idx, ref sample; pData[0 .. ptp.size]) {
 		a = cast(int) dMain % 0x100;
 		b = cast(int) dPitch % 0x100;
 		c = cast(int) dVolume % 0x100;
-		d = cast(int)(cast(double)(i * 0x100) / ptp.size);
-		pData[i] = cast(ubyte)(waveModelTable[ptp.oMain.model][a] * ptp.oMain.top / 64 * (((waveModelTable[ptp.oVolume.model][c] * ptp.oVolume.top) / 64) + 64) / 64 * envelopeTable[d] / 64 + 128);
+		d = cast(int)(cast(double)(idx * 0x100) / ptp.size);
+		sample = cast(ubyte)(waveModelTable[ptp.oMain.model][a] * ptp.oMain.top / 64 * (((waveModelTable[ptp.oVolume.model][c] * ptp.oVolume.top) / 64) + 64) / 64 * envelopeTable[d] / 64 + 128);
 
 		if (waveModelTable[ptp.oPitch.model][b] < 0) {
 			dMain += d1 - d1 * 0.5 * -cast(int) waveModelTable[ptp.oPitch.model][b] * ptp.oPitch.top / 64.0 / 64.0;
