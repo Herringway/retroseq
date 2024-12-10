@@ -9,6 +9,7 @@ import std.math;
 
 import retroseq.interpolation;
 import retroseq.mixer;
+import retroseq.utility;
 import organya.params;
 import organya.pixtone;
 
@@ -485,8 +486,6 @@ public static OrganyaSong createSong(const(ubyte)[] p) @safe pure
 	in(p, "No organya data")
 {
 	OrganyaSong song;
-	static ushort readLE16(ref const(ubyte)[] p) { scope(exit) p = p[2 .. $]; return ((p[1] << 8) | p[0]); }
-	static uint readLE32(ref const(ubyte)[] p) { scope(exit) p = p[4 .. $]; return ((p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0]); }
 
 	song.info.allocatedNotes = allocNote;
 	song.info.dot = 4;
@@ -505,40 +504,33 @@ public static OrganyaSong createSong(const(ubyte)[] p) @safe pure
 
 	enforce(p != null, "No data to load");
 
-	if(p[0 .. 6] == pass) {
-		ver = 1;
+	switch (p.pop!(char[6])) {
+		case pass: ver = 1; break;
+		case pass2: ver = 2; break;
+		default: throw new Exception("Invalid version");
 	}
-	if(p[0 .. 6] == pass2) {
-		ver = 2;
-	}
-	p = p[6 .. $];
-
-	enforce(ver != 0, "Invalid version");
 
 	// 曲の情報を設定 (Set song information)
-	song.info.wait = readLE16(p);
-	song.info.line = p[0];
-	p = p[1 .. $];
-	song.info.dot = p[0];
-	p = p[1 .. $];
-	song.info.repeatX = readLE32(p);
-	song.info.endX = readLE32(p);
+	song.info.wait = p.pop!(LittleEndian!ushort).native;
+	song.info.line = p.pop!ubyte;
+	song.info.dot = p.pop!ubyte;
+	song.info.repeatX = p.pop!(LittleEndian!uint).native;
+	song.info.endX = p.pop!(LittleEndian!uint).native;
 
 	foreach (trackIdx, ref track; song.info.trackData) {
-		track.freq = readLE16(p);
+		track.freq = p.pop!(LittleEndian!ushort).native;
 
-		track.waveNumber = p[0];
-		p = p[1 .. $];
+		track.waveNumber = p.pop!ubyte;
 
 		if (ver == 1) {
 			track.pipi = 0;
 		} else {
-			track.pipi = p[0];
+			track.pipi = p.peek!ubyte;
 		}
 
-		p = p[1 .. $];
+		p.pop!ubyte();
 
-		noteCounts[trackIdx] = readLE16(p);
+		noteCounts[trackIdx] = p.pop!(LittleEndian!ushort).native;
 	}
 
 	// 音符のロード (Loading notes)
@@ -567,7 +559,7 @@ public static OrganyaSong createSong(const(ubyte)[] p) @safe pure
 		// 内容を代入 (Assign content)
 		np = track.notePosition;	// Ｘ座標 (X coordinate)
 		for (int i = 0; i < noteCounts[trackIdx]; i++) {
-			np[i].x = readLE32(p);
+			np[i].x = p.pop!(LittleEndian!uint).native;
 		}
 
 		np = track.notePosition;	// Ｙ座標 (Y coordinate)
