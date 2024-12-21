@@ -347,17 +347,11 @@ public:
 
 		this.unitNum = unitNum;
 		units = new PxNoiseDesignUnit[](unitNum);
-		if (!units) {
-			goto end;
-		}
 
 		for (int u = 0; u < unitNum; u++) {
 			PxNoiseDesignUnit* pUnit = &units[u];
 			pUnit.enveNum = envelopeNum;
 			pUnit.enves = new PxtnPoint[](pUnit.enveNum);
-			if (!pUnit.enves) {
-				goto end;
-			}
 		}
 
 		bRet = true;
@@ -389,9 +383,6 @@ public:
 				pDst.units[u].pan = units[u].pan;
 				pDst.units[u].volu = units[u].volu;
 				pDst.units[u].enves = new PxtnPoint[](enveNum);
-				if (!pDst.units[u].enves) {
-					goto end;
-				}
 				for (int e = 0; e < enveNum; e++) {
 					pDst.units[u].enves[e] = units[u].enves[e];
 				}

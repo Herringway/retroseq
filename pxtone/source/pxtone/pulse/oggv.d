@@ -322,10 +322,7 @@ public:
 		}
 
 		pDst.pData = new ubyte[](size);
-		if (!(pDst.pData)) {
-			return false;
-		}
-		pDst.pData[0 .. size] = pData[0 .. size];
+		pDst.pData[] = pData[0 .. size];
 
 		pDst.ch = ch;
 		pDst.sps2 = sps2;

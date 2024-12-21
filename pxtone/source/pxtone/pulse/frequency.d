@@ -111,9 +111,6 @@ private float[] genTables() @safe {
 	double work;
 
 	freqTable = new float[tableSize];
-	//if (!(freqTable)) {
-	//	goto End;
-	//}
 
 	octX24 = getDivideOctaveRate(keyPerOctave * frequencyPerKey);
 

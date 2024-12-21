@@ -210,10 +210,6 @@ public:
 	void allocate(int maxEventNumber) @safe {
 		release();
 		events = new EveRecord[](maxEventNumber);
-		if (!(events)) {
-			throw new PxtoneException("Unable to allocate memory");
-		}
-		events[0 .. maxEventNumber] = EveRecord.init;
 		eventAllocatedNum = maxEventNumber;
 	}
 

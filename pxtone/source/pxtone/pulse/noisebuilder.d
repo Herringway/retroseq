@@ -147,9 +147,6 @@ public:
 		unitNum = pNoise.getUnitNum();
 
 		units = new Unit[](unitNum);
-		scope(exit) {
-			units = null;
-		}
 
 		for (int u = 0; u < unitNum; u++) {
 			Unit* pU = &units[u];

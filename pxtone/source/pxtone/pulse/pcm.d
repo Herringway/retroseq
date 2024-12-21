@@ -30,12 +30,7 @@ private:
 	///
 	private bool convertChannelNum(int newChannels) nothrow @safe {
 		ubyte[] pcmWork = null;
-		int sampleSize;
-		int workSize;
-		int a, b;
-		int temp1;
-		int temp2;
-		sampleSize = sampleBody * channels * bps / 8;
+		const sampleSize = sampleBody * channels * bps / 8;
 
 		if (pcmSamples == null) {
 			return false;
@@ -44,26 +39,21 @@ private:
 			return true;
 		}
 
-		// mono to stereo --------
-		if (newChannels == 2) {
-			workSize = sampleSize * 2;
-			pcmWork = new ubyte[](workSize);
-			if (!pcmWork) {
-				return false;
-			}
+		if (newChannels == 2) { // mono to stereo
+			pcmWork = new ubyte[](sampleSize * 2);
 
 			switch (bps) {
 			case 8:
-				b = 0;
-				for (a = 0; a < sampleSize; a++) {
+				int b = 0;
+				for (int a = 0; a < sampleSize; a++) {
 					pcmWork[b] = pcmSamples[a];
 					pcmWork[b + 1] = pcmSamples[a];
 					b += 2;
 				}
 				break;
 			case 16:
-				b = 0;
-				for (a = 0; a < sampleSize; a += 2) {
+				int b = 0;
+				for (int a = 0; a < sampleSize; a += 2) {
 					pcmWork[b] = pcmSamples[a];
 					pcmWork[b + 1] = pcmSamples[a + 1];
 					pcmWork[b + 2] = pcmSamples[a];
@@ -74,29 +64,23 @@ private:
 			default:
 				break;
 			}
-
-		}  // stereo to mono --------
-		else {
-			workSize = sampleSize / 2;
-			pcmWork = new ubyte[](workSize);
-			if (!pcmWork) {
-				return false;
-			}
+		} else { // stereo to mono
+			pcmWork = new ubyte[](sampleSize / 2);
 
 			switch (bps) {
 			case 8:
-				b = 0;
-				for (a = 0; a < sampleSize; a += 2) {
-					temp1 = cast(int) pcmSamples[a] + cast(int) pcmSamples[a + 1];
+				int b = 0;
+				for (int a = 0; a < sampleSize; a += 2) {
+					int temp1 = cast(int) pcmSamples[a] + cast(int) pcmSamples[a + 1];
 					pcmWork[b] = cast(ubyte)(temp1 / 2);
 					b++;
 				}
 				break;
 			case 16:
-				b = 0;
-				for (a = 0; a < sampleSize; a += 4) {
-					temp1 = (cast(short[])pcmSamples[a + 0 .. a + 2])[0];
-					temp2 = (cast(short[])pcmSamples[a + 2 .. a + 4])[0];
+				int b = 0;
+				for (int a = 0; a < sampleSize; a += 4) {
+					int temp1 = (cast(short[])pcmSamples[a + 0 .. a + 2])[0];
+					int temp2 = (cast(short[])pcmSamples[a + 2 .. a + 4])[0];
 					(cast(short[])(pcmWork[b .. b + 2]))[0] = cast(short)((temp1 + temp2) / 2);
 					b += 2;
 				}
@@ -106,14 +90,7 @@ private:
 			}
 		}
 
-		// release once.
-		pcmSamples = null;
-
-		pcmSamples = new ubyte[](workSize);
-		if (!(pcmSamples)) {
-			return false;
-		}
-		pcmSamples[0 .. workSize] = pcmWork[0 .. workSize];
+		pcmSamples = pcmWork;
 
 		// update param.
 		channels = newChannels;
@@ -125,10 +102,6 @@ private:
 	///
 	private bool convertBitPerSample(int newBPS) nothrow @safe {
 		ubyte[] pcmWork;
-		int sampleSize;
-		int workSize;
-		int a, b;
-		int temp1;
 
 		if (!pcmSamples) {
 			return false;
@@ -137,19 +110,16 @@ private:
 			return true;
 		}
 
-		sampleSize = sampleBody * channels * bps / 8;
+		const sampleSize = sampleBody * channels * bps / 8;
 
 		switch (newBPS) {
 			// 16 to 8 --------
 		case 8:
-			workSize = sampleSize / 2;
+			const workSize = sampleSize / 2;
 			pcmWork = new ubyte[](workSize);
-			if (!pcmWork) {
-				return false;
-			}
-			b = 0;
-			for (a = 0; a < sampleSize; a += 2) {
-				temp1 = ((cast(short[])(pcmSamples[a .. a + 2])))[0];
+			int b = 0;
+			for (int a = 0; a < sampleSize; a += 2) {
+				int temp1 = ((cast(short[])(pcmSamples[a .. a + 2])))[0];
 				temp1 = (temp1 / 0x100) + 128;
 				pcmWork[b] = cast(ubyte) temp1;
 				b++;
@@ -157,14 +127,11 @@ private:
 			break;
 			//  8 to 16 --------
 		case 16:
-			workSize = sampleSize * 2;
+			const workSize = sampleSize * 2;
 			pcmWork = new ubyte[](workSize);
-			if (!pcmWork) {
-				return false;
-			}
-			b = 0;
-			for (a = 0; a < sampleSize; a++) {
-				temp1 = pcmSamples[a];
+			int b = 0;
+			for (int a = 0; a < sampleSize; a++) {
+				int temp1 = pcmSamples[a];
 				temp1 = (temp1 - 128) * 0x100;
 				((cast(short[])(pcmWork[b .. b + 2])))[0] = cast(short) temp1;
 				b += 2;
@@ -175,14 +142,7 @@ private:
 			return false;
 		}
 
-		// release once.
-		pcmSamples = null;
-
-		pcmSamples = new ubyte[](workSize);
-		if (!(pcmSamples)) {
-			return false;
-		}
-		pcmSamples[0 .. workSize] = pcmWork[0 .. workSize];
+		pcmSamples = pcmWork;
 
 		// update param.
 		bps = newBPS;
@@ -193,20 +153,10 @@ private:
 	///
 	private bool convertSamplePerSecond(int newSPS) nothrow @safe {
 		bool bRet = false;
-		int sampleNum;
-		int workSize;
-
-		int bodySize;
-
-		ubyte[] p1byteData;
-		ushort[] p2byteData;
-		uint[] p4byteData;
 
 		ubyte[] p1byteWork = null;
 		ushort[] p2byteWork = null;
 		uint[] p4byteWork = null;
-
-		int a, b;
 
 		if (!pcmSamples) {
 			return false;
@@ -215,68 +165,53 @@ private:
 			return true;
 		}
 
-		bodySize = sampleBody * channels * bps / 8;
+		int bodySize = sampleBody * channels * bps / 8;
 
 		bodySize = cast(int)((cast(double) bodySize * cast(double) newSPS + cast(double)(sps) - 1) / sps);
 
-		workSize = bodySize;
+		int workSize = bodySize;
 
-		// stereo 16bit ========
-		if (channels == 2 && bps == 16) {
+		if (channels == 2 && bps == 16) { // stereo 16bit ========
 			sampleBody = bodySize / 4;
-			sampleNum = workSize / 4;
+			const sampleNum = workSize / 4;
 			workSize = sampleNum * 4;
-			p4byteData = cast(uint[]) pcmSamples;
+			const p4byteData = cast(uint[]) pcmSamples;
 			p4byteWork = new uint[](workSize / uint.sizeof);
-			if (!p4byteWork) {
-				goto End;
-			}
-			for (a = 0; a < sampleNum; a++) {
-				b = cast(int)(cast(double) a * cast(double)(sps) / cast(double) newSPS);
+
+			for (int a = 0; a < sampleNum; a++) {
+				int b = cast(int)(cast(double) a * cast(double)(sps) / cast(double) newSPS);
 				p4byteWork[a] = p4byteData[b];
 			}
-		}  // mono 8bit ========
-		else if (channels == 1 && bps == 8) {
+		} else if (channels == 1 && bps == 8) { // mono 8bit ========
 			sampleBody = bodySize / 1;
-			sampleNum = workSize / 1;
+			const sampleNum = workSize / 1;
 			workSize = sampleNum * 1;
-			p1byteData = cast(ubyte[]) pcmSamples;
+			const p1byteData = cast(ubyte[]) pcmSamples;
 			p1byteWork = new ubyte[](workSize);
-			if (!p1byteWork) {
-				goto End;
-			}
-			for (a = 0; a < sampleNum; a++) {
-				b = cast(int)(cast(double) a * cast(double)(sps) / cast(double)(newSPS));
+
+			for (int a = 0; a < sampleNum; a++) {
+				int b = cast(int)(cast(double) a * cast(double)(sps) / cast(double)(newSPS));
 				p1byteWork[a] = p1byteData[b];
 			}
-		} else // mono 16bit / stereo 8bit ========
-		{
+		} else { // mono 16bit / stereo 8bit ========
 			sampleBody = bodySize / 2;
-			sampleNum = workSize / 2;
+			const sampleNum = workSize / 2;
 			workSize = sampleNum * 2;
-			p2byteData = cast(ushort[]) pcmSamples;
+			const p2byteData = cast(ushort[]) pcmSamples;
 			p2byteWork = new ushort[](workSize / ushort.sizeof);
-			if (!p2byteWork) {
-				goto End;
-			}
-			for (a = 0; a < sampleNum; a++) {
-				b = cast(int)(cast(double) a * cast(double)(sps) / cast(double) newSPS);
+
+			for (int a = 0; a < sampleNum; a++) {
+				int b = cast(int)(cast(double) a * cast(double)(sps) / cast(double) newSPS);
 				p2byteWork[a] = p2byteData[b];
 			}
 		}
 
-		// release once.
-		pcmSamples = new ubyte[](workSize);
-		if (!pcmSamples) {
-			goto End;
-		}
-
 		if (p4byteWork) {
-			pcmSamples[0 .. workSize] = (cast(ubyte[])p4byteWork)[0 .. workSize];
+			pcmSamples = cast(ubyte[])p4byteWork;
 		} else if (p2byteWork) {
-			pcmSamples[0 .. workSize] = (cast(ubyte[])p2byteWork)[0 .. workSize];
+			pcmSamples = cast(ubyte[])p2byteWork;
 		} else if (p1byteWork) {
-			pcmSamples[0 .. workSize] = p1byteWork[0 .. workSize];
+			pcmSamples = p1byteWork;
 		} else {
 			goto End;
 		}
@@ -308,23 +243,20 @@ public:
 			throw new PxtoneException("pcm unknown");
 		}
 
-		int size = 0;
-
-		pcmSamples = null;
 		channels = ch;
 		this.sps = sps;
 		this.bps = bps;
 		sampleBody = sampleNum;
 
 		// bit / sample is 8 or 16
-		size = sampleBody * bps * channels / 8;
+		const size = sampleBody * bps * channels / 8;
 
 		pcmSamples = new ubyte[](size);
 
 		if (bps == 8) {
-			pcmSamples[0 .. size] = 128;
+			pcmSamples[] = 128;
 		} else {
-			pcmSamples[0 .. size] = 0;
+			pcmSamples[] = 0;
 		}
 	}
 
@@ -518,7 +450,7 @@ public:
 		}
 		pDest.create(channels, sps, bps, sampleBody);
 		const size = sampleBody * channels * bps / 8;
-		pDest.pcmSamples[0 .. size] =pcmSamples[0 .. size];
+		pDest.pcmSamples[0 .. size] = pcmSamples[0 .. size];
 	}
 
 	///

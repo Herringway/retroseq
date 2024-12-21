@@ -421,20 +421,14 @@ public:
 			num = voiceUnit2.envelope.headNumber + voiceUnit2.envelope.bodyNumber + voiceUnit2.envelope.tailNumber;
 			size = PxtnPoint.sizeof * num;
 			voiceUnit2.envelope.points = new PxtnPoint[](size / PxtnPoint.sizeof);
-			if (!voiceUnit2.envelope.points) {
-				goto End;
-			}
-			voiceUnit2.envelope.points[0 .. size] = voiceUnit1.envelope.points[0 .. size];
+			voiceUnit2.envelope.points[] = voiceUnit1.envelope.points[0 .. size];
 
 			// wave
 			voiceUnit2.wave.num = voiceUnit1.wave.num;
 			voiceUnit2.wave.reso = voiceUnit1.wave.reso;
 			size = PxtnPoint.sizeof * voiceUnit2.wave.num;
 			voiceUnit2.wave.points = new PxtnPoint[](size / PxtnPoint.sizeof);
-			if (!voiceUnit2.wave.points) {
-				goto End;
-			}
-			voiceUnit2.wave.points[0 .. size] = voiceUnit1.wave.points[0 .. size];
+			voiceUnit2.wave.points[] = voiceUnit1.wave.points[0 .. size];
 
 			voiceUnit1.pcm.copy(voiceUnit2.pcm);
 			if (!voiceUnit1.ptn.copy(voiceUnit2.ptn)) {
@@ -929,7 +923,6 @@ public:
 					voiceInstance.sampleBody = 400;
 					int size = voiceInstance.sampleBody * ch * bps / 8;
 					voiceInstance.sample = new ubyte[](size);
-					voiceInstance.sample[0 .. size] = 0x00;
 					updateWavePTV(voiceUnit, voiceInstance, ch, sps, bps);
 					break;
 				}
