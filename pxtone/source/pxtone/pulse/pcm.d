@@ -23,9 +23,7 @@ private:
 	int channels; ///
 	int sps; ///
 	int bps; ///
-	int sampleHead; /// no use. 0
 	int sampleBody; ///
-	int sampleTail; /// no use. 0
 	ubyte[] pcmSamples; ///
 
 	// stereo / mono
@@ -37,8 +35,7 @@ private:
 		int a, b;
 		int temp1;
 		int temp2;
-
-		sampleSize = (sampleHead + sampleBody + sampleTail) * channels * bps / 8;
+		sampleSize = sampleBody * channels * bps / 8;
 
 		if (pcmSamples == null) {
 			return false;
@@ -140,7 +137,7 @@ private:
 			return true;
 		}
 
-		sampleSize = (sampleHead + sampleBody + sampleTail) * channels * bps / 8;
+		sampleSize = sampleBody * channels * bps / 8;
 
 		switch (newBPS) {
 			// 16 to 8 --------
@@ -199,7 +196,7 @@ private:
 		int sampleNum;
 		int workSize;
 
-		int headSize, bodySize, tailSize;
+		int bodySize;
 
 		ubyte[] p1byteData;
 		ushort[] p2byteData;
@@ -218,21 +215,15 @@ private:
 			return true;
 		}
 
-		headSize = sampleHead * channels * bps / 8;
 		bodySize = sampleBody * channels * bps / 8;
-		tailSize = sampleTail * channels * bps / 8;
 
-		headSize = cast(int)((cast(double) headSize * cast(double) newSPS + cast(double)(sps) - 1) / sps);
 		bodySize = cast(int)((cast(double) bodySize * cast(double) newSPS + cast(double)(sps) - 1) / sps);
-		tailSize = cast(int)((cast(double) tailSize * cast(double) newSPS + cast(double)(sps) - 1) / sps);
 
-		workSize = headSize + bodySize + tailSize;
+		workSize = bodySize;
 
 		// stereo 16bit ========
 		if (channels == 2 && bps == 16) {
-			sampleHead = headSize / 4;
 			sampleBody = bodySize / 4;
-			sampleTail = tailSize / 4;
 			sampleNum = workSize / 4;
 			workSize = sampleNum * 4;
 			p4byteData = cast(uint[]) pcmSamples;
@@ -246,9 +237,7 @@ private:
 			}
 		}  // mono 8bit ========
 		else if (channels == 1 && bps == 8) {
-			sampleHead = headSize / 1;
 			sampleBody = bodySize / 1;
-			sampleTail = tailSize / 1;
 			sampleNum = workSize / 1;
 			workSize = sampleNum * 1;
 			p1byteData = cast(ubyte[]) pcmSamples;
@@ -262,9 +251,7 @@ private:
 			}
 		} else // mono 16bit / stereo 8bit ========
 		{
-			sampleHead = headSize / 2;
 			sampleBody = bodySize / 2;
-			sampleTail = tailSize / 2;
 			sampleNum = workSize / 2;
 			workSize = sampleNum * 2;
 			p2byteData = cast(ushort[]) pcmSamples;
@@ -301,9 +288,7 @@ private:
 	End:
 
 		if (!bRet) {
-			sampleHead = 0;
 			sampleBody = 0;
-			sampleTail = 0;
 		}
 
 		return bRet;
@@ -329,9 +314,7 @@ public:
 		channels = ch;
 		this.sps = sps;
 		this.bps = bps;
-		sampleHead = 0;
 		sampleBody = sampleNum;
-		sampleTail = 0;
 
 		// bit / sample is 8 or 16
 		size = sampleBody * bps * channels / 8;
@@ -351,9 +334,7 @@ public:
 		channels = 0;
 		sps = 0;
 		bps = 0;
-		sampleHead = 0;
 		sampleBody = 0;
-		sampleTail = 0;
 	}
 
 	///
@@ -435,7 +416,7 @@ public:
 			bText = false;
 		}
 
-		sampleSize = (sampleHead + sampleBody + sampleTail) * channels * bps / 8;
+		sampleSize = sampleBody * channels * bps / 8;
 
 		format.formatID = 0x0001; // PCM
 		format.ch = cast(ushort) channels;
@@ -445,7 +426,7 @@ public:
 		format.blockSize = cast(ushort)(bps * channels / 8);
 		format.ext = 0;
 
-		factSize = (sampleHead + sampleBody + sampleTail);
+		factSize = sampleBody;
 		riffSize = sampleSize;
 		riffSize += 4; // 'WAVE'
 		riffSize += 26; // 'fmt '
@@ -504,7 +485,7 @@ public:
 			return false;
 		}
 
-		int sampleNum = (sampleHead + sampleBody + sampleTail) * channels;
+		int sampleNum = sampleBody * channels;
 
 		switch (bps) {
 		case 8: {
@@ -536,7 +517,7 @@ public:
 			return;
 		}
 		pDest.create(channels, sps, bps, sampleBody);
-		const size = (sampleHead + sampleBody + sampleTail) * channels * bps / 8;
+		const size = sampleBody * channels * bps / 8;
 		pDest.pcmSamples[0 .. size] =pcmSamples[0 .. size];
 	}
 
@@ -544,9 +525,6 @@ public:
 	bool copy(ref PxtnPulsePCM pDest, int start, int end) const @safe {
 		int size, offset;
 
-		if (sampleHead || sampleTail) {
-			return false;
-		}
 		if (!pcmSamples) {
 			pDest.release();
 			return true;
@@ -571,7 +549,7 @@ public:
 
 	///
 	float getSec() const nothrow @safe {
-		return cast(float)(sampleBody + sampleHead + sampleTail) / cast(float) sps;
+		return cast(float)sampleBody / cast(float) sps;
 	}
 
 	///
@@ -595,18 +573,8 @@ public:
 	}
 
 	///
-	int getSampleHead() const nothrow @safe {
-		return sampleHead;
-	}
-
-	///
-	int getSampleTail() const nothrow @safe {
-		return sampleTail;
-	}
-
-	///
 	int getBufferSize() const nothrow @safe {
-		return (sampleHead + sampleBody + sampleTail) * channels * bps / 8;
+		return sampleBody * channels * bps / 8;
 	}
 
 	///

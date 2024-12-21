@@ -51,9 +51,9 @@ void writeWave(ref PxtnDescriptor pDoc, const(PxtnVoiceUnit)* voiceUnit, ref int
 		pDoc.writeVarInt(voiceUnit.pcm.getChannels(), pTotal);
 		pDoc.writeVarInt(voiceUnit.pcm.getBPS(), pTotal);
 		pDoc.writeVarInt(voiceUnit.pcm.getSPS(), pTotal);
-		pDoc.writeVarInt(voiceUnit.pcm.getSampleHead(), pTotal);
+		pDoc.writeVarInt(0, pTotal);
 		pDoc.writeVarInt(voiceUnit.pcm.getSampleBody(), pTotal);
-		pDoc.writeVarInt(voiceUnit.pcm.getSampleTail(), pTotal);
+		pDoc.writeVarInt(0, pTotal);
 
 		size = voiceUnit.pcm.getBufferSize();
 

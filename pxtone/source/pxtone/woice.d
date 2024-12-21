@@ -59,9 +59,7 @@ enum PxtnVoiceType {
 
 ///
 struct PxtnVoiceInstance {
-	int sampleHead; ///
 	int sampleBody; ///
-	int sampleTail; ///
 	ubyte[] sample; ///
 
 	ubyte[] envelope; ///
@@ -891,17 +889,13 @@ public:
 		for (int v = 0; v < voiceNum; v++) {
 			voiceInstance = &voinsts[v];
 			voiceInstance.sample = null;
-			voiceInstance.sampleHead = 0;
 			voiceInstance.sampleBody = 0;
-			voiceInstance.sampleTail = 0;
 		}
 		scope (failure) {
 			for (int v = 0; v < voiceNum; v++) {
 				voiceInstance = &voinsts[v];
 				voiceInstance.sample = null;
-				voiceInstance.sampleHead = 0;
 				voiceInstance.sampleBody = 0;
-				voiceInstance.sampleTail = 0;
 			}
 		}
 
@@ -915,9 +909,7 @@ public:
 				version (WithOggVorbis) {
 					voiceUnit.oggV.decode(pcmWork);
 					pcmWork.convert(ch, sps, bps);
-					voiceInstance.sampleHead = pcmWork.getSampleHead();
 					voiceInstance.sampleBody = pcmWork.getSampleBody();
-					voiceInstance.sampleTail = pcmWork.getSampleTail();
 					voiceInstance.sample = pcmWork.devolveSamplingBuffer();
 					break;
 				} else {
@@ -928,9 +920,7 @@ public:
 
 				voiceUnit.pcm.copy(pcmWork);
 				pcmWork.convert(ch, sps, bps);
-				voiceInstance.sampleHead = pcmWork.getSampleHead();
 				voiceInstance.sampleBody = pcmWork.getSampleBody();
-				voiceInstance.sampleTail = pcmWork.getSampleTail();
 				voiceInstance.sample = pcmWork.devolveSamplingBuffer();
 				break;
 
