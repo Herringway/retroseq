@@ -1,6 +1,8 @@
 ///
 module pxtone.pulse.noisebuilder;
 
+import std.algorithm.comparison;
+
 import pxtone.pxtn;
 
 import pxtone.error;
@@ -62,8 +64,6 @@ private struct Unit {
 
 ///
 private void setOscillator(Oscillator* pTo, PxNoiseDesignOscillator* pFrom, int sps, const(short)[] pTbl, const(short)[] pTblRand) nothrow @safe {
-	const(short)[] p;
-
 	switch (pFrom.type) {
 	case PxWaveType.Random:
 		pTo.ranType = RandomType.saw;
@@ -91,9 +91,7 @@ private void setOscillator(Oscillator* pTo, PxNoiseDesignOscillator* pFrom, int 
 
 	pTo.rdmStart = 0;
 	pTo.rdmIndex = cast(int)(cast(double)(smpNumRand) * (pFrom.offset / 100));
-	p = pTblRand;
-	pTo.rdmMargin = p[pTo.rdmIndex];
-
+	pTo.rdmMargin = pTblRand[pTo.rdmIndex % $];
 }
 
 ///
@@ -210,7 +208,7 @@ public:
 						case RandomType.none:
 							offset = cast(int) po.offset;
 							if (offset >= 0) {
-								work = po.pSmp[offset];
+								work = po.pSmp[offset % $];
 							} else {
 								work = 0;
 							}
@@ -242,7 +240,7 @@ public:
 						switch (po.ranType) {
 						case RandomType.none:
 							offset = cast(int) po.offset;
-							vol = cast(double) po.pSmp[offset];
+							vol = cast(double) po.pSmp[offset % $];
 							break;
 						case RandomType.saw:
 							vol = po.rdmStart + po.rdmMargin * cast(int) po.offset / smpNum;
@@ -298,7 +296,8 @@ public:
 					switch (po.ranType) {
 					case RandomType.none:
 						offset = cast(int) po.offset;
-						fre = keyTop * po.pSmp[offset] / samplingTop;
+						// offset can be greater than array length. that's undefined, so let's just wrap around...
+						fre = keyTop * po.pSmp[offset % $] / samplingTop;
 						break;
 					case RandomType.saw:
 						fre = po.rdmStart + po.rdmMargin * cast(int) po.offset / smpNum;
