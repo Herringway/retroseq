@@ -199,11 +199,9 @@ private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 	chan.envelopeVolumeRight = chan.rightVolume * v / 256U;
 	chan.envelopeVolumeLeft = chan.leftVolume * v / 256U;
 
-	int loopLen = 0;
 	const(byte)[] loopStart;
 	if (chan.statusFlags & 0x10) {
 		loopStart = wav.sample[wav.header.loopStart .. $];
-		loopLen = wav.header.size - wav.header.loopStart;
 	}
 	int samplesLeftInWav = chan.count;
 	const(byte)[] currentPointer = chan.currentPointer;
@@ -255,13 +253,13 @@ private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 			finePos -= cast(int)finePos;
 			samplesLeftInWav -= newCoarsePos;
 			if (samplesLeftInWav <= 0) {
-				if (loopLen != 0) {
+				if (loopStart.length != 0) {
 					currentPointer = loopStart;
 					newCoarsePos = -samplesLeftInWav;
-					samplesLeftInWav += loopLen;
+					samplesLeftInWav += loopStart.length;
 					while (samplesLeftInWav <= 0) {
-						newCoarsePos -= loopLen;
-						samplesLeftInWav += loopLen;
+						newCoarsePos -= loopStart.length;
+						samplesLeftInWav += loopStart.length;
 					}
 					b = currentPointer[newCoarsePos];
 					m = cast(short)(currentPointer[newCoarsePos + 1] - b);
