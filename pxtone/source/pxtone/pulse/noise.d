@@ -1,13 +1,14 @@
 ///
 module pxtone.pulse.noise;
 
-import pxtone.pxtn;
+import std.exception;
 
-import pxtone.error;
 import pxtone.descriptor;
+import pxtone.error;
 import pxtone.pulse.frequency;
 import pxtone.pulse.oscillator;
 import pxtone.pulse.pcm;
+import pxtone.pxtn;
 
 ///
 enum PxWaveType {
@@ -127,9 +128,7 @@ private void readOscillator(PxNoiseDesignOscillator* pOsc, ref PxtnDescriptor pD
 	int work;
 	pDoc.readVarInt(work);
 	pOsc.type = cast(PxWaveType) work;
-	if (pOsc.type >= PxWaveType.num) {
-		throw new PxtoneException("fmt unknown");
-	}
+	enforce!PxtoneException(pOsc.type < PxWaveType.num, "fmt unknown");
 	pDoc.readVarInt(work);
 	pOsc.bRev = work ? true : false;
 	pDoc.readVarInt(work);
@@ -193,7 +192,6 @@ public:
 	}
 	///
 	void write(ref PxtnDescriptor pDoc, ref int pAdd) const @safe {
-		bool bRet = false;
 		int u, e, seek, numSeek, flags;
 		char _byte;
 		char unitNum = 0;
@@ -248,13 +246,6 @@ public:
 		pDoc.write(unitNum);
 		pDoc.seek(PxtnSeek.cur, seek - numSeek - 1);
 		pAdd = seek;
-
-		bRet = true;
-	end:
-
-		if (!bRet) {
-			throw new PxtoneException("");
-		}
 	}
 	///
 	void read(ref PxtnDescriptor pDoc) @safe {
@@ -273,21 +264,13 @@ public:
 			release();
 		}
 		pDoc.read(code[]);
-		if (code != identifierCode[0 .. 8]) {
-			throw new PxtoneException("inv code");
-		}
+		enforce!PxtoneException(code == identifierCode[0 .. 8], "inv code");
 		pDoc.read(ver);
-		if (ver > currentVersion) {
-			throw new PxtoneException("fmt new");
-		}
+		enforce!PxtoneException(ver <= currentVersion ,"fmt new");
 		pDoc.readVarInt(smpNum44k);
 		pDoc.read(unitNum);
-		if (unitNum < 0) {
-			throw new PxtoneException("inv data");
-		}
-		if (unitNum > maxNoiseEditUnitNum) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(unitNum >= 0, "inv data");
+		enforce!PxtoneException(unitNum <= maxNoiseEditUnitNum, "fmt unknown");
 		this.unitNum = unitNum;
 
 		units = new PxNoiseDesignUnit[](unitNum);
@@ -297,16 +280,12 @@ public:
 			pU.bEnable = true;
 
 			pDoc.readVarInt(flags);
-			if (flags & noiseEditFlag.uncovered) {
-				throw new PxtoneException("fmt unknown");
-			}
+			enforce!PxtoneException((flags & noiseEditFlag.uncovered) == 0 ,"fmt unknown");
 
 			// envelope
 			if (flags & noiseEditFlag.envelope) {
 				pDoc.readVarInt(pU.enveNum);
-				if (pU.enveNum > maxNoiseEditEnvelopeNum) {
-					throw new PxtoneException("fmt unknown");
-				}
+				enforce!PxtoneException(pU.enveNum <= maxNoiseEditEnvelopeNum, "fmt unknown");
 				pU.enves = new PxtnPoint[](pU.enveNum);
 				for (int e = 0; e < pU.enveNum; e++) {
 					pDoc.readVarInt(pU.enves[e].x);
@@ -340,41 +319,30 @@ public:
 	}
 
 	///
-	bool allocate(int unitNum, int envelopeNum) nothrow @safe {
-		bool bRet = false;
-
-		release();
-
+	void allocate(int unitNum, int envelopeNum) nothrow @safe {
 		this.unitNum = unitNum;
 		units = new PxNoiseDesignUnit[](unitNum);
+		scope(failure) {
+			release();
+		}
 
 		for (int u = 0; u < unitNum; u++) {
 			PxNoiseDesignUnit* pUnit = &units[u];
 			pUnit.enveNum = envelopeNum;
 			pUnit.enves = new PxtnPoint[](pUnit.enveNum);
 		}
-
-		bRet = true;
-	end:
-		if (!bRet) {
-			release();
-		}
-
-		return bRet;
 	}
 
 	///
-	bool copy(ref PxtnPulseNoise pDst) const nothrow @safe {
-		bool bRet = false;
-
+	void copy(ref PxtnPulseNoise pDst) const @safe {
 		pDst.release();
 		pDst.smpNum44k = smpNum44k;
-
+		scope(failure) {
+			pDst.release();
+		}
 		if (unitNum) {
 			int enveNum = units[0].enveNum;
-			if (!pDst.allocate(unitNum, enveNum)) {
-				goto end;
-			}
+			pDst.allocate(unitNum, enveNum);
 			for (int u = 0; u < unitNum; u++) {
 				pDst.units[u].bEnable = units[u].bEnable;
 				pDst.units[u].enveNum = units[u].enveNum;
@@ -388,14 +356,6 @@ public:
 				}
 			}
 		}
-
-		bRet = true;
-	end:
-		if (!bRet) {
-			pDst.release();
-		}
-
-		return bRet;
 	}
 
 	///

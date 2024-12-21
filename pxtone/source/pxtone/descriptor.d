@@ -40,7 +40,7 @@ private:
 public:
 	///
 	void setFileReadOnly(ref File fd) @safe {
-		enforce(fd.isOpen, new PxtoneException("File must be opened for reading"));
+		enforce!PxtoneException(fd.isOpen, "File must be opened for reading");
 
 		fd.seek(0, SEEK_END);
 		ulong sz = fd.tell;
@@ -65,7 +65,7 @@ public:
 
 	///
 	void setMemoryReadOnly(ubyte[] buf) @safe {
-		enforce(buf.length >= 1, new PxtoneException("No data to read in buffer"));
+		enforce!PxtoneException(buf.length >= 1, "No data to read in buffer");
 		buffer = buf;
 		isFile = false;
 		readOnly = true;
@@ -80,18 +80,18 @@ public:
 		} else {
 			switch (mode) {
 			case PxtnSeek.set:
-				enforce(val < buffer.length, "Unexpected end of data");
-				enforce(val >= 0, "Cannot seek to negative position");
+				enforce!PxtoneException(val < buffer.length, "Unexpected end of data");
+				enforce!PxtoneException(val >= 0, "Cannot seek to negative position");
 				currentPosition = val;
 				break;
 			case PxtnSeek.cur:
-				enforce(currentPosition + val < buffer.length, "Unexpected end of data");
-				enforce(currentPosition + val >= 0, "Cannot seek to negative position");
+				enforce!PxtoneException(currentPosition + val < buffer.length, "Unexpected end of data");
+				enforce!PxtoneException(currentPosition + val >= 0, "Cannot seek to negative position");
 				currentPosition += val;
 				break;
 			case PxtnSeek.end:
-				enforce(buffer.length + val < buffer.length, "Unexpected end of data");
-				enforce(buffer.length + val >= 0, "Cannot seek to negative position");
+				enforce!PxtoneException(buffer.length + val < buffer.length, "Unexpected end of data");
+				enforce!PxtoneException(buffer.length + val >= 0, "Cannot seek to negative position");
 				currentPosition = cast(int)buffer.length + val;
 				break;
 			default:
@@ -111,7 +111,7 @@ public:
 
 	///
 	void write(T)(scope const(T)[] p) @safe {
-		enforce(isOpen && isFile && !readOnly, new PxtoneException("File must be opened for writing"));
+		enforce!PxtoneException(isOpen && isFile && !readOnly, "File must be opened for writing");
 
 		file.trustedWrite(p);
 		size += p.length * T.sizeof;
@@ -119,14 +119,14 @@ public:
 
 	///
 	void read(T)(T[] p) @safe {
-		enforce(isOpen, new PxtoneException("File must be opened for reading"));
-		enforce(readOnly, new PxtoneException("File must be opened for reading"));
+		enforce!PxtoneException(isOpen, "File must be opened for reading");
+		enforce!PxtoneException(readOnly, "File must be opened for reading");
 
 		if (isFile) {
 			file.trustedRead(p);
 		} else {
 			for (int i = 0; i < p.length; i++) {
-				enforce(currentPosition + T.sizeof < buffer.length, new PxtoneException("Unexpected end of buffer"));
+				enforce!PxtoneException(currentPosition + T.sizeof < buffer.length, "Unexpected end of buffer");
 				p[i] = (cast(T[])buffer[currentPosition .. currentPosition + T.sizeof])[0];
 				currentPosition += T.sizeof;
 			}
@@ -135,13 +135,13 @@ public:
 
 	///
 	void read(T)(ref T p) @safe if (!is(T : U[], U)) {
-		enforce(isOpen, new PxtoneException("File must be opened for reading"));
-		enforce(readOnly, new PxtoneException("File must be opened for reading"));
+		enforce!PxtoneException(isOpen, "File must be opened for reading");
+		enforce!PxtoneException(readOnly, "File must be opened for reading");
 
 		if (isFile) {
 			p = file.trustedRead!T();
 		} else {
-			enforce(currentPosition + T.sizeof < buffer.length, new PxtoneException("Unexpected end of buffer"));
+			enforce!PxtoneException(currentPosition + T.sizeof < buffer.length, "Unexpected end of buffer");
 			p = (cast(T[])buffer[currentPosition .. currentPosition + T.sizeof])[0];
 			currentPosition += T.sizeof;
 		}
@@ -154,7 +154,7 @@ public:
 		writeVarInt(val, dummy);
 	}
 	void writeVarInt(int val, ref int pAdd) @safe {
-		enforce(isOpen && isFile && !readOnly, new PxtoneException("File must be opened for writing"));
+		enforce!PxtoneException(isOpen && isFile && !readOnly, "File must be opened for writing");
 
 		ubyte[5] a = 0;
 		ubyte[5] b = 0;
@@ -202,7 +202,7 @@ public:
 	// 可変長読み込み（int  までを保証）
 	///
 	void readVarInt(T)(ref T p) {
-		enforce(isOpen && readOnly, new PxtoneException("File must be opened for reading"));
+		enforce!PxtoneException(isOpen && readOnly, "File must be opened for reading");
 
 		int i;
 		ubyte[5] a = 0;

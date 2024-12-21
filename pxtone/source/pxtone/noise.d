@@ -18,13 +18,13 @@ struct PxtoneNoise {
 	private int bps = 16; ///
 
 	///
-	bool qualitySet(int channels, int sps, int bps) nothrow @safe {
+	void qualitySet(int channels, int sps, int bps) @safe {
 		switch (channels) {
 		case 1:
 		case 2:
 			break;
 		default:
-			return false;
+			throw new PxtoneException("Invalid channel count");
 		}
 
 		switch (sps) {
@@ -34,7 +34,7 @@ struct PxtoneNoise {
 		case 11025:
 			break;
 		default:
-			return false;
+			throw new PxtoneException("Invalid sample rate");
 		}
 
 		switch (bps) {
@@ -42,14 +42,12 @@ struct PxtoneNoise {
 		case 16:
 			break;
 		default:
-			return false;
+			throw new PxtoneException("Invalid bps");
 		}
 
 		this.channels = channels;
 		this.bps = bps;
 		this.sps = sps;
-
-		return false;
 	}
 
 	///

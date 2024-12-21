@@ -2,11 +2,12 @@
 module pxtone.woiceptv;
 // '12/03/03
 
-import pxtone.pxtn;
+import std.exception;
 
 import pxtone.descriptor;
 import pxtone.error;
 import pxtone.pulse.noise;
+import pxtone.pxtn;
 import pxtone.woice;
 
 immutable int expectedVersion = 20060111; /// support no-envelope
@@ -152,12 +153,8 @@ void readEnvelope(ref PxtnDescriptor pDoc, PxtnVoiceUnit* voiceUnit) @safe {
 	pDoc.readVarInt(voiceUnit.envelope.headNumber);
 	pDoc.readVarInt(voiceUnit.envelope.bodyNumber);
 	pDoc.readVarInt(voiceUnit.envelope.tailNumber);
-	if (voiceUnit.envelope.bodyNumber) {
-		throw new PxtoneException("fmt unknown");
-	}
-	if (voiceUnit.envelope.tailNumber != 1) {
-		throw new PxtoneException("fmt unknown");
-	}
+	enforce!PxtoneException(!voiceUnit.envelope.bodyNumber, "fmt unknown");
+	enforce!PxtoneException(voiceUnit.envelope.tailNumber == 1, "fmt unknown");
 
 	num = voiceUnit.envelope.headNumber + voiceUnit.envelope.bodyNumber + voiceUnit.envelope.tailNumber;
 	voiceUnit.envelope.points = new PxtnPoint[](num);

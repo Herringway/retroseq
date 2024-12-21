@@ -310,15 +310,12 @@ public:
 	}
 
 	///
-	bool setWoice(const(pxtnWoice)* woice) nothrow @safe {
-		if (!woice) {
-			return false;
-		}
+	void setWoice(const(pxtnWoice)* woice) @safe {
+		enforce!PxtoneException(woice, "no woice supplied");
 		this.woice = woice;
 		keyNow = EventDefault.key;
 		keyMargin = 0;
 		keyStart = EventDefault.key;
-		return true;
 	}
 
 	///
@@ -327,16 +324,13 @@ public:
 	}
 
 	///
-	bool setNameBuf(scope const char[] name) nothrow @safe {
-		if (!name || name.length > pxtnMaxTuneUnitName) {
-			return false;
-		}
+	void setNameBuf(scope const char[] name) @safe {
+		enforce!PxtoneException(name && name.length <= pxtnMaxTuneUnitName, "Invalid unit name");
 		nameBuf[0 .. $] = 0;
 		if (name.length) {
 			nameBuf[0 .. name.length] = name;
 		}
 		nameSize = cast(int)name.length;
-		return true;
 	}
 
 	///
@@ -384,9 +378,7 @@ public:
 
 		pDoc.read(size);
 		pDoc.read(unit);
-		if (cast(PxtnWoiceType) unit.type != PxtnWoiceType.pcm && cast(PxtnWoiceType) unit.type != PxtnWoiceType.ptv && cast(PxtnWoiceType) unit.type != PxtnWoiceType.ptn) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(cast(PxtnWoiceType) unit.type == PxtnWoiceType.pcm || cast(PxtnWoiceType) unit.type == PxtnWoiceType.ptv || cast(PxtnWoiceType) unit.type == PxtnWoiceType.ptn, "fmt unknown");
 		pGroup = unit.group;
 	}
 
@@ -397,7 +389,7 @@ public:
 
 		pDoc.read(size);
 		pDoc.read(unit);
-		enforce(cast(PxtnWoiceType) unit.type == PxtnWoiceType.pcm, new PxtoneException("Expecting a PCM unit"));
+		enforce!PxtoneException(cast(PxtnWoiceType) unit.type == PxtnWoiceType.pcm, "Expecting a PCM unit");
 
 		nameBuf[0 .. pxtnMaxTuneUnitName] = unit.name[0 .. pxtnMaxTuneUnitName];
 		nameBuf[pxtnMaxTuneUnitName] = '\0';

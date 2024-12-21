@@ -1,10 +1,11 @@
 ///
 module pxtone.pulse.pcm;
 
-import pxtone.pxtn;
+import std.exception;
 
-import pxtone.error;
 import pxtone.descriptor;
+import pxtone.error;
+import pxtone.pxtn;
 
 ///
 private struct WAVEFORMATCHUNK {
@@ -28,15 +29,13 @@ private:
 
 	// stereo / mono
 	///
-	private bool convertChannelNum(int newChannels) nothrow @safe {
+	private void convertChannelNum(int newChannels) @safe {
 		ubyte[] pcmWork = null;
 		const sampleSize = sampleBody * channels * bps / 8;
 
-		if (pcmSamples == null) {
-			return false;
-		}
+		enforce!PxtoneException(pcmSamples != null, "No data to convert");
 		if (channels == newChannels) {
-			return true;
+			return;
 		}
 
 		if (newChannels == 2) { // mono to stereo
@@ -94,20 +93,16 @@ private:
 
 		// update param.
 		channels = newChannels;
-
-		return true;
 	}
 
 	// change bps
 	///
-	private bool convertBitPerSample(int newBPS) nothrow @safe {
+	private void convertBitPerSample(int newBPS) @safe {
 		ubyte[] pcmWork;
 
-		if (!pcmSamples) {
-			return false;
-		}
+		enforce!PxtoneException(pcmSamples, "No data to convert");
 		if (bps == newBPS) {
-			return true;
+			return;
 		}
 
 		const sampleSize = sampleBody * channels * bps / 8;
@@ -139,30 +134,26 @@ private:
 			break;
 
 		default:
-			return false;
+			throw new PxtoneException("Invalid requested bps");
 		}
 
 		pcmSamples = pcmWork;
 
 		// update param.
 		bps = newBPS;
-
-		return true;
 	}
 	// sps
 	///
-	private bool convertSamplePerSecond(int newSPS) nothrow @safe {
+	private void convertSamplePerSecond(int newSPS) @safe {
 		bool bRet = false;
 
 		ubyte[] p1byteWork = null;
 		ushort[] p2byteWork = null;
 		uint[] p4byteWork = null;
 
-		if (!pcmSamples) {
-			return false;
-		}
+		enforce!PxtoneException(pcmSamples, "No data to convert");
 		if (sps == newSPS) {
-			return true;
+			return;
 		}
 
 		int bodySize = sampleBody * channels * bps / 8;
@@ -213,20 +204,11 @@ private:
 		} else if (p1byteWork) {
 			pcmSamples = p1byteWork;
 		} else {
-			goto End;
+			throw new PxtoneException("Invalid data");
 		}
 
 		// update.
 		sps = newSPS;
-
-		bRet = true;
-	End:
-
-		if (!bRet) {
-			sampleBody = 0;
-		}
-
-		return bRet;
 	}
 
 public:
@@ -239,9 +221,7 @@ public:
 	void create(int ch, int sps, int bps, int sampleNum) @safe {
 		release();
 
-		if (bps != 8 && bps != 16) {
-			throw new PxtoneException("pcm unknown");
-		}
+		enforce!PxtoneException(bps == 8 || bps == 16, "pcm unknown");
 
 		channels = ch;
 		this.sps = sps;
@@ -283,23 +263,15 @@ public:
 		// 'RIFFxxxxWAVEfmt '
 		doc.read(buf[]);
 
-		if (buf[0] != 'R' || buf[1] != 'I' || buf[2] != 'F' || buf[3] != 'F' || buf[8] != 'W' || buf[9] != 'A' || buf[10] != 'V' || buf[11] != 'E' || buf[12] != 'f' || buf[13] != 'm' || buf[14] != 't' || buf[15] != ' ') {
-			throw new PxtoneException("pcm unknown");
-		}
+		enforce!PxtoneException(buf[0 .. 4] != "RIFF" && buf[8 .. 16] == "WAVEfmt ", "pcm unknown");
 
 		// read format.
 		doc.read(size);
 		doc.read(format);
 
-		if (format.formatID != 0x0001) {
-			throw new PxtoneException("pcm unknown");
-		}
-		if (format.ch != 1 && format.ch != 2) {
-			throw new PxtoneException("pcm unknown");
-		}
-		if (format.bps != 8 && format.bps != 16) {
-			throw new PxtoneException("pcm unknown");
-		}
+		enforce!PxtoneException(format.formatID == 0x0001, "pcm unknown");
+		enforce!PxtoneException(format.ch == 1 || format.ch == 2, "pcm unknown");
+		enforce!PxtoneException(format.bps == 8 || format.bps == 16 ,"pcm unknown");
 
 		// find 'data'
 		doc.seek(PxtnSeek.set, 12);
@@ -321,9 +293,7 @@ public:
 
 	///
 	void write(ref PxtnDescriptor doc, const char[] pstrLIST) const @safe {
-		if (!pcmSamples) {
-			throw new PxtoneException("pcmSamples");
-		}
+		enforce!PxtoneException(pcmSamples, "pcmSamples");
 
 		WAVEFORMATCHUNK format;
 		uint riffSize;
@@ -400,22 +370,14 @@ public:
 	// convert..
 	///
 	void convert(int newChannels, int newSPS, int newBPS) @safe {
-		if (!convertChannelNum(newChannels)) {
-			throw new PxtoneException("convertChannelNum");
-		}
-		if (!convertBitPerSample(newBPS)) {
-			throw new PxtoneException("convertBitPerSample");
-		}
-		if (!convertSamplePerSecond(newSPS)) {
-			throw new PxtoneException("convertSamplePerSecond");
-		}
+		convertChannelNum(newChannels);
+		convertBitPerSample(newBPS);
+		convertSamplePerSecond(newSPS);
 	}
 
 	///
-	bool convertVolume(float v) nothrow @safe {
-		if (!pcmSamples) {
-			return false;
-		}
+	void convertVolume(float v) @safe {
+		enforce!PxtoneException(pcmSamples, "No sample data to convert");
 
 		int sampleNum = sampleBody * channels;
 
@@ -437,9 +399,8 @@ public:
 				break;
 			}
 		default:
-			return false;
+			throw new PxtoneException("Invalid bps");
 		}
-		return true;
 	}
 
 	///
@@ -454,12 +415,12 @@ public:
 	}
 
 	///
-	bool copy(ref PxtnPulsePCM pDest, int start, int end) const @safe {
+	void copy(ref PxtnPulsePCM pDest, int start, int end) const @safe {
 		int size, offset;
 
 		if (!pcmSamples) {
 			pDest.release();
-			return true;
+			return;
 		}
 
 		size = (end - start) * channels * bps / 8;
@@ -468,8 +429,6 @@ public:
 		pDest.create(channels, sps, bps, end - start);
 
 		pDest.pcmSamples[0 .. size] = pcmSamples[offset .. offset + size];
-
-		return true;
 	}
 
 	///

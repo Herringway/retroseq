@@ -2,6 +2,8 @@
 module pxtone.overdrive;
 // '12/03/03
 
+import std.exception;
+
 import pxtone.pxtn;
 import pxtone.error;
 import pxtone.descriptor;
@@ -103,18 +105,10 @@ struct pxtnOverDrive {
 		pDoc.read(size);
 		pDoc.read(over);
 
-		if (over.xxx) {
-			throw new PxtoneException("fmt unknown");
-		}
-		if (over.yyy) {
-			throw new PxtoneException("fmt unknown");
-		}
-		if (over.cut > tuneOverdriveCutMax || over.cut < tuneOverdriveCutMin) {
-			throw new PxtoneException("fmt unknown");
-		}
-		if (over.amp > tuneOverdriveAmpMax || over.amp < tuneOverdriveAmpMin) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(!over.xxx, "fmt unknown");
+		enforce!PxtoneException(!over.yyy, "fmt unknown");
+		enforce!PxtoneException((over.cut <= tuneOverdriveCutMax) && (over.cut >= tuneOverdriveCutMin), "fmt unknown");
+		enforce!PxtoneException((over.amp <= tuneOverdriveAmpMax) && (over.amp >= tuneOverdriveAmpMin), "fmt unknown");
 
 		cut = over.cut;
 		amp = over.amp;

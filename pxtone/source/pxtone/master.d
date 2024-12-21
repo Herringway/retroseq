@@ -2,11 +2,12 @@
 module pxtone.master;
 // '12/03/03
 
-import pxtone.pxtn;
+import std.exception;
 
 import pxtone.descriptor;
 import pxtone.error;
 import pxtone.evelist;
+import pxtone.pxtn;
 import pxtone.util;
 
 /////////////////////////////////
@@ -189,9 +190,7 @@ public:
 		uint size = 0;
 
 		pDoc.read(size);
-		if (size != 15) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(size == 15, "fmt unknown");
 
 		pDoc.read(beatClock);
 		pDoc.read(beatNum);
@@ -236,12 +235,8 @@ public:
 		pDoc.read(mast);
 
 		// unknown format
-		if (mast.dataNumber != 3) {
-			throw new PxtoneException("fmt unknown");
-		}
-		if (mast.rrr) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(mast.dataNumber == 3, "fmt unknown");
+		enforce!PxtoneException(!mast.rrr, "fmt unknown");
 
 		beatClock = EventDefault.beatClock;
 		beatNum = EventDefault.beatNumber;
@@ -261,42 +256,30 @@ public:
 			switch (status) {
 			case EventKind.beatClock:
 				beatClock = volume;
-				if (clock) {
-					throw new PxtoneException("desc broken");
-				}
+				enforce!PxtoneException(!clock, "desc broken");
 				break;
 			case EventKind.beatTempo:
 				beatTempo = reinterpretInt(volume);
-				if (clock) {
-					throw new PxtoneException("desc broken");
-				}
+				enforce!PxtoneException(!clock, "desc broken");
 				break;
 			case EventKind.beatNumber:
 				beatNum = volume;
-				if (clock) {
-					throw new PxtoneException("desc broken");
-				}
+				enforce!PxtoneException(!clock, "desc broken");
 				break;
 			case EventKind.repeat:
 				repeatClock = clock;
-				if (volume) {
-					throw new PxtoneException("desc broken");
-				}
+				enforce!PxtoneException(!volume, "desc broken");
 				break;
 			case EventKind.last:
 				lastClock = clock;
-				if (volume) {
-					throw new PxtoneException("desc broken");
-				}
+				enforce!PxtoneException(!volume, "desc broken");
 				break;
 			default:
 				throw new PxtoneException("fmt unknown");
 			}
 		}
 
-		if (e != mast.eventNumber) {
-			throw new PxtoneException("desc broken");
-		}
+		enforce!PxtoneException(e == mast.eventNumber, "desc broken");
 
 		this.beatNum = beatNum;
 		this.beatTempo = beatTempo;

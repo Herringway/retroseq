@@ -131,9 +131,7 @@ private:
 	ubyte[] pData; ///
 
 	///
-	private bool setInformation() @safe {
-		bool bRet = false;
-
+	private void setInformation() @safe {
 		OVMEM ovmem;
 		ovmem.pBuf = pData;
 		ovmem.pos = 0;
@@ -160,12 +158,6 @@ private:
 
 		// end.
 		trustedOvClear(vf);
-
-		bRet = true;
-
-	End:
-		return bRet;
-
 	}
 
 public:
@@ -234,10 +226,8 @@ public:
 	}
 
 	///
-	bool getInfo(int* pCh, int* pSPS, int* pSmpNum) nothrow @safe {
-		if (!pData) {
-			return false;
-		}
+	void getInfo(int* pCh, int* pSPS, int* pSmpNum) @safe {
+		enforce!PxtoneException(pData, "No ogg data");
 
 		if (pCh) {
 			*pCh = ch;
@@ -248,8 +238,6 @@ public:
 		if (pSmpNum) {
 			*pSmpNum = smpNum;
 		}
-
-		return true;
 	}
 
 	///
@@ -268,25 +256,19 @@ public:
 	///
 	void oggRead(ref PxtnDescriptor desc) @safe {
 		size = desc.getByteSize();
-		if (!(size)) {
-			throw new PxtoneException("desc r");
-		}
+		enforce!PxtoneException(size, "desc r");
 		pData = new ubyte[](size);
 		scope(failure) {
 			pData = null;
 			size = 0;
 		}
 		desc.read(pData);
-		if (!setInformation()) {
-			throw new PxtoneException("setInformation");
-		}
+		setInformation();
 	}
 
 	///
 	void pxtnWrite(ref PxtnDescriptor pDoc) const @safe {
-		if (!pData) {
-			throw new PxtoneException("No data");
-		}
+		enforce!PxtoneException(pData, "No data");
 
 		pDoc.write(ch);
 		pDoc.write(sps2);
@@ -302,9 +284,7 @@ public:
 		pDoc.read(smpNum);
 		pDoc.read(size);
 
-		if (!size) {
-			throw new PxtoneException("Invalid size read");
-		}
+		enforce!PxtoneException(size, "Invalid size read");
 
 		pData = new ubyte[](size);
 		scope(failure) {
@@ -315,10 +295,10 @@ public:
 	}
 
 	///
-	bool copy(ref PxtnPulseOggv pDst) const nothrow @safe {
+	void copy(ref PxtnPulseOggv pDst) const @safe {
 		pDst.release();
 		if (!pData) {
-			return true;
+			return;
 		}
 
 		pDst.pData = new ubyte[](size);
@@ -328,8 +308,6 @@ public:
 		pDst.sps2 = sps2;
 		pDst.size = size;
 		pDst.smpNum = smpNum;
-
-		return true;
 	}
 }
 

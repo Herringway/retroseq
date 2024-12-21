@@ -248,9 +248,7 @@ private:
 
 	///
 	private void initialize(int fixEvelsNum, bool bEdit) @safe {
-		if (isInitialized) {
-			throw new PxtoneException("pxtnService already initialized");
-		}
+		enforce!PxtoneException(!isInitialized, "pxtnService already initialized");
 
 		int byteSize = 0;
 
@@ -290,17 +288,13 @@ private:
 
 	///
 	private void mooResetVoiceOn(PxtnUnit* unit, int w) const @safe {
-		if (!isMooInitialized) {
-			throw new PxtoneException("Moo not initialized!");
-		}
+		enforce!PxtoneException(isMooInitialized, "Moo not initialized!");
 
 		const(PxtnVoiceInstance)* voiceInstance;
 		const(PxtnVoiceUnit)* voiceUnit;
 		const(pxtnWoice)* woice = woiceGet(w);
 
-		if (!woice) {
-			throw new PxtoneException("Moo not initialized!");
-		}
+		enforce!PxtoneException(woice, "Woice not found");
 
 		unit.setWoice(woice);
 
@@ -320,9 +314,7 @@ private:
 
 	///
 	private void mooInitUnitTone() @safe {
-		if (!isMooInitialized) {
-			throw new PxtoneException("Moo not initialized!");
-		}
+		enforce!PxtoneException(isMooInitialized, "Moo not initialized!");
 		for (int u = 0; u < units.length; u++) {
 			PxtnUnit* unit = unitGet(u);
 			unit.toneInit();
@@ -332,9 +324,7 @@ private:
 
 	///
 	private bool mooPxtoneSample(scope short[] pData) @safe {
-		if (!isMooInitialized) {
-			throw new PxtoneException("Moo not initialized!");
-		}
+		enforce!PxtoneException(isMooInitialized ,"Moo not initialized!");
 
 		// envelope..
 		for (int u = 0; u < units.length; u++) {
@@ -612,9 +602,7 @@ public:
 
 	///
 	void tonesReady() @safe {
-		if (!isInitialized) {
-			throw new PxtoneException("pxtnService not initialized");
-		}
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 
 		int beatNum = song.master.getBeatNum();
 		float beatTempo = song.master.getBeatTempo();
@@ -632,9 +620,7 @@ public:
 
 	///
 	void tonesClear() @safe {
-		if (!isInitialized) {
-			throw new PxtoneException("pxtnService not initialized");
-		}
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		for (int i = 0; i < delays.length; i++) {
 			delays[i].toneClear();
 		}
@@ -692,12 +678,8 @@ public:
 
 	///
 	void delayReadyTone(int idx) @safe {
-		if (!isInitialized) {
-			throw new PxtoneException("pxtnService not initialized");
-		}
-		if (idx < 0 || idx >= delays.length) {
-			throw new PxtoneException("param");
-		}
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
+		enforce!PxtoneException((idx >= 0) && (idx < delays.length), "param");
 		delays[idx].toneReady(song.master.getBeatNum(), song.master.getBeatTempo(), outputSamplesPerSecond);
 	}
 
@@ -936,7 +918,7 @@ public:
 
 	///
 	void setDestinationQuality(int channels, int sps) @safe {
-		enforce(isInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		switch (channels) {
 		case 1:
 			break;
@@ -952,7 +934,7 @@ public:
 
 	///
 	void getDestinationQuality(int* channels, int* samplesPerSecond) const @safe {
-		enforce(isInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		if (channels) {
 			*channels = outputChannels;
 		}
@@ -963,7 +945,7 @@ public:
 
 	///
 	void setSampledCallback(pxtnSampledCallback proc, void* user) @safe {
-		enforce(isInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		sampledCallback = proc;
 		sampledCallbackUserData = user;
 	}
@@ -978,31 +960,31 @@ public:
 
 	///
 	bool mooIsValidData() const @safe {
-		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce!PxtoneException(isMooInitialized, "pxtnService not initialized");
 		return songLoaded;
 	}
 
 	///
 	bool mooIsEndVomit() const @safe {
-		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce!PxtoneException(isMooInitialized, "pxtnService not initialized");
 		return songStopped;
 	}
 
 	///
 	void mooSetMuteByUnit(bool b) @safe {
-		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce!PxtoneException(isMooInitialized, "pxtnService not initialized");
 		mutedByUnit = b;
 	}
 
 	///
 	void mooSetLoop(bool b) @safe {
-		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce!PxtoneException(isMooInitialized, "pxtnService not initialized");
 		songLooping = b;
 	}
 
 	///
 	void mooSetFade(int fade, float sec) @safe {
-		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce!PxtoneException(isMooInitialized, "pxtnService not initialized");
 		mooFadeMax = cast(int)(cast(float) outputSamplesPerSecond * sec) >> 8;
 		if (fade < 0) {
 			mooFadeFade = -1;
@@ -1020,7 +1002,7 @@ public:
 
 	///
 	void mooSetMasterVolume(float v) @safe {
-		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
+		enforce!PxtoneException(isMooInitialized, "pxtnService not initialized");
 		if (v < 0) {
 			v = 0;
 		}
@@ -1032,8 +1014,8 @@ public:
 
 	///
 	int mooGetTotalSample() const @safe {
-		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
-		enforce(songLoaded, new PxtoneException("no valid data loaded"));
+		enforce!PxtoneException(isMooInitialized, "pxtnService not initialized");
+		enforce!PxtoneException(songLoaded, "no valid data loaded");
 
 		int measNum;
 		int beatNum;
@@ -1045,29 +1027,29 @@ public:
 
 	///
 	int mooGetNowClock() const @safe {
-		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
-		enforce(mooClockRate, new PxtoneException("No clock rate set"));
+		enforce!PxtoneException(isMooInitialized, "pxtnService not initialized");
+		enforce!PxtoneException(mooClockRate, "No clock rate set");
 		return cast(int)(mooSampleCount / mooClockRate);
 	}
 
 	///
 	int mooGetEndClock() const @safe {
-		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
-		enforce(mooClockRate, new PxtoneException("No clock rate set"));
+		enforce!PxtoneException(isMooInitialized, "pxtnService not initialized");
+		enforce!PxtoneException(mooClockRate, "No clock rate set");
 		return cast(int)(mooSampleEnd / mooClockRate);
 	}
 
 	///
 	int mooGetSamplingOffset() const @safe {
-		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
-		enforce(!songStopped, new PxtoneException("playback has ended"));
+		enforce!PxtoneException(isMooInitialized, "pxtnService not initialized");
+		enforce!PxtoneException(!songStopped, "playback has ended");
 		return mooSampleCount;
 	}
 
 	///
 	int mooGetSamplingEnd() const @safe {
-		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
-		enforce(!songStopped, new PxtoneException("playback has ended"));
+		enforce!PxtoneException(isMooInitialized, "pxtnService not initialized");
+		enforce!PxtoneException(!songStopped, "playback has ended");
 		return mooSampleEnd;
 	}
 
@@ -1081,10 +1063,10 @@ public:
 		scope(failure) {
 			songStopped = true;
 		}
-		enforce(isMooInitialized, new PxtoneException("pxtnService not initialized"));
-		enforce(songLoaded, new PxtoneException("no valid data loaded"));
-		enforce(outputChannels, new PxtoneException("invalid channel number specified"));
-		enforce(outputSamplesPerSecond, new PxtoneException("invalid sample rate specified"));
+		enforce!PxtoneException(isMooInitialized, "pxtnService not initialized");
+		enforce!PxtoneException(songLoaded, "no valid data loaded");
+		enforce!PxtoneException(outputChannels, "invalid channel number specified");
+		enforce!PxtoneException(outputSamplesPerSecond, "invalid sample rate specified");
 
 		int measEnd = song.master.getPlayMeas();
 		int measRepeat = song.master.getRepeatMeas();
@@ -1134,7 +1116,7 @@ public:
 
 	///
 	void setVolume(float volume) @safe {
-		enforce(!volume.isNaN, "Volume must be a number");
+		enforce!PxtoneException(!volume.isNaN, "Volume must be a number");
 		masterVolume = clamp(volume, 0.0, 1.0);
 	}
 
@@ -1154,23 +1136,21 @@ public:
 	////////////////////
 
 	///
-	bool moo(short[] buffer) nothrow @safe {
+	void moo(short[] buffer) nothrow @safe {
 		if (!isMooInitialized) {
-			return false;
+			return;
 		}
 		if (!songLoaded) {
-			return false;
+			return;
 		}
 		if (songStopped) {
-			return false;
+			return;
 		}
-
-		bool bRe = false;
 
 		int samplesWritten = 0;
 
 		if (buffer.length % outputChannels) {
-			return false;
+			return;
 		}
 
 		int sampleCount = cast(int)(buffer.length / outputChannels);
@@ -1203,13 +1183,9 @@ public:
 			int clock = cast(int)(mooSampleCount / mooClockRate);
 			if (!sampledCallback(sampledCallbackUserData, &this)) {
 				songStopped = true;
-				goto term;
+				return;
 			}
 		}
-
-		bRe = true;
-	term:
-		return bRe;
 	}
 }
 

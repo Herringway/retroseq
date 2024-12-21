@@ -2,16 +2,17 @@
 module pxtone.woice;
 // '12/03/03 pxtnWoice.
 
-import pxtone.pxtn;
+import std.exception;
 
 import pxtone.descriptor;
 import pxtone.error;
 import pxtone.evelist;
 import pxtone.pulse.noise;
 import pxtone.pulse.noisebuilder;
+import pxtone.pulse.oggv;
 import pxtone.pulse.oscillator;
 import pxtone.pulse.pcm;
-import pxtone.pulse.oggv;
+import pxtone.pxtn;
 import pxtone.util;
 import pxtone.woiceptv;
 
@@ -321,16 +322,12 @@ public:
 	}
 
 	///
-	bool setNameBuf(const(char)[] name) nothrow @safe {
-		if (!name || name.length < 0 || name.length > pxtnMaxTuneWoiceName) {
-			return false;
-		}
+	void setNameBuf(const(char)[] name) @safe {
+		enforce!PxtoneException(name != "", "Name cannot be blank");
+		enforce!PxtoneException(name.length <= pxtnMaxTuneWoiceName, "Name too long");
 		nameBuffer[] = 0;
 		nameSize = cast(uint)name.length;
-		if (name.length) {
-			nameBuffer[0 .. name.length] = name;
-		}
-		return true;
+		nameBuffer[0 .. name.length] = name;
 	}
 
 	///
@@ -385,8 +382,7 @@ public:
 	}
 
 	///
-	bool copy(pxtnWoice* pDst) const @safe {
-		bool bRet = false;
+	void copy(pxtnWoice* pDst) const @safe {
 		int v, num;
 		size_t size;
 		const(PxtnVoiceUnit)* voiceUnit1 = null;
@@ -431,23 +427,11 @@ public:
 			voiceUnit2.wave.points[] = voiceUnit1.wave.points[0 .. size];
 
 			voiceUnit1.pcm.copy(voiceUnit2.pcm);
-			if (!voiceUnit1.ptn.copy(voiceUnit2.ptn)) {
-				goto End;
-			}
+			voiceUnit1.ptn.copy(voiceUnit2.ptn);
 			version (WithOggVorbis) {
-				if (!voiceUnit1.oggV.copy(voiceUnit2.oggV)) {
-					goto End;
-				}
+				voiceUnit1.oggV.copy(voiceUnit2.oggV);
 			}
 		}
-
-		bRet = true;
-	End:
-		if (!bRet) {
-			pDst.voiceRelease();
-		}
-
-		return bRet;
 	}
 
 	///
@@ -533,8 +517,7 @@ public:
 	}
 
 	///
-	bool ptvWrite(ref PxtnDescriptor pDoc, scope int* pTotal) const @safe {
-		bool bRet = false;
+	void ptvWrite(ref PxtnDescriptor pDoc, scope int* pTotal) const @safe {
 		const(PxtnVoiceUnit)* voiceUnit = null;
 		uint work = 0;
 		int v = 0;
@@ -555,9 +538,6 @@ public:
 		for (v = 0; v < voiceNum; v++) {
 			// pPtvv. (9)
 			voiceUnit = &voices[v];
-			if (!voiceUnit) {
-				goto End;
-			}
 
 			pDoc.writeVarInt(voiceUnit.basicKey, total);
 			pDoc.writeVarInt(voiceUnit.volume, total);
@@ -583,10 +563,6 @@ public:
 		if (pTotal) {
 			*pTotal = 16 + total;
 		}
-		bRet = true;
-	End:
-
-		return bRet;
 	}
 
 	///
@@ -601,30 +577,21 @@ public:
 
 		pDoc.read(code[]);
 		pDoc.read(gotVersion);
-		if (code[0 .. 8] != identifierCode) {
-			throw new PxtoneException("inv code");
-		}
+		enforce!PxtoneException(code[0 .. 8] == identifierCode, "inv code");
 		pDoc.read(total);
-		if (gotVersion > expectedVersion) {
-			throw new PxtoneException("fmt new");
-		}
+		enforce!PxtoneException(gotVersion <= expectedVersion, "fmt new");
 
 		// pPtv. (5)
 		pDoc.readVarInt(x3xBasicKey);
 		pDoc.readVarInt(work1);
 		pDoc.readVarInt(work2);
-		if (work1 || work2) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(!work1 && !work2, "fmt unknown");
 		pDoc.readVarInt(num);
 		voiceAllocate(num);
 
 		for (int v = 0; v < voiceNum; v++) {
 			// pPtvv. (8)
 			voiceUnit = &voices[v];
-			if (!voiceUnit) {
-				throw new PxtoneException("FATAL");
-			}
 			pDoc.readVarInt(voiceUnit.basicKey);
 			pDoc.readVarInt(voiceUnit.volume);
 			pDoc.readVarInt(voiceUnit.pan);
@@ -634,12 +601,8 @@ public:
 			pDoc.readVarInt(*cast(int*)&voiceUnit.dataFlags);
 
 			// no support.
-			if (voiceUnit.voiceFlags & PTVVoiceFlag.uncovered) {
-				throw new PxtoneException("fmt unknown");
-			}
-			if (voiceUnit.dataFlags & PTVDataFlag.uncovered) {
-				throw new PxtoneException("fmt unknown");
-			}
+			enforce!PxtoneException((voiceUnit.voiceFlags & PTVVoiceFlag.uncovered) == 0, "fmt unknown");
+			enforce!PxtoneException((voiceUnit.dataFlags & PTVDataFlag.uncovered) == 0, "fmt unknown");
 			if (voiceUnit.dataFlags & PTVDataFlag.wave) {
 				readWave(pDoc, voiceUnit);
 			}
@@ -679,9 +642,7 @@ public:
 		pDoc.read(size);
 		pDoc.read(pcm);
 
-		if ((cast(int) pcm.voiceFlags) & PTVVoiceFlag.uncovered) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException((((cast(int) pcm.voiceFlags) & PTVVoiceFlag.uncovered) == 0), "fmt unknown");
 
 		voiceAllocate(1);
 		scope(failure) {
@@ -741,11 +702,8 @@ public:
 		pDoc.read(size);
 		pDoc.read(ptn);
 
-		if (ptn.rrr > 1) {
-			throw new PxtoneException("fmt unknown");
-		} else if (ptn.rrr < 0) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(ptn.rrr <= 1, "fmt unknown");
+		enforce!PxtoneException(ptn.rrr >= 0, "fmt unknown");
 
 		voiceAllocate(1);
 
@@ -765,7 +723,7 @@ public:
 	}
 
 	///
-	bool ioMatePTVWrite(ref PxtnDescriptor pDoc) const @safe {
+	void ioMatePTVWrite(ref PxtnDescriptor pDoc) const @safe {
 		MaterialStructPTV ptv;
 		int headSize = MaterialStructPTV.sizeof + int.sizeof;
 		int size = 0;
@@ -778,9 +736,7 @@ public:
 		// pre write
 		pDoc.write(size);
 		pDoc.write(ptv);
-		if (!ptvWrite(pDoc, &ptv.size)) {
-			return false;
-		}
+		ptvWrite(pDoc, &ptv.size);
 
 		pDoc.seek(PxtnSeek.cur, -(ptv.size + headSize));
 
@@ -789,8 +745,6 @@ public:
 		pDoc.write(ptv);
 
 		pDoc.seek(PxtnSeek.cur, ptv.size);
-
-		return true;
 	}
 
 	///
@@ -800,9 +754,7 @@ public:
 
 		pDoc.read(size);
 		pDoc.read(ptv);
-		if (ptv.rrr) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(!ptv.rrr, "fmt unknown");
 		ptvRead(pDoc);
 
 		if (ptv.x3xTuning != 1.0) {
@@ -814,10 +766,8 @@ public:
 
 	version (WithOggVorbis) {
 		///
-		bool ioMateOGGVWrite(ref PxtnDescriptor pDoc) const @safe {
-			if (!voices) {
-				return false;
-			}
+		void ioMateOGGVWrite(ref PxtnDescriptor pDoc) const @safe {
+			enforce!PxtoneException(voices, "No voices");
 
 			MaterialStructOGGV mate;
 			const(PxtnVoiceUnit)* voiceUnit = &voices[0];
@@ -832,8 +782,6 @@ public:
 			pDoc.write(size);
 			pDoc.write(mate);
 			voiceUnit.oggV.pxtnWrite(pDoc);
-
-			return true;
 		}
 
 		///
@@ -844,9 +792,7 @@ public:
 			pDoc.read(size);
 			pDoc.read(mate);
 
-			if ((cast(int) mate.voiceFlags) & PTVVoiceFlag.uncovered) {
-				throw new PxtoneException("fmt unknown");
-			}
+			enforce!PxtoneException(((cast(int) mate.voiceFlags) & PTVVoiceFlag.uncovered) == 0, "fmt unknown");
 
 			voiceAllocate(1);
 			scope(failure) {

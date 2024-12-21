@@ -1,6 +1,8 @@
 ///
 module pxtone.evelist;
 
+import std.exception;
+
 import pxtone.descriptor;
 import pxtone.error;
 import pxtone.util;
@@ -359,10 +361,8 @@ public:
 	}
 
 	///
-	bool recordAdd(int clock, ubyte unitNumber, ubyte kind, int value) nothrow @safe {
-		if (!events) {
-			return false;
-		}
+	void recordAdd(int clock, ubyte unitNumber, ubyte kind, int value) @safe {
+		enforce!PxtoneException(events, "Events not allocated yet");
 
 		EveRecord* pNew = null;
 		EveRecord* pPrev = null;
@@ -375,9 +375,7 @@ public:
 				break;
 			}
 		}
-		if (!pNew) {
-			return false;
-		}
+		enforce!PxtoneException(pNew, "No room for new events");
 
 		// first.
 		if (!start) {
@@ -446,18 +444,16 @@ public:
 				}
 			}
 		}
-
-		return true;
 	}
 
 	///
-	bool recordAdd(int clock, ubyte unitNumber, ubyte kind, float newValue) nothrow @safe {
+	void recordAdd(int clock, ubyte unitNumber, ubyte kind, float newValue) @safe {
 		union Reinterpret {
 			float f;
 			int i;
 		}
 		int value = Reinterpret(newValue).i;
-		return recordAdd(clock, unitNumber, kind, value);
+		recordAdd(clock, unitNumber, kind, value);
 	}
 
 	/////////////////////
@@ -465,13 +461,10 @@ public:
 	/////////////////////
 
 	///
-	bool linearStart() nothrow @safe {
-		if (!events) {
-			return false;
-		}
+	void linearStart() @safe {
+		enforce!PxtoneException(events, "No events allocated");
 		clear();
 		linear = 0;
-		return true;
 	}
 
 	///
@@ -514,7 +507,7 @@ public:
 	}
 
 	///
-	int recordClockShift(int clock, int shift, ubyte unitNumber) nothrow @safe  // can't be under 0.
+	int recordClockShift(int clock, int shift, ubyte unitNumber) @safe  // can't be under 0.
 	{
 		if (!events) {
 			return 0;
@@ -985,14 +978,11 @@ public:
 	}
 
 	///
-	bool x4xReadStart() nothrow @safe {
-		if (!events) {
-			return false;
-		}
+	void x4xReadStart() @safe {
+		enforce!PxtoneException(events, "No events allocated");
 		clear();
 		linear = 0;
 		eventRecords = null;
-		return true;
 	}
 
 	///
@@ -1076,15 +1066,9 @@ public:
 		pDoc.read(size);
 		pDoc.read(evnt);
 
-		if (evnt.dataNumber != 2) {
-			throw new PxtoneException("fmt unknown");
-		}
-		if (evnt.eventKind >= EventKind.num) {
-			throw new PxtoneException("fmt unknown");
-		}
-		if (bCheckRRR && evnt.rrr) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(evnt.dataNumber == 2, "fmt unknown");
+		enforce!PxtoneException(evnt.eventKind < EventKind.num, "fmt unknown");
+		enforce!PxtoneException(!bCheckRRR || !evnt.rrr, "fmt unknown");
 
 		absolute = 0;
 		for (e = 0; e < cast(int) evnt.eventNumber; e++) {
@@ -1097,9 +1081,7 @@ public:
 				absolute += value;
 			}
 		}
-		if (e != evnt.eventNumber) {
-			throw new PxtoneException("desc broken");
-		}
+		enforce!PxtoneException(e == evnt.eventNumber, "desc broken");
 
 		x4xReadNewKind();
 	}
@@ -1115,17 +1097,13 @@ public:
 		pDoc.read(evnt);
 
 		// support only 2
-		if (evnt.dataNumber != 2) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(evnt.dataNumber == 2, "fmt unknown");
 
 		for (e = 0; e < cast(int) evnt.eventNumber; e++) {
 			pDoc.readVarInt(work);
 			pDoc.readVarInt(work);
 		}
-		if (e != evnt.eventNumber) {
-			throw new PxtoneException("desc broken");
-		}
+		enforce!PxtoneException(e == evnt.eventNumber ,"desc broken");
 
 		pNum = evnt.eventNumber;
 	}

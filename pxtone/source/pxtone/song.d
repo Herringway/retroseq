@@ -105,12 +105,8 @@ struct PxToneSong {
 		}
 
 		if (fmtVer <= FMTVER.x3x) {
-			if (!x3xTuningKeyEvent()) {
-				throw new PxtoneException("x3x key");
-			}
-			if (!x3xAddTuningEvent()) {
-				throw new PxtoneException("x3x add tuning");
-			}
+			x3xTuningKeyEvent();
+			x3xAddTuningEvent();
 			x3xSetVoiceNames();
 		}
 
@@ -201,9 +197,7 @@ struct PxToneSong {
 				break;
 			case PxtnWoiceType.ptv:
 				pDoc.write(identifierCodeMatePTV);
-				if (!woice.ioMatePTVWrite(pDoc)) {
-					throw new PxtoneException("desc w");
-				}
+				woice.ioMatePTVWrite(pDoc);
 				break;
 			case PxtnWoiceType.ptn:
 				pDoc.write(identifierCodeMatePTN);
@@ -213,9 +207,7 @@ struct PxToneSong {
 
 				version (WithOggVorbis) {
 					pDoc.write(identifierCodeMateOGGV);
-					if (!woice.ioMateOGGVWrite(pDoc)) {
-						throw new PxtoneException("desc w");
-					}
+					woice.ioMateOGGVWrite(pDoc);
 					break;
 				} else {
 					throw new PxtoneException("Ogg vorbis support is required");
@@ -226,9 +218,7 @@ struct PxToneSong {
 
 			if (!bTune && woice.isNameBuf()) {
 				pDoc.write(identifierCodeAssiWOIC);
-				if (!ioAssistWoiceWrite(pDoc, w)) {
-					throw new PxtoneException("desc w");
-				}
+				ioAssistWoiceWrite(pDoc, w);
 			}
 		}
 
@@ -239,9 +229,7 @@ struct PxToneSong {
 		for (int u = 0; u < units.length; u++) {
 			if (!bTune && units[u].isNameBuf()) {
 				pDoc.write(identifierCodeAssiUNIT);
-				if (!ioAssistUnitWrite(pDoc, u)) {
-					throw new PxtoneException("desc w");
-				}
+				ioAssistUnitWrite(pDoc, u);
 			}
 		}
 
@@ -424,18 +412,14 @@ struct PxToneSong {
 
 	///
 	private void ioReadDelay(ref PxtnDescriptor pDoc) @safe {
-		if (pxtnMaxTuneDelayStruct < delays.length) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(pxtnMaxTuneDelayStruct >= delays.length, "fmt unknown");
 
 		Delay delay;
 		int size = 0;
 
 		pDoc.read(size);
 		pDoc.read(delay);
-		if (delay.unit >= DelayUnit.num) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(delay.unit < DelayUnit.num, "fmt unknown");
 
 		if (delay.group >= pxtnMaxTuneGroupNumber) {
 			delay.group = 0;
@@ -446,9 +430,7 @@ struct PxToneSong {
 
 	///
 	private void ioReadOverDrive(ref PxtnDescriptor pDoc) @safe {
-		if (pxtnMaxTuneOverdriveStruct < overdrives.length) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(pxtnMaxTuneOverdriveStruct >= overdrives.length, "fmt unknown");
 
 		pxtnOverDrive* ovdrv = new pxtnOverDrive();
 		ovdrv.read(pDoc);
@@ -457,9 +439,7 @@ struct PxToneSong {
 
 	///
 	private void ioReadWoice(ref PxtnDescriptor pDoc, PxtnWoiceType type) @safe {
-		if (pxtnMaxTuneWoiceStruct < woices.length) {
-			throw new PxtoneException("Too many woices");
-		}
+		enforce!PxtoneException(pxtnMaxTuneWoiceStruct >= woices.length, "Too many woices");
 
 		pxtnWoice* woice = new pxtnWoice();
 
@@ -489,9 +469,7 @@ struct PxToneSong {
 
 	///
 	private void ioReadOldUnit(ref PxtnDescriptor pDoc, int ver) @safe {
-		if (pxtnMaxTuneUnitStruct < units.length) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(pxtnMaxTuneUnitStruct >= units.length, "fmt unknown");
 
 		PxtnUnit* unit = new PxtnUnit();
 		int group = 0;
@@ -545,14 +523,12 @@ struct PxToneSong {
 	/////////////
 
 	///
-	private bool ioAssistWoiceWrite(ref PxtnDescriptor pDoc, int idx) const @safe {
+	private void ioAssistWoiceWrite(ref PxtnDescriptor pDoc, int idx) const @safe {
 		AssistWoice assi;
 		int size;
 		const char[] pName = woices[idx].getNameBuf();
 
-		if (pName.length > pxtnMaxTuneWoiceName) {
-			return false;
-		}
+		enforce!PxtoneException(pName.length <= pxtnMaxTuneWoiceName, "Woice name too long");
 
 		assi.name[0 .. pName.length] = pName;
 		assi.woiceIndex = cast(ushort) idx;
@@ -560,8 +536,6 @@ struct PxToneSong {
 		size = AssistWoice.sizeof;
 		pDoc.write(size);
 		pDoc.write(assi);
-
-		return true;
 	}
 
 	///
@@ -570,27 +544,19 @@ struct PxToneSong {
 		int size = 0;
 
 		pDoc.read(size);
-		if (size != assi.sizeof) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(size == assi.sizeof, "fmt unknown");
 		pDoc.read(assi);
-		if (assi.rrr) {
-			throw new PxtoneException("fmt unknown");
-		}
-		if (assi.woiceIndex >= woices.length) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(!assi.rrr, "fmt unknown");
+		enforce!PxtoneException(assi.woiceIndex < woices.length, "fmt unknown");
 
-		if (!woices[assi.woiceIndex].setNameBuf(assi.name.dup)) {
-			throw new PxtoneException("FATAL");
-		}
+		woices[assi.woiceIndex].setNameBuf(assi.name.dup);
 	}
 	// -----
 	// assi unit.
 	// -----
 
 	///
-	private bool ioAssistUnitWrite(ref PxtnDescriptor pDoc, int idx) const @safe {
+	private void ioAssistUnitWrite(ref PxtnDescriptor pDoc, int idx) const @safe {
 		AssistUnit assi;
 		int size;
 		const(char)[] pName = units[idx].getNameBuf();
@@ -601,8 +567,6 @@ struct PxToneSong {
 		size = assi.sizeof;
 		pDoc.write(size);
 		pDoc.write(assi);
-
-		return true;
 	}
 
 	///
@@ -611,20 +575,12 @@ struct PxToneSong {
 		int size;
 
 		pDoc.read(size);
-		if (size != assi.sizeof) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(size == assi.sizeof, "fmt unknown");
 		pDoc.read(assi);
-		if (assi.rrr) {
-			throw new PxtoneException("fmt unknown");
-		}
-		if (assi.unitIndex >= units.length) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(!assi.rrr, "fmt unknown");
+		enforce!PxtoneException(assi.unitIndex < units.length, "fmt unknown");
 
-		if (!units[assi.unitIndex].setNameBuf(assi.name.fromStringz)) {
-			throw new PxtoneException("FATAL");
-		}
+		units[assi.unitIndex].setNameBuf(assi.name.fromStringz);
 	}
 	// -----
 	// unit num
@@ -648,33 +604,21 @@ struct PxToneSong {
 		int size = 0;
 
 		pDoc.read(size);
-		if (size != NumUnit.sizeof) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(size == NumUnit.sizeof, "fmt unknown");
 		pDoc.read(data);
-		if (data.rrr) {
-			throw new PxtoneException("fmt unknown");
-		}
-		if (data.num > pxtnMaxTuneUnitStruct) {
-			throw new PxtoneException("fmt new");
-		}
-		if (data.num < 0) {
-			throw new PxtoneException("fmt unknown");
-		}
+		enforce!PxtoneException(!data.rrr, "fmt unknown");
+		enforce!PxtoneException(data.num <= pxtnMaxTuneUnitStruct, "fmt new");
+		enforce!PxtoneException(data.num >= 0, "fmt unknown");
 		pNum = data.num;
 	}
 
 	// fix old key event
 	///
-	private bool x3xTuningKeyEvent() nothrow @safe {
-		if (units.length > woices.length) {
-			return false;
-		}
+	private void x3xTuningKeyEvent() @safe {
+		enforce!PxtoneException(units.length <= woices.length, "Too many units");
 
 		for (int u = 0; u < units.length; u++) {
-			if (u >= woices.length) {
-				return false;
-			}
+			enforce!PxtoneException(u < woices.length, "Invalid woice index");
 
 			int changeValue = woices[u].getX3xBasicKey() - EventDefault.basicKey;
 
@@ -683,15 +627,12 @@ struct PxToneSong {
 			}
 			evels.recordValueChange(0, -1, cast(ubyte) u, EventKind.key, changeValue);
 		}
-		return true;
 	}
 
 	// fix old tuning (1.0)
 	///
-	private bool x3xAddTuningEvent() nothrow @safe {
-		if (units.length > woices.length) {
-			return false;
-		}
+	private void x3xAddTuningEvent() @safe {
+		enforce!PxtoneException(units.length <= woices.length, "Too many units");
 
 		for (int u = 0; u < units.length; u++) {
 			float tuning = woices[u].getX3xTuning();
@@ -699,22 +640,15 @@ struct PxToneSong {
 				evels.recordAdd(0, cast(ubyte) u, EventKind.tuning, tuning);
 			}
 		}
-
-		return true;
 	}
 
 	///
-	private bool x3xSetVoiceNames() nothrow @safe {
+	private void x3xSetVoiceNames() @safe {
 		for (int i = 0; i < woices.length; i++) {
 			char[pxtnMaxTuneWoiceName + 1] name = 0;
-			try {
-				sformat(name[], "voice_%02d", i);
-			} catch (Exception) { //This will never actually happen...
-				return false;
-			}
+			sformat(name[], "voice_%02d", i);
 			woices[i].setNameBuf(name.dup);
 		}
-		return true;
 	}
 
 	///
@@ -736,8 +670,8 @@ struct PxToneSong {
 		readVersion(pDoc, fmtVer, exeVer);
 
 		if (fmtVer == FMTVER.x1x) {
-			count = 10000;
-			goto term;
+			pCount = 10000;
+			return;
 		}
 
 		while (!bEnd) {
@@ -795,8 +729,6 @@ struct PxToneSong {
 		if (fmtVer <= FMTVER.x3x) {
 			count += pxtnMaxTuneUnitStruct * 4; // voice number, group number, key tuning, key event x3x
 		}
-
-	term:
 
 		pCount = count;
 	}
