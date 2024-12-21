@@ -7,7 +7,6 @@ import m4a.cgb_audio;
 import m4a.internal;
 import m4a.m4a_tables;
 import m4a.music_player;
-import m4a.sound_mixer;
 
 import std.algorithm.comparison;
 
