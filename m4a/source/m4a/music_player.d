@@ -331,7 +331,7 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @safe p
 
 ///
 void TrackStop(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref MusicPlayerTrack track) @safe pure {
-	if (track.flags & 0x80) {
+	if (track.flags & MPT_FLG_EXIST) {
 		for (SoundChannel *chan = track.chan; chan != null; chan = chan.nextChannelPointer) {
 			if (chan.statusFlags != 0) {
 				ubyte cgbType = chan.type & 0x7;
