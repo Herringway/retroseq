@@ -28,12 +28,17 @@ void Funcify(alias Method, T)(ref T newThis, Parameters!Method params) {
 
 /// Wrapper for SDL callbacks
 extern (C) void sdlSampleFunctionWrapper(alias Function)(void* user, ubyte* buf, int bufSize) nothrow if (isDynamicArray!(Parameters!Function[1])) {
+	static bool done;
 	import std.exception : assumeWontThrow;
 	import std.stdio : writeln;
+	if (done) {
+		return;
+	}
 	try {
 		Function(*cast(Parameters!Function[0]*)user, cast(Parameters!Function[1])buf[0 .. bufSize]);
 	} catch (Throwable e) {
 		assumeWontThrow(writeln(e));
+		done = true;
 	}
 }
 
