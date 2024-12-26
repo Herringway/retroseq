@@ -43,11 +43,6 @@ void MP2KClearChain(ref SoundChannel chan) @safe pure {
 	chan.track = null;
 }
 
-///
-void MPlayJumpTableCopy(MPlayFunc[] mplayJumpTable) @safe pure {
-	mplayJumpTable[] = gMPlayJumpTableTemplate;
-}
-
 /// Ends the current track. (Fine as in the Italian musical word, not English)
 void MP2K_event_fine(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack track) @safe pure {
 	for (SoundChannel *chan = track.chan; chan != null; chan = chan.nextChannelPointer) {
@@ -239,7 +234,7 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @safe p
 				} else if (event >= 0xB1) {
 					MPlayFunc eventFunc;
 					subPlayer.cmd = cast(ubyte)(event - 0xB1);
-					eventFunc = player.soundInfo.mp2kEventFuncTable[subPlayer.cmd];
+					eventFunc = gMPlayJumpTable[subPlayer.cmd];
 					eventFunc(player, subPlayer, currentTrack);
 
 					if (currentTrack.flags == 0) {

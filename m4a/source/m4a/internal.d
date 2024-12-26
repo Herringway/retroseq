@@ -290,7 +290,6 @@ struct SoundMixerState {
 	CgbSoundFunc cgbMixerFunc; ///
 	CgbOscOffFunc cgbNoteOffFunc; ///
 	MidiKeyToCgbFreqFunc cgbCalcFreqFunc; ///
-	MPlayFunc[] mp2kEventFuncTable; ///
 	PlyNoteFunc mp2kEventNxxFunc; ///
 	ExtVolPitFunc ExtVolPit; ///
 	void *reserved2; ///

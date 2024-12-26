@@ -22,7 +22,6 @@ struct M4APlayer {
 	uint songTableOffset; ///
 
 	SoundMixerState soundInfo; ///
-	MPlayFunc[36] gMPlayJumpTable; ///
 	SoundChannel[4] cgbChans; ///
 	MusicPlayerInfo gMPlayInfo_BGM; ///
 	MusicPlayerInfo gMPlayInfo_SE1; ///
@@ -73,16 +72,6 @@ struct M4APlayer {
 			gb.set_envelope(i, 8);
 			gb.trigger_note(i);
 		}
-
-		gMPlayJumpTable[8] = &ply_memacc;
-		gMPlayJumpTable[17] = &MP2K_event_lfos;
-		gMPlayJumpTable[19] = &MP2K_event_mod;
-		gMPlayJumpTable[28] = &ply_xcmd;
-		gMPlayJumpTable[29] = &MP2K_event_endtie;
-		gMPlayJumpTable[30] = &MP2K_event_nothing;
-		gMPlayJumpTable[31] = &TrackStop;
-		gMPlayJumpTable[32] = &Funcify!(FadeOutBody, M4APlayer);
-		gMPlayJumpTable[33] = &TrkVolPitSet;
 
 		soundInfo.cgbChans = cgbChans[];
 		soundInfo.cgbMixerFunc = &Funcify!(cgbMixerFunc, M4APlayer);
@@ -255,11 +244,8 @@ struct M4APlayer {
 		soundInfo.cgbNoteOffFunc = &DummyFunc2;
 		soundInfo.cgbCalcFreqFunc = &DummyFunc3;
 		soundInfo.ExtVolPit = &DummyFunc4;
-
-		MPlayJumpTableCopy(gMPlayJumpTable);
-
-		soundInfo.mp2kEventFuncTable = gMPlayJumpTable;
 	}
+
 	///
 	void SoundClear() @safe pure {
 		int i = MAX_DIRECTSOUND_CHANNELS;
@@ -1160,8 +1146,7 @@ void ply_memacc(ref M4APlayer player, ref MusicPlayerInfo mplayInfo, ref MusicPl
 	}
 
 cond_true: {
-		// *& is required for matching
-		player.gMPlayJumpTable[1](player, mplayInfo, track);
+		gMPlayJumpTable[1](player, mplayInfo, track);
 		return;
 	}
 
@@ -1179,7 +1164,7 @@ void ply_xcmd(ref M4APlayer player, ref MusicPlayerInfo mplayInfo, ref MusicPlay
 
 ///
 void ply_xxx(ref M4APlayer player, ref MusicPlayerInfo mplayInfo, ref MusicPlayerTrack track) @safe pure {
-	player.gMPlayJumpTable[0](player, mplayInfo, track);
+	gMPlayJumpTable[0](player, mplayInfo, track);
 }
 
 ///
