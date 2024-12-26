@@ -329,16 +329,15 @@ struct M4APlayer {
 			mplayInfo.tempoCounter = 0;
 			mplayInfo.fadeInterval = 0;
 
-			foreach (i, ref track; mplayInfo.tracks[0 .. song.header.trackCount]) {
+			foreach (i, ref track; mplayInfo.tracks) {
 				TrackStop(this, mplayInfo, track);
-				track.flags = MPT_FLG_EXIST | MPT_FLG_START;
-				track.chan = null;
-				track.cmdPtr = song.parts[i].toAbsoluteArray(musicData);
-			}
-
-			foreach (ref track;  mplayInfo.tracks[min(mplayInfo.trackCount, song.header.trackCount) .. mplayInfo.trackCount]) {
-				TrackStop(this, mplayInfo, track);
-				track.flags = 0;
+				if (i < song.header.trackCount) {
+					track.flags = MPT_FLG_EXIST | MPT_FLG_START;
+					track.chan = null;
+					track.cmdPtr = song.parts[i].toAbsoluteArray(musicData);
+				} else {
+					track.flags = 0;
+				}
 			}
 
 			if (song.header.reverb & SOUND_MODE_REVERB_SET) {

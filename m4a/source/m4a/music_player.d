@@ -200,22 +200,18 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @safe p
 	while (subPlayer.tempoCounter >= 150) {
 		ushort trackBits = 0;
 
-		for (uint i = 0; i < subPlayer.trackCount; i++) {
-			MusicPlayerTrack *currentTrack = &subPlayer.tracks[i];
-			SoundChannel *chan;
+		trackLoop: foreach (idx, ref currentTrack; subPlayer.tracks[0 .. subPlayer.trackCount]) {
 			if ((currentTrack.flags & MPT_FLG_EXIST) == 0) {
 				continue;
 			}
-			trackBits |= (1 << i);
+			trackBits |= (1 << idx);
 
-			chan = currentTrack.chan;
-			while (chan != null) {
+			for (SoundChannel* chan = currentTrack.chan; chan != null; chan = chan.nextChannelPointer) {
 				if ((chan.statusFlags & SOUND_CHANNEL_SF_ON) == 0) {
 					player.ClearChain(*chan);
 				} else if (chan.gateTime != 0 && --chan.gateTime == 0) {
 					chan.statusFlags |= SOUND_CHANNEL_SF_STOP;
 				}
-				chan = chan.nextChannelPointer;
 			}
 
 			if (currentTrack.flags & MPT_FLG_START) {
@@ -239,15 +235,15 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @safe p
 				}
 
 				if (event >= 0xCF) {
-					player.soundInfo.mp2kEventNxxFunc(player, event - 0xCF, subPlayer, *currentTrack);
+					player.soundInfo.mp2kEventNxxFunc(player, event - 0xCF, subPlayer, currentTrack);
 				} else if (event >= 0xB1) {
 					MPlayFunc eventFunc;
 					subPlayer.cmd = cast(ubyte)(event - 0xB1);
 					eventFunc = player.soundInfo.mp2kEventFuncTable[subPlayer.cmd];
-					eventFunc(player, subPlayer, *currentTrack);
+					eventFunc(player, subPlayer, currentTrack);
 
 					if (currentTrack.flags == 0) {
-						goto nextTrack;
+						continue trackLoop;
 					}
 				} else {
 					currentTrack.wait = gClockTable[event - 0x80];
@@ -259,7 +255,7 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @safe p
 			if (currentTrack.lfoSpeed != 0 && currentTrack.modDepth != 0) {
 				if (currentTrack.lfoDelayCounter != 0U) {
 					currentTrack.lfoDelayCounter--;
-					goto nextTrack;
+					continue trackLoop;
 				}
 
 				currentTrack.lfoSpeedCounter += currentTrack.lfoSpeed;
@@ -283,8 +279,6 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @safe p
 					}
 				}
 			}
-
-			nextTrack:;
 		}
 
 		subPlayer.clock++;
