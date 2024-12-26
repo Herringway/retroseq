@@ -268,8 +268,6 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @safe p
 				if (currentTrack.lfoSpeedCounter >= 0x40U && currentTrack.lfoSpeedCounter < 0xC0U) {
 					r = cast(byte)(128 - currentTrack.lfoSpeedCounter);
 				} else if (currentTrack.lfoSpeedCounter >= 0xC0U) {
-					// Unsigned . signed casts where the value is out of range are implementation defined.
-					// Why not add a few extra lines to make behavior the same for literally everyone?
 					r = cast(byte)(currentTrack.lfoSpeedCounter - 256);
 				} else {
 					r = currentTrack.lfoSpeedCounter;

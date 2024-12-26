@@ -266,8 +266,6 @@ struct SoundIO {
 struct SoundMixerState {
 	// This field is normally equal to ID_NUMBER but it is set to other
 	// values during sensitive operations for locking purposes.
-	// This field should be volatile but isn't. This could potentially cause
-	// race conditions.
 	ubyte dmaCounter; ///
 
 	// Direct Sound
