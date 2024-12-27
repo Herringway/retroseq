@@ -147,8 +147,6 @@ struct M4APlayer {
 
 	///
 	void m4aSongNumStop(ushort n) @safe pure {
-		const(SongPointer) *song = &songTable[n];
-
 		if (gMPlayInfo_BGM.playing == n) {
 			m4aMPlayStop(gMPlayInfo_BGM);
 		}
@@ -156,8 +154,6 @@ struct M4APlayer {
 
 	///
 	void m4aSongNumContinue(ushort n) @safe pure {
-		const(SongPointer)* song = &songTable[n];
-
 		if (gMPlayInfo_BGM.playing == n) {
 			MPlayContinue(gMPlayInfo_BGM);
 		}
@@ -165,8 +161,6 @@ struct M4APlayer {
 
 	///
 	void m4aMPlayAllStop() @safe pure {
-		int i;
-
 		m4aMPlayStop(gMPlayInfo_BGM);
 	}
 
@@ -177,8 +171,6 @@ struct M4APlayer {
 
 	///
 	void m4aMPlayAllContinue() @safe pure {
-		int i;
-
 		MPlayContinue(gMPlayInfo_BGM);
 	}
 
