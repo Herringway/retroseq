@@ -195,11 +195,8 @@ struct M4APlayer {
 	}
 
 	///
-	void m4aMPlayImmInit(MusicPlayerInfo *mplayInfo) {
-		int trackCount = mplayInfo.trackCount;
-		MusicPlayerTrack *track = &mplayInfo.tracks[0];
-
-		while (trackCount > 0) {
+	void m4aMPlayImmInit(MusicPlayerInfo *mplayInfo) @safe pure {
+		foreach (ref track; mplayInfo.tracks[0 .. mplayInfo.trackCount]) {
 			if (track.flags & MPT_FLG_EXIST) {
 				if (track.flags & MPT_FLG_START) {
 					track.flags = MPT_FLG_EXIST;
@@ -209,9 +206,6 @@ struct M4APlayer {
 					track.instrument.type = 1;
 				}
 			}
-
-			trackCount--;
-			track++;
 		}
 	}
 
