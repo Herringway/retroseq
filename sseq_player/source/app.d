@@ -12,6 +12,7 @@ import std.exception;
 import std.file;
 import std.format;
 import std.getopt;
+import std.mmfile;
 import std.path;
 import std.range;
 import std.stdio;
@@ -122,9 +123,10 @@ int main(string[] args) {
 	const(ubyte)[] data;
 	tracef("Reading file %s", filePath);
 	if (auto split = filePath.findSplit("|")) {
-		data = NDS(cast(ubyte[])read(split[0])).fileSystem[split[2]].data;
+		auto file = cast(const(ubyte)[])(new MmFile(split[0])[]);
+		data = NDS(file).fileSystem[split[2]].data;
 	} else {
-		data = cast(ubyte[])read(args[1]);
+		data = cast(const(ubyte)[])(new MmFile(args[1])[]);
 		if (data[0xC0 .. 0xD0] == [0x24, 0xFF, 0xAE, 0x51, 0x69, 0x9A, 0xA2, 0x21, 0x3D, 0x84, 0x82, 0x0A, 0x84, 0xE4, 0x09, 0xAD]) {
 			tracef("Detected NDS ROM, searching for SDAT...");
 			auto rom = NDS(data);
