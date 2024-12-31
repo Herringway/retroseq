@@ -189,7 +189,6 @@ struct DetectionResult {
 
 ///
 DetectionResult detectParameters(scope const(ubyte)[] data, scope const(ubyte)[] dsp) @safe pure {
-	import std.algorithm.searching : find;
 	DetectionResult result;
 	result.header.sampleBase = dsp[0x5D] << 8;
 	if (data[0x400 .. 0x410].among(earlyAMK, laterAMK)) {
