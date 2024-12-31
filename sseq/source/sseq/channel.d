@@ -202,16 +202,6 @@ struct Channel
 	}
 }
 
-
-// Code from http://learningcppisfun.blogspot.com/2010/04/comparing-floating-point-numbers.html
-///
-bool fEqual(T)(T x, T y, int N = 1)
-{
-	T diff = abs(x - y);
-	T tolerance = N * T.epsilon;
-	return diff <= tolerance * abs(x) && diff <= tolerance * abs(y);
-}
-
 ///
 immutable ushort[] getpitchtbl = [
 	0x0000, 0x003B, 0x0076, 0x00B2, 0x00ED, 0x0128, 0x0164, 0x019F,

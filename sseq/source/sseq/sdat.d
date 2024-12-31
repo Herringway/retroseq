@@ -200,10 +200,8 @@ struct SDAT
 		song.sbnk = newSBNK;
 
 		// Read SWARs for this SBNK
-		for (int i = 0; i < 4; ++i)
-			if (newSBNK.info.waveArc[i] != 0xFFFF)
-			{
-				ushort waveArc = newSBNK.info.waveArc[i];
+		foreach (idx, waveArc; newSBNK.info.waveArc) {
+			if (waveArc != 0xFFFF) {
 				fileID = infoSection.WAVEARCrecord(infoSectionData)[waveArc].fileID;
 				name = "SWAR" ~ NumToHexString(fileID)[2 .. $];
 				if (!symbSection.isNull)
@@ -217,10 +215,11 @@ struct SDAT
 				newSWAR.info = infoSection.WAVEARCrecord(infoSectionData)[waveArc];
 				newSWAR.data = swarFile;
 				newSWAR.loadSWAVs();
-				song.swar[i] = newSWAR;
+				song.swar[idx] = newSWAR;
+			} else {
+				song.swar[idx] = null;
 			}
-			else
-				song.swar[i] = null;
+		}
 		return song;
 	}
 };

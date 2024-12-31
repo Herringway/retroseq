@@ -56,9 +56,7 @@ struct SBNKInstrument {
 			{
 				ubyte lowNote = file.pop!ubyte();
 				ubyte highNote = file.pop!ubyte();
-				ubyte num = cast(ubyte)(highNote - lowNote + 1);
-				for (ubyte i = 0; i < num; ++i)
-				{
+				foreach (i; 0 .. cast(ubyte)(highNote - lowNote + 1)) {
 					ushort thisRecord = file.pop!ushort();
 					auto range = SBNKInstrumentRange(cast(ubyte)(lowNote + i), cast(ubyte)(lowNote + i), thisRecord);
 					range.header = file.pop!(SBNKInstrumentRange.Header)();

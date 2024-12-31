@@ -29,8 +29,9 @@ short[] decode(const(ubyte)[] origData, ref SWAV.Header header) @safe {
 	{
 		// PCM 8-bit . PCM signed 16-bit
 		data.length = size;
-		for (size_t i = 0; i < size; ++i)
+		foreach (i; 0 .. size) {
 			data[i] = cast(short)(origData[i] << 8);
+		}
 		header.loopOffset *= 4;
 		header.nonLoopLength *= 4;
 	}
@@ -61,8 +62,7 @@ void DecodeADPCM(const(ubyte)[] origData, short[] finalData, uint len) @safe {
 	int predictedValue = origData[0] | (origData[1] << 8);
 	int stepIndex = origData[2] | (origData[3] << 8);
 
-	for (uint i = 0; i < len; ++i)
-	{
+	foreach (i; 0 .. len) {
 		int nibble = origData[i + 4] & 0x0F;
 		DecodeADPCMNibble(nibble, stepIndex, predictedValue);
 		finalData[2 * i] = cast(short)predictedValue;

@@ -52,10 +52,9 @@ struct Player
 
 	///
 	bool Setup(const Song song) {
-		for (size_t i = 0; i < 16; ++i)
-		{
-			this.channels[i].initialize();
-			this.channels[i].chnId = cast(byte)i;
+		foreach (idx, ref channel; this.channels) {
+			channel.initialize();
+			channel.chnId = cast(byte)idx;
 		}
 		this.song = &[song][0];
 
@@ -85,27 +84,23 @@ struct Player
 	}
 	///
 	void FreeTracks() {
-		for (ubyte i = 0; i < this.nTracks; ++i)
-			this.tracks[this.trackIds[i]].Free();
+		foreach (trackID; this.trackIds[0 .. this.nTracks])
+			this.tracks[trackID].Free();
 		this.nTracks = 0;
 	}
 	///
 	void Stop(bool bKillSound) {
 		this.ClearState();
-		for (ubyte i = 0; i < this.nTracks; ++i)
-		{
-			ubyte trackId = this.trackIds[i];
+		foreach (trackId; this.trackIds[0 .. this.nTracks]) {
 			this.tracks[trackId].ClearState();
 			this.tracks[trackId].prio += this.prio;
-			for (int j = 0; j < 16; ++j)
-			{
-				Channel* chn = &this.channels[j];
-				if (chn.state != ChannelState.none && chn.trackId == trackId)
+			foreach (ref channel; this.channels) {
+				if (channel.state != ChannelState.none && channel.trackId == trackId)
 				{
 					if (bKillSound)
-						chn.Kill();
+						channel.Kill();
 					else
-						chn.Release();
+						channel.Release();
 				}
 			}
 		}
@@ -122,9 +117,7 @@ struct Player
 		auto chnArray = arrayArray[type];
 
 		int curChnNo = -1;
-		for (int i = 0; i < chnArray.length; ++i)
-		{
-			int thisChnNo = chnArray[i];
+		foreach (thisChnNo; chnArray) {
 			Channel* thisChn = &this.channels[thisChnNo];
 			if (curChnNo != -1) {
 				Channel* curChn = &this.channels[curChnNo];
@@ -148,16 +141,13 @@ struct Player
 	}
 	///
 	int TrackAlloc() @safe {
-		for (int i = 0; i < FSS_MAXTRACKS; ++i)
-		{
-			Track* thisTrk = &this.tracks[i];
-			if (!thisTrk.state[TrackState.alloc])
-			{
-				thisTrk.maxLoops = maxLoops;
-				thisTrk.Zero();
-				thisTrk.state[TrackState.alloc] = true;
-				thisTrk.updateFlags = false;
-				return i;
+		foreach (idx, ref track; this.tracks) {
+			if (!track.state[TrackState.alloc]) {
+				track.maxLoops = maxLoops;
+				track.Zero();
+				track.state[TrackState.alloc] = true;
+				track.updateFlags = false;
+				return cast(int)idx;
 			}
 		}
 		return -1;
@@ -167,9 +157,10 @@ struct Player
 		while (this.tempoCount >= 240)
 		{
 			this.tempoCount -= 240;
-			for (ubyte i = 0; i < this.nTracks; ++i)
-				runTrack(this.trackIds[i]);
+			foreach (trackID; this.trackIds[0 .. this.nTracks]) {
+				runTrack(trackID);
 				//this.tracks[this.trackIds[i]].Run();
+			}
 		}
 		this.tempoCount += cast(int)(this.tempo) * cast(int)(this.tempoRate);
 	}
@@ -293,8 +284,9 @@ struct Player
 
 					case SseqCommand.SSEQ_CMD_MASTERVOL:
 						this.masterVol = cast(short)Cnv_Sust(track.overriding.val(track.trackDataCurrent, &read8));
-						for (ubyte i = 0; i < this.nTracks; ++i)
-							this.tracks[this.trackIds[i]].updateFlags[TrackUpdateFlags.volume] = true;
+						foreach (id; this.trackIds[0 .. this.nTracks]) {
+							this.tracks[id].updateFlags[TrackUpdateFlags.volume] = true;
+						}
 						break;
 
 					case SseqCommand.SSEQ_CMD_PRIO:
@@ -533,10 +525,12 @@ struct Player
 	}
 	///
 	void UpdateTracks() @safe {
-		for (int i = 0; i < 16; ++i)
-			UpdateTrack(this.channels[i]);
-		for (int i = 0; i < FSS_MAXTRACKS; ++i)
-			this.tracks[i].updateFlags = false;
+		foreach (ref channel; this.channels) {
+			UpdateTrack(channel);
+		}
+		foreach (ref track; this.tracks) {
+			track.updateFlags = false;
+		}
 	}
 	///
 	void UpdateTrack(ref Channel channel) @safe {
@@ -589,11 +583,10 @@ struct Player
 	}
 	///
 	void ReleaseAllNotes(ref Track track) @safe {
-		for (int i = 0; i < 16; ++i)
-		{
-			Channel* chn = &this.channels[i];
-			if (chn.state > ChannelState.none && chn.trackId == track.trackId && chn.state != ChannelState.release)
-				chn.Release();
+		foreach (ref channel; this.channels) {
+			if (channel.state > ChannelState.none && channel.trackId == track.trackId && channel.state != ChannelState.release) {
+				channel.Release();
+			}
 		}
 	}
 	///
@@ -621,11 +614,11 @@ struct Player
 		}
 		else if (fRecord == 17)
 		{
-			size_t reg, ranges;
-			for (reg = 0, ranges = instrument.ranges.length; reg < ranges; ++reg)
+			size_t reg;
+			for (reg = 0; reg < instrument.ranges.length; ++reg)
 				if (key <= instrument.ranges[reg].highNote)
 					break;
-			if (reg == ranges)
+			if (reg == instrument.ranges.length)
 				return -1;
 
 			noteDef = &instrument.ranges[reg];
@@ -717,7 +710,7 @@ struct Player
 		// Find an existing note
 		int i;
 		Channel *chn = null;
-		for (i = 0; i < 16; ++i)
+		for (i = 0; i < this.channels.length; ++i)
 		{
 			chn = &this.channels[i];
 			if (chn.state > ChannelState.none && chn.trackId == track.trackId && chn.state != ChannelState.release)
@@ -749,8 +742,9 @@ struct Player
 	void Timer() @safe {
 		this.UpdateTracks();
 
-		for (int i = 0; i < 16; ++i)
-			UpdateChannel(this.channels[i]);
+		foreach (ref channel; this.channels) {
+			UpdateChannel(channel);
+		}
 
 		this.Run();
 	}
@@ -758,43 +752,38 @@ struct Player
 	/* Playback helper */
 	double secondsPerSample, secondsIntoPlayback, secondsUntilNextClock;
 	bool[16] mutes;
-	void GenerateSamples(short[2][] buf) @safe {
-		uint offset;
+	void GenerateSamples(scope short[2][] buf) @safe {
 		const mute = this.mutes;
 
-		for (uint smpl = 0; smpl < buf.length; ++smpl)
-		{
+		foreach (ref samples; buf) {
 			this.secondsIntoPlayback += this.secondsPerSample;
 
 			int leftChannel = 0, rightChannel = 0;
 
 			// I need to advance the sound channels here
-			for (int i = 0; i < 16; ++i)
-			{
-				Channel* chn = &this.channels[i];
-
-				if (chn.state > ChannelState.none)
+			foreach (idx, ref channel; this.channels) {
+				if (channel.state > ChannelState.none)
 				{
-					int sample = GenerateSample(*chn);
-					chn.IncrementSample();
+					int sample = GenerateSample(channel);
+					channel.IncrementSample();
 
-					if (mute[i])
+					if (mute[idx])
 						continue;
 
-					ubyte datashift = chn.reg.volumeDiv;
+					ubyte datashift = channel.reg.volumeDiv;
 					if (datashift == 3)
 						datashift = 4;
-					sample = muldiv7(sample, chn.reg.volumeMul) >> datashift;
+					sample = muldiv7(sample, channel.reg.volumeMul) >> datashift;
 
-					leftChannel += muldiv7(sample, cast(ubyte)(127 - chn.reg.panning));
-					rightChannel += muldiv7(sample, chn.reg.panning);
+					leftChannel += muldiv7(sample, cast(ubyte)(127 - channel.reg.panning));
+					rightChannel += muldiv7(sample, channel.reg.panning);
 				}
 			}
 
 			leftChannel = clamp(leftChannel, -0x8000, 0x7FFF);
 			rightChannel = clamp(rightChannel, -0x8000, 0x7FFF);
 
-			buf[offset++] = [cast(short)leftChannel, cast(short)rightChannel];
+			samples = [cast(short)leftChannel, cast(short)rightChannel];
 
 			if (this.secondsIntoPlayback > this.secondsUntilNextClock)
 			{
@@ -1082,43 +1071,33 @@ struct Player
 	}
 	///
 	int GenerateSample(ref Channel channel) @safe {
-		if (channel.reg.samplePosition < 0)
+		if (channel.reg.samplePosition < 0) {
 			return 0;
-
-		if (channel.reg.format != 3)
-		{
-			if (this.interpolation == Interpolation.none)
-				return channel.reg.source.data[cast(uint)(channel.reg.samplePosition)];
-			else
-				return Interpolate(channel);
 		}
-		else
-		{
-			if (channel.chnId < 8)
-				return 0;
-			else if (channel.chnId < 14)
-				return wavedutytbl[channel.reg.waveDuty][cast(uint)(channel.reg.samplePosition) & 0x7];
-			else
-			{
-				if (channel.reg.psgLastCount != cast(uint)(channel.reg.samplePosition))
-				{
-					uint max = cast(uint)(channel.reg.samplePosition);
-					for (uint i = channel.reg.psgLastCount; i < max; ++i)
-					{
-						if (channel.reg.psgX & 0x1)
-						{
-							channel.reg.psgX = (channel.reg.psgX >> 1) ^ 0x6000;
-							channel.reg.psgLast = -0x7FFF;
-						}
-						else
-						{
-							channel.reg.psgX >>= 1;
-							channel.reg.psgLast = 0x7FFF;
-						}
-					}
 
-					channel.reg.psgLastCount = cast(uint)(channel.reg.samplePosition);
+		if (channel.reg.format != 3) {
+			if (this.interpolation == Interpolation.none) {
+				return channel.reg.source.data[cast(uint)(channel.reg.samplePosition)];
+			} else {
+				return Interpolate(channel);
+			}
+		} else {
+			if (channel.chnId < 8) {
+				return 0;
+			} else if (channel.chnId < 14) {
+				return wavedutytbl[channel.reg.waveDuty][cast(uint)(channel.reg.samplePosition) & 0x7];
+			} else {
+				foreach (_; channel.reg.psgLastCount .. channel.reg.samplePosition) {
+					if (channel.reg.psgX & 0x1) {
+						channel.reg.psgX = (channel.reg.psgX >> 1) ^ 0x6000;
+						channel.reg.psgLast = -0x7FFF;
+					} else {
+						channel.reg.psgX >>= 1;
+						channel.reg.psgLast = 0x7FFF;
+					}
 				}
+
+				channel.reg.psgLastCount = cast(uint)(channel.reg.samplePosition);
 
 				return channel.reg.psgLast;
 			}
@@ -1432,26 +1411,25 @@ private int calcVolDivShift(int x) @safe
  * These are static as they will not change between channels or runs
  * of the program.
  */
-private immutable uint SINC_RESOLUTION = 8192; ///
-private immutable uint SINC_WIDTH = 8; ///
-private immutable uint SINC_SAMPLES = SINC_RESOLUTION * SINC_WIDTH; ///
-private immutable double[SINC_SAMPLES + 1] sinc_lut = prepareSincLUT!(SINC_SAMPLES, SINC_WIDTH)(); ///
-private immutable double[SINC_SAMPLES + 1] window_lut = prepareWindowLUT!(SINC_SAMPLES, SINC_WIDTH)(); ///
+private enum SINC_RESOLUTION = 8192; ///
+private enum SINC_WIDTH = 8; ///
+private enum SINC_SAMPLES = SINC_RESOLUTION * SINC_WIDTH; ///
+private immutable sinc_lut = prepareSincLUT!(SINC_SAMPLES, SINC_WIDTH)(); ///
+private immutable window_lut = prepareWindowLUT!(SINC_SAMPLES, SINC_WIDTH)(); ///
 
 ///
-double sinc(double x) @safe
-{
-	return fEqual(x, 0.0) ? 1.0 : sin(x * M_PI) / (x * M_PI);
+double sinc(double x) @safe pure {
+	return isClose(x, 0.0) ? 1.0 : sin(x * PI) / (x * PI);
 }
 
 ///
 private double[SINC_SAMPLES + 1] prepareSincLUT(size_t SINC_SAMPLES, size_t SINC_WIDTH)() {
 	double[SINC_SAMPLES + 1] result;
-	double dx = cast(double)(SINC_WIDTH) / SINC_SAMPLES, x = 0.0;
-	for (uint i = 0; i <= SINC_SAMPLES; ++i, x += dx)
-	{
-		double y = x / SINC_WIDTH;
-		result[i] = abs(x) < SINC_WIDTH ? sinc(x) : 0.0;
+	double x = 0.0;
+	foreach (ref sample; result) {
+		const double y = x / SINC_WIDTH;
+		sample = abs(x) < SINC_WIDTH ? sinc(x) : 0.0;
+		x += cast(double)(SINC_WIDTH) / SINC_SAMPLES;
 	}
 	return result;
 }
@@ -1459,14 +1437,11 @@ private double[SINC_SAMPLES + 1] prepareSincLUT(size_t SINC_SAMPLES, size_t SINC
 ///
 private double[SINC_SAMPLES + 1] prepareWindowLUT(size_t SINC_SAMPLES, size_t SINC_WIDTH)() {
 	double[SINC_SAMPLES + 1] result;
-	double dx = cast(double)(SINC_WIDTH) / SINC_SAMPLES, x = 0.0;
-	for (uint i = 0; i <= SINC_SAMPLES; ++i, x += dx)
-	{
-		double y = x / SINC_WIDTH;
-		result[i] = (0.40897 + 0.5 * cos(M_PI * y) + 0.09103 * cos(2 * M_PI * y));
+	double x = 0.0;
+	foreach (ref sample; result) {
+		const double y = x / SINC_WIDTH;
+		sample = (0.40897 + 0.5 * cos(PI * y) + 0.09103 * cos(2 * PI * y));
+		x += cast(double)(SINC_WIDTH) / SINC_SAMPLES;
 	}
 	return result;
 }
-
-///
-private immutable double M_PI = 3.14159265358979323846;

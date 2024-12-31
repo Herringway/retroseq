@@ -7,16 +7,21 @@ module sseq.common;
  * integers are in the format of 0x00, 16-bit integers are in the format of
  * 0x0000, and so on.
  */
-string NumToHexString(T)(ref const T num)
+string NumToHexString(T)(const T num)
 {
 	char[T.sizeof * 2] hex;
-	ubyte len = T.sizeof * 2;
-	for (ubyte i = 0; i < len; ++i)
-	{
+	foreach (i; 0 .. hex.length) {
 		ubyte tmp = (num >> (i * 4)) & 0xF;
 		hex[$ - i - 1] = cast(char)(tmp < 10 ? tmp + '0' : tmp - 10 + 'a');
 	}
 	return "0x" ~ hex;
+}
+
+pure @safe unittest {
+	assert(NumToHexString(0) == "0x00000000");
+	assert(NumToHexString!ubyte(0) == "0x00");
+	assert(NumToHexString!ubyte(255) == "0xff");
+	assert(NumToHexString!ubyte(0x0F) == "0x0f");
 }
 
 /**
@@ -150,24 +155,21 @@ int Cnv_Sine(int arg) @safe
 }
 
 ///
-int read8(ref const(ubyte)[] ppData) @safe
-{
+int read8(ref const(ubyte)[] ppData) @safe pure {
 	int x = ppData[0];
 	ppData = ppData[1 .. $];
 	return x;
 }
 
 ///
-int read16(ref const(ubyte)[] ppData) @safe
-{
+int read16(ref const(ubyte)[] ppData) @safe pure {
 	int x = read8(ppData);
 	x |= read8(ppData) << 8;
 	return x;
 }
 
 ///
-int read24(ref const(ubyte)[] ppData) @safe
-{
+int read24(ref const(ubyte)[] ppData) @safe pure {
 	int x = read8(ppData);
 	x |= read8(ppData) << 8;
 	x |= read8(ppData) << 16;
@@ -175,15 +177,25 @@ int read24(ref const(ubyte)[] ppData) @safe
 }
 
 ///
-int readvl(ref const(ubyte)[] ppData) @safe
-{
+int readvl(ref const(ubyte)[] ppData) @safe pure {
 	int x = 0;
-	for (;;)
-	{
+	while(true) {
 		int data = read8(ppData);
 		x = (x << 7) | (data & 0x7F);
 		if (!(data & 0x80))
 			break;
 	}
 	return x;
+}
+
+@safe pure unittest {
+	const(ubyte)[] tmp = [0x00];
+	assert(readvl(tmp) == 0);
+	assert(tmp == []);
+	tmp = [0x40];
+	assert(readvl(tmp) == 0x40);
+	assert(tmp == []);
+	tmp = [0x81, 0x4, 0x7];
+	assert(readvl(tmp) == 0x84);
+	assert(tmp == [7]);
 }
