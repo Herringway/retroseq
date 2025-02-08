@@ -413,9 +413,6 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
 	SoundChannel *chan;
 
 	if (cgbType != 0) {
-		if (player.soundInfo.cgbChans == null) {
-			return;
-		}
 		// There's only one CgbChannel of a given type, so we don't need to loop to find it.
 		chan = &player.soundInfo.cgbChans[cgbType - 1];
 

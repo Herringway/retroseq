@@ -22,7 +22,6 @@ struct M4APlayer {
 	uint songTableOffset; ///
 
 	SoundMixerState soundInfo; ///
-	SoundChannel[4] cgbChans; ///
 	MusicPlayerInfo gMPlayInfo_BGM; ///
 	MusicPlayerInfo gMPlayInfo_SE1; ///
 	MusicPlayerInfo gMPlayInfo_SE2; ///
@@ -73,7 +72,6 @@ struct M4APlayer {
 			gb.trigger_note(i);
 		}
 
-		soundInfo.cgbChans = cgbChans[];
 		soundInfo.cgbMixerFunc = &Funcify!(cgbMixerFunc, M4APlayer);
 		soundInfo.cgbNoteOffFunc = &Funcify!(cgbNoteOffFunc, M4APlayer);
 		soundInfo.cgbCalcFreqFunc = &cgbCalcFreqFunc;
@@ -81,14 +79,14 @@ struct M4APlayer {
 
 		//CpuFill32(0, cgbChans, SoundChannel.sizeof * 4);
 
-		cgbChans[0].type = 1;
-		cgbChans[0].panMask = 0x11;
-		cgbChans[1].type = 2;
-		cgbChans[1].panMask = 0x22;
-		cgbChans[2].type = 3;
-		cgbChans[2].panMask = 0x44;
-		cgbChans[3].type = 4;
-		cgbChans[3].panMask = 0x88;
+		soundInfo.cgbChans[0].type = 1;
+		soundInfo.cgbChans[0].panMask = 0x11;
+		soundInfo.cgbChans[1].type = 2;
+		soundInfo.cgbChans[1].panMask = 0x22;
+		soundInfo.cgbChans[2].type = 3;
+		soundInfo.cgbChans[2].panMask = 0x44;
+		soundInfo.cgbChans[3].type = 4;
+		soundInfo.cgbChans[3].panMask = 0x88;
 	}
 	///
 	const(SongPointer)[] songTable() @safe pure {

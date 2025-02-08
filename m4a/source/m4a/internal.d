@@ -284,7 +284,7 @@ struct SoundMixerState {
 	int sampleRate; ///
 	float origFreq = 0; /// for adjusting original freq to the new sample rate
 	float divFreq = 0; ///
-	SoundChannel[] cgbChans; ///
+	SoundChannel[4] cgbChans; ///
 	MPlayMainFunc firstPlayerFunc; ///
 	MusicPlayerInfo *firstPlayer; ///
 	CgbSoundFunc cgbMixerFunc; ///
