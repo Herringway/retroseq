@@ -95,7 +95,7 @@ short[2][] sampleFunction(ref SSEQPlayer player, short[2][] buffer) @safe {
 	if (player.stopped) {
 		return [];
 	}
-	player.player.GenerateSamples(buffer);
+	player.player.fillBuffer(buffer);
 	return buffer;
 }
 

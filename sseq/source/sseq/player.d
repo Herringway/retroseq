@@ -752,7 +752,7 @@ struct Player
 	/* Playback helper */
 	double secondsPerSample, secondsIntoPlayback, secondsUntilNextClock;
 	bool[16] mutes;
-	void GenerateSamples(scope short[2][] buf) @safe {
+	void fillBuffer(scope short[2][] buf) @safe {
 		const mute = this.mutes;
 
 		foreach (ref samples; buf) {
