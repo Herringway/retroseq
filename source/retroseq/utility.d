@@ -1,6 +1,8 @@
 ///
 module retroseq.utility;
 
+import std.exception;
+import std.format;
 import std.range;
 import std.traits;
 
@@ -18,7 +20,12 @@ T peek(T)(const(ubyte)[] buf) {
 
 ///
 const(T)[] sliceMax(T)(const(ubyte)[] input, size_t start) @safe pure {
-	return cast(const(T)[])(input[start .. start + ((($ - start) / T.sizeof) * T.sizeof)]);
+	return cast(const(T)[])(input[start .. start + getMaxSliceSize!T(input, start)]);
+}
+
+///
+size_t getMaxSliceSize(T)(const(ubyte)[] input, size_t start) @safe pure {
+	return (((input.length - start) / T.sizeof) * T.sizeof);
 }
 
 ///
@@ -112,3 +119,54 @@ void swapEndianness(T)(ref T val) {
 
 alias LittleEndian(T) = EndianType!(T, true);
 alias BigEndian(T) = EndianType!(T, false);
+
+///
+struct RelativePointer(Element, Offset, size_t Base) {
+	align(1):
+	Offset offset; ///
+	///
+	bool isValid() const @safe pure {
+		return offset >= Base;
+	}
+	///
+	const(Element)[] toAbsoluteArray(const(ubyte)[] base) const {
+		return toAbsoluteArray!Element(base);
+	}
+	///
+	const(Element)[] toAbsoluteArray(const(ubyte)[] base, size_t length) const {
+		return toAbsoluteArray!Element(base, length);
+	}
+	///
+	const(T)[] toAbsoluteArray(T)(const(ubyte)[] base) const {
+		const realOffset = offset - Base;
+		return toAbsoluteArray!T(base, (base.length - realOffset) / T.sizeof);
+	}
+	///
+	const(T)[] toAbsoluteArray(T)(const(ubyte)[] base, size_t length) const {
+		const realOffset = offset - Base;
+		enforce (realOffset < base.length, format!"Invalid pointer: %X"(offset));
+		return cast(const(T)[])(base[realOffset .. realOffset + length * T.sizeof]);
+	}
+	///
+	Offset opAssign(Offset newValue) {
+		return offset = newValue;
+	}
+	void toString(W)(auto ref W writer) const {
+		writer.formattedWrite!"$%X"(offset);
+	}
+}
+
+@safe pure unittest {
+	ubyte[] sample = [1, 2, 3, 4, 5];
+	alias RelativePointer1 = RelativePointer!(ubyte, uint, 0);
+	alias RelativePointer2 = RelativePointer!(ushort, uint, 0);
+	assert(RelativePointer1(0).toAbsoluteArray(sample) == [1, 2, 3, 4, 5]);
+	assert(RelativePointer1(1).toAbsoluteArray(sample) == [2, 3, 4, 5]);
+
+	assert(RelativePointer2(0).toAbsoluteArray(sample) == [0x0201, 0x0403]);
+	assert(RelativePointer2(0).toAbsoluteArray(sample, 1) == [0x0201]);
+	assert(RelativePointer2(1).toAbsoluteArray(sample) == [0x0302, 0x0504]);
+	assert(RelativePointer2(1).toAbsoluteArray(sample, 1) == [0x0302]);
+	assert(RelativePointer2(0).toAbsoluteArray!ubyte(sample) == [1, 2, 3, 4, 5]);
+	assert(RelativePointer2(1).toAbsoluteArray!ubyte(sample) == [2, 3, 4, 5]);
+}

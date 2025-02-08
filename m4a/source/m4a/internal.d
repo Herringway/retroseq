@@ -5,25 +5,7 @@ import retroseq.utility;
 
 import m4a.m4a;
 
-///
-struct RelativePointer(Element, Offset) {
-	align(1):
-	Offset offset; ///
-	enum Base = 0x8000000; ///
-	///
-	bool isValid() const @safe pure {
-		return offset >= Base;
-	}
-	///
-	const(Element)[] toAbsoluteArray(const(ubyte)[] base) const {
-		const realOffset = offset - Base;
-		return sliceMax!(const Element)(cast(const(ubyte)[])base, realOffset);
-	}
-	///
-	Offset opAssign(Offset newValue) {
-		return offset = newValue;
-	}
-}
+alias RelativePointer(Element, Offset) = retroseq.utility.RelativePointer!(Element, Offset, 0x8000000);
 
 enum C_V = 0x40; /// center value for PAN, BEND, and TUNE
 
