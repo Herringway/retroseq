@@ -7,10 +7,12 @@ import m4a.internal;
 import m4a.m4a;
 
 ///
-void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure {
-	int samplesPerFrame = cast(int)audioBuffer.length;
+void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure
+	in(audioBuffer.length == player.soundInfo.samplesPerFrame, "Invalid buffer size")
+{
+	int samplesPerFrame = player.soundInfo.samplesPerFrame;
 
-	player.playerCounter += audioBuffer.length;
+	player.playerCounter += samplesPerFrame;
 	while (player.playerCounter >= player.soundInfo.samplesPerFrame) {
 		player.playerCounter -= player.soundInfo.samplesPerFrame;
 		uint maxScanlines = player.soundInfo.maxScanlines;

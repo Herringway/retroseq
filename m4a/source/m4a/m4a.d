@@ -7,6 +7,7 @@ import m4a.cgb_audio;
 import m4a.internal;
 import m4a.m4a_tables;
 import m4a.music_player;
+import m4a.sound_mixer;
 
 import std.algorithm.comparison;
 
@@ -31,6 +32,8 @@ struct M4APlayer {
 	MusicPlayerTrack[9] gMPlayTrack_SE2; ///
 	MusicPlayerTrack[1] gMPlayTrack_SE3; ///
 	ubyte[0x10] gMPlayMemAccArea; ///
+	private float[2][] frameBuffer;
+	private float[2][] frame;
 
 	AudioCGB gb; ///
 	float playerCounter = 0; ///
@@ -51,6 +54,23 @@ struct M4APlayer {
 		mplayInfo.checkSongPriority = 0;
 		mplayInfo.memAccArea = gMPlayMemAccArea[];
 		gb.initialize(freq);
+	}
+
+	///
+	void fillBuffer(float[2][] audioBuffer) @system pure {
+		while (audioBuffer.length > 0) {
+			const lastFrameSamplesUsed = min(audioBuffer.length, frame.length);
+			audioBuffer[0 .. lastFrameSamplesUsed] = frame[0 .. lastFrameSamplesUsed];
+			audioBuffer = audioBuffer[lastFrameSamplesUsed .. $];
+			frame = frame[lastFrameSamplesUsed .. $];
+			if (frame.length == 0) {
+				if (frameBuffer.length != soundInfo.samplesPerFrame) {
+					frameBuffer = new float[2][](soundInfo.samplesPerFrame);
+				}
+				RunMixerFrame(this, frameBuffer);
+				frame = frameBuffer;
+			}
+		}
 	}
 	///
 	void MPlayExtender() @safe pure {
