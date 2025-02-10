@@ -272,7 +272,7 @@ private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 				}
 			} else {
 				b = currentPointer[newCoarsePos - 1];
-				m = cast(short)(currentPointer[newCoarsePos] - b);
+				m = cast(short)(currentPointer.ptr[newCoarsePos] - b);
 				currentPointer = currentPointer[newCoarsePos .. $];
 			}
 		}
