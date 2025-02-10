@@ -1,6 +1,7 @@
 ///
 module pxtone.pulse.noise;
 
+import std.array;
 import std.exception;
 
 import pxtone.descriptor;
@@ -109,33 +110,33 @@ private immutable identifierCode = "PTNOISE-";
 private __gshared const uint currentVersion = 20120418; // 16 wave types.
 
 ///
-private void writeOscillator(const(PxNoiseDesignOscillator)* pOsc, ref PxtnDescriptor pDoc, ref int pAdd) @safe {
+private void writeOscillator(R)(const(PxNoiseDesignOscillator)* pOsc, ref R output, ref int pAdd) @safe {
 	int work;
 	work = cast(int) pOsc.type;
-	pDoc.writeVarInt(work, pAdd);
+	output.writeVarInt(work, pAdd);
 	work = cast(int) pOsc.bRev;
-	pDoc.writeVarInt(work, pAdd);
+	output.writeVarInt(work, pAdd);
 	work = cast(int)(pOsc.freq * 10);
-	pDoc.writeVarInt(work, pAdd);
+	output.writeVarInt(work, pAdd);
 	work = cast(int)(pOsc.volume * 10);
-	pDoc.writeVarInt(work, pAdd);
+	output.writeVarInt(work, pAdd);
 	work = cast(int)(pOsc.offset * 10);
-	pDoc.writeVarInt(work, pAdd);
+	output.writeVarInt(work, pAdd);
 }
 
 ///
-private void readOscillator(PxNoiseDesignOscillator* pOsc, ref PxtnDescriptor pDoc) @safe {
+private void readOscillator(PxNoiseDesignOscillator* pOsc, ref const(ubyte)[] buffer) @safe {
 	int work;
-	pDoc.readVarInt(work);
+	buffer.popVarInt(work);
 	pOsc.type = cast(PxWaveType) work;
 	enforce!PxtoneException(pOsc.type < PxWaveType.num, "fmt unknown");
-	pDoc.readVarInt(work);
+	buffer.popVarInt(work);
 	pOsc.bRev = work ? true : false;
-	pDoc.readVarInt(work);
+	buffer.popVarInt(work);
 	pOsc.freq = cast(float) work / 10;
-	pDoc.readVarInt(work);
+	buffer.popVarInt(work);
 	pOsc.volume = cast(float) work / 10;
-	pDoc.readVarInt(work);
+	buffer.popVarInt(work);
 	pOsc.offset = cast(float) work / 10;
 }
 
@@ -191,7 +192,7 @@ public:
 		release();
 	}
 	///
-	void write(ref PxtnDescriptor pDoc, ref int pAdd) const @safe {
+	void write(R)(ref R output, ref int pAdd) const @safe {
 		int u, e, seek, numSeek, flags;
 		char _byte;
 		char unitNum = 0;
@@ -201,54 +202,53 @@ public:
 
 		seek = pAdd;
 
-		pDoc.write(identifierCode);
-		pDoc.write(currentVersion);
+		output.write(identifierCode);
+		output.write(currentVersion);
 		seek += 12;
-		pDoc.writeVarInt(smpNum44k, seek);
+		output.writeVarInt(smpNum44k, seek);
 
-		pDoc.write(unitNum);
+		Appender!(ubyte[]) tmp;
 		numSeek = seek;
 		seek += 1;
 
-		for (u = 0; u < unitNum; u++) {
+		for (u = 0; u < this.unitNum; u++) {
 			pU = &units[u];
 			if (pU.bEnable) {
 				// フラグ
 				flags = makeFlags(pU);
-				pDoc.writeVarInt(flags, seek);
+				tmp.writeVarInt(flags, seek);
 				if (flags & noiseEditFlag.envelope) {
-					pDoc.writeVarInt(pU.enveNum, seek);
+					tmp.writeVarInt(pU.enveNum, seek);
 					for (e = 0; e < pU.enveNum; e++) {
-						pDoc.writeVarInt(pU.enves[e].x, seek);
-						pDoc.writeVarInt(pU.enves[e].y, seek);
+						tmp.writeVarInt(pU.enves[e].x, seek);
+						tmp.writeVarInt(pU.enves[e].y, seek);
 					}
 				}
 				if (flags & noiseEditFlag.pan) {
 					_byte = cast(char) pU.pan;
-					pDoc.write(_byte);
+					tmp.write(_byte);
 					seek++;
 				}
 				if (flags & noiseEditFlag.oscillatorMain) {
-					writeOscillator(&pU.main, pDoc, seek);
+					writeOscillator(&pU.main, tmp, seek);
 				}
 				if (flags & noiseEditFlag.oscillatorFreq) {
-					writeOscillator(&pU.freq, pDoc, seek);
+					writeOscillator(&pU.freq, tmp, seek);
 				}
 				if (flags & noiseEditFlag.oscillatorVolume) {
-					writeOscillator(&pU.volu, pDoc, seek);
+					writeOscillator(&pU.volu, tmp, seek);
 				}
 				unitNum++;
 			}
 		}
 
 		// update unitNum.
-		pDoc.seek(PxtnSeek.cur, numSeek - seek);
-		pDoc.write(unitNum);
-		pDoc.seek(PxtnSeek.cur, seek - numSeek - 1);
+		output.write(unitNum);
+		output.write(tmp[]);
 		pAdd = seek;
 	}
 	///
-	void read(ref PxtnDescriptor pDoc) @safe {
+	void read(ref const(ubyte)[] buffer) @safe {
 		uint flags = 0;
 		char unitNum = 0;
 		char _byte = 0;
@@ -263,12 +263,12 @@ public:
 		scope(failure) {
 			release();
 		}
-		pDoc.read(code[]);
+		buffer.pop(code[]);
 		enforce!PxtoneException(code == identifierCode[0 .. 8], "inv code");
-		pDoc.read(ver);
+		buffer.pop(ver);
 		enforce!PxtoneException(ver <= currentVersion ,"fmt new");
-		pDoc.readVarInt(smpNum44k);
-		pDoc.read(unitNum);
+		buffer.popVarInt(smpNum44k);
+		buffer.pop(unitNum);
 		enforce!PxtoneException(unitNum >= 0, "inv data");
 		enforce!PxtoneException(unitNum <= maxNoiseEditUnitNum, "fmt unknown");
 		this.unitNum = unitNum;
@@ -279,33 +279,33 @@ public:
 			pU = &units[u];
 			pU.bEnable = true;
 
-			pDoc.readVarInt(flags);
+			buffer.popVarInt(flags);
 			enforce!PxtoneException((flags & noiseEditFlag.uncovered) == 0 ,"fmt unknown");
 
 			// envelope
 			if (flags & noiseEditFlag.envelope) {
-				pDoc.readVarInt(pU.enveNum);
+				buffer.popVarInt(pU.enveNum);
 				enforce!PxtoneException(pU.enveNum <= maxNoiseEditEnvelopeNum, "fmt unknown");
 				pU.enves = new PxtnPoint[](pU.enveNum);
 				for (int e = 0; e < pU.enveNum; e++) {
-					pDoc.readVarInt(pU.enves[e].x);
-					pDoc.readVarInt(pU.enves[e].y);
+					buffer.popVarInt(pU.enves[e].x);
+					buffer.popVarInt(pU.enves[e].y);
 				}
 			}
 			// pan
 			if (flags & noiseEditFlag.pan) {
-				pDoc.read(_byte);
+				buffer.pop(_byte);
 				pU.pan = _byte;
 			}
 
 			if (flags & noiseEditFlag.oscillatorMain) {
-				readOscillator(&pU.main, pDoc);
+				readOscillator(&pU.main, buffer);
 			}
 			if (flags & noiseEditFlag.oscillatorFreq) {
-				readOscillator(&pU.freq, pDoc);
+				readOscillator(&pU.freq, buffer);
 			}
 			if (flags & noiseEditFlag.oscillatorVolume) {
-				readOscillator(&pU.volu, pDoc);
+				readOscillator(&pU.volu, buffer);
 			}
 		}
 	}

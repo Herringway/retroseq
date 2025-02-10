@@ -2,6 +2,7 @@
 module pxtone.woice;
 // '12/03/03 pxtnWoice.
 
+import std.array;
 import std.exception;
 
 import pxtone.descriptor;
@@ -459,7 +460,7 @@ public:
 	}
 
 	///
-	void read(ref PxtnDescriptor desc, PxtnWoiceType type) @safe {
+	void read(ref const(ubyte)[] buffer, PxtnWoiceType type) @safe {
 		switch (type) {
 			// PCM
 		case PxtnWoiceType.pcm: {
@@ -467,7 +468,7 @@ public:
 				voiceAllocate(1);
 				voiceUnit = &voices[0];
 				voiceUnit.type = PxtnVoiceType.sampling;
-				voiceUnit.pcm.read(desc);
+				voiceUnit.pcm.read(buffer);
 				// if under 0.005 sec, set LOOP.
 				if (voiceUnit.pcm.getSec() < 0.005f) {
 					voiceUnit.voiceFlags |= PTVVoiceFlag.waveLoop;
@@ -480,7 +481,7 @@ public:
 
 			// PTV
 		case PxtnWoiceType.ptv: {
-				ptvRead(desc);
+				ptvRead(buffer);
 			}
 			break;
 
@@ -490,7 +491,7 @@ public:
 			{
 				PxtnVoiceUnit* voiceUnit = &voices[0];
 				voiceUnit.type = PxtnVoiceType.noise;
-				voiceUnit.ptn.read(desc);
+				voiceUnit.ptn.read(buffer);
 				this.type = PxtnWoiceType.ptn;
 			}
 			break;
@@ -503,7 +504,7 @@ public:
 					PxtnVoiceUnit* voiceUnit;
 					voiceUnit = &voices[0];
 					voiceUnit.type = PxtnVoiceType.oggVorbis;
-					voiceUnit.oggV.oggRead(desc);
+					voiceUnit.oggV.oggRead(buffer);
 					this.type = PxtnWoiceType.oggVorbis;
 				}
 				break;
@@ -517,48 +518,47 @@ public:
 	}
 
 	///
-	void ptvWrite(ref PxtnDescriptor pDoc, scope int* pTotal) const @safe {
+	void ptvWrite(R)(ref R output, scope int* pTotal) const @safe {
 		const(PxtnVoiceUnit)* voiceUnit = null;
 		uint work = 0;
 		int v = 0;
 		int total = 0;
 
-		pDoc.write(identifierCode);
-		pDoc.write(expectedVersion);
-		pDoc.write(total);
+		output.write(identifierCode);
+		output.write(expectedVersion);
+		Appender!(ubyte[]) tmp;
 
 		work = 0;
 
 		// pPtv. (5)
-		pDoc.writeVarInt(work, total);
-		pDoc.writeVarInt(work, total);
-		pDoc.writeVarInt(work, total);
-		pDoc.writeVarInt(voiceNum, total);
+		tmp.writeVarInt(work, total);
+		tmp.writeVarInt(work, total);
+		tmp.writeVarInt(work, total);
+		tmp.writeVarInt(voiceNum, total);
 
 		for (v = 0; v < voiceNum; v++) {
 			// pPtvv. (9)
 			voiceUnit = &voices[v];
 
-			pDoc.writeVarInt(voiceUnit.basicKey, total);
-			pDoc.writeVarInt(voiceUnit.volume, total);
-			pDoc.writeVarInt(voiceUnit.pan, total);
+			tmp.writeVarInt(voiceUnit.basicKey, total);
+			tmp.writeVarInt(voiceUnit.volume, total);
+			tmp.writeVarInt(voiceUnit.pan, total);
 			work = reinterpretFloat(voiceUnit.tuning);
-			pDoc.writeVarInt(work, total);
-			pDoc.writeVarInt(voiceUnit.voiceFlags, total);
-			pDoc.writeVarInt(voiceUnit.dataFlags, total);
+			tmp.writeVarInt(work, total);
+			tmp.writeVarInt(voiceUnit.voiceFlags, total);
+			tmp.writeVarInt(voiceUnit.dataFlags, total);
 
 			if (voiceUnit.dataFlags & PTVDataFlag.wave) {
-				writeWave(pDoc, voiceUnit, total);
+				writeWave(tmp, voiceUnit, total);
 			}
 			if (voiceUnit.dataFlags & PTVDataFlag.envelope) {
-				writeEnvelope(pDoc, voiceUnit, total);
+				writeEnvelope(tmp, voiceUnit, total);
 			}
 		}
 
 		// total size
-		pDoc.seek(PxtnSeek.cur, -(total + 4));
-		pDoc.write(total);
-		pDoc.seek(PxtnSeek.cur, total);
+		output.write(total);
+		output.write(tmp[]);
 
 		if (pTotal) {
 			*pTotal = 16 + total;
@@ -566,7 +566,7 @@ public:
 	}
 
 	///
-	void ptvRead(ref PxtnDescriptor pDoc) @safe {
+	void ptvRead(ref const(ubyte)[] buffer) @safe {
 		PxtnVoiceUnit* voiceUnit = null;
 		ubyte[8] code = 0;
 		int gotVersion = 0;
@@ -575,46 +575,46 @@ public:
 		int total = 0;
 		int num = 0;
 
-		pDoc.read(code[]);
-		pDoc.read(gotVersion);
+		buffer.pop(code[]);
+		buffer.pop(gotVersion);
 		enforce!PxtoneException(code[0 .. 8] == identifierCode, "inv code");
-		pDoc.read(total);
+		buffer.pop(total);
 		enforce!PxtoneException(gotVersion <= expectedVersion, "fmt new");
 
 		// pPtv. (5)
-		pDoc.readVarInt(x3xBasicKey);
-		pDoc.readVarInt(work1);
-		pDoc.readVarInt(work2);
+		buffer.popVarInt(x3xBasicKey);
+		buffer.popVarInt(work1);
+		buffer.popVarInt(work2);
 		enforce!PxtoneException(!work1 && !work2, "fmt unknown");
-		pDoc.readVarInt(num);
+		buffer.popVarInt(num);
 		voiceAllocate(num);
 
 		for (int v = 0; v < voiceNum; v++) {
 			// pPtvv. (8)
 			voiceUnit = &voices[v];
-			pDoc.readVarInt(voiceUnit.basicKey);
-			pDoc.readVarInt(voiceUnit.volume);
-			pDoc.readVarInt(voiceUnit.pan);
-			pDoc.readVarInt(work1);
+			buffer.popVarInt(voiceUnit.basicKey);
+			buffer.popVarInt(voiceUnit.volume);
+			buffer.popVarInt(voiceUnit.pan);
+			buffer.popVarInt(work1);
 			voiceUnit.tuning = reinterpretInt(work1);
-			pDoc.readVarInt(*cast(int*)&voiceUnit.voiceFlags);
-			pDoc.readVarInt(*cast(int*)&voiceUnit.dataFlags);
+			buffer.popVarInt(*cast(int*)&voiceUnit.voiceFlags);
+			buffer.popVarInt(*cast(int*)&voiceUnit.dataFlags);
 
 			// no support.
 			enforce!PxtoneException((voiceUnit.voiceFlags & PTVVoiceFlag.uncovered) == 0, "fmt unknown");
 			enforce!PxtoneException((voiceUnit.dataFlags & PTVDataFlag.uncovered) == 0, "fmt unknown");
 			if (voiceUnit.dataFlags & PTVDataFlag.wave) {
-				readWave(pDoc, voiceUnit);
+				readWave(buffer, voiceUnit);
 			}
 			if (voiceUnit.dataFlags & PTVDataFlag.envelope) {
-				readEnvelope(pDoc, voiceUnit);
+				readEnvelope(buffer, voiceUnit);
 			}
 		}
 		type = PxtnWoiceType.ptv;
 	}
 
 	///
-	void ioMatePCMWrite(ref PxtnDescriptor pDoc) const @safe {
+	void ioMatePCMWrite(R)(ref R output) const @safe {
 		const PxtnPulsePCM* pulsePCM = &voices[0].pcm;
 		const(PxtnVoiceUnit)* voiceUnit = &voices[0];
 		MaterialStructPCM pcm;
@@ -629,18 +629,18 @@ public:
 		pcm.basicKey = cast(ushort) voiceUnit.basicKey;
 
 		uint size = cast(uint)(MaterialStructPCM.sizeof + pcm.dataSize);
-		pDoc.write(size);
-		pDoc.write(pcm);
-		pDoc.write(pulsePCM.getPCMBuffer());
+		output.write(size);
+		output.write(pcm);
+		output.write(pulsePCM.getPCMBuffer());
 	}
 
 	///
-	void ioMatePCMRead(ref PxtnDescriptor pDoc) @safe {
+	void ioMatePCMRead(ref const(ubyte)[] buffer) @safe {
 		MaterialStructPCM pcm;
 		int size = 0;
 
-		pDoc.read(size);
-		pDoc.read(pcm);
+		buffer.pop(size);
+		buffer.pop(pcm);
 
 		enforce!PxtoneException((((cast(int) pcm.voiceFlags) & PTVVoiceFlag.uncovered) == 0), "fmt unknown");
 
@@ -655,7 +655,7 @@ public:
 			voiceUnit.type = PxtnVoiceType.sampling;
 
 			voiceUnit.pcm.create(pcm.ch, pcm.sps, pcm.bps, pcm.dataSize / (pcm.bps / 8 * pcm.ch));
-			pDoc.read(voiceUnit.pcm.getPCMBuffer()[0 .. pcm.dataSize]);
+			buffer.pop(voiceUnit.pcm.getPCMBuffer()[0 .. pcm.dataSize]);
 			type = PxtnWoiceType.pcm;
 
 			voiceUnit.voiceFlags = pcm.voiceFlags;
@@ -667,7 +667,7 @@ public:
 	}
 
 	///
-	void ioMatePTNWrite(ref PxtnDescriptor pDoc) const @safe {
+	void ioMatePTNWrite(R)(ref R output) const @safe {
 		MaterialStructPTN ptn;
 		const(PxtnVoiceUnit)* voiceUnit;
 		int size = 0;
@@ -682,25 +682,24 @@ public:
 		ptn.rrr = 1;
 
 		// pre
-		pDoc.write(size);
-		pDoc.write(ptn);
+		Appender!(ubyte[]) tmp;
+		tmp.write(ptn);
 		size += MaterialStructPTN.sizeof;
-		voiceUnit.ptn.write(pDoc, size);
-		pDoc.seek(PxtnSeek.cur, cast(int)(-size - int.sizeof));
-		pDoc.write(size);
-		pDoc.seek(PxtnSeek.cur, size);
+		voiceUnit.ptn.write(tmp, size);
+		output.write(size);
+		output.write(tmp[]);
 	}
 
 	///
-	void ioMatePTNRead(ref PxtnDescriptor pDoc) @safe {
+	void ioMatePTNRead(ref const(ubyte)[] buffer) @safe {
 		MaterialStructPTN ptn;
 		int size = 0;
 
 		scope(failure) {
 			voiceRelease();
 		}
-		pDoc.read(size);
-		pDoc.read(ptn);
+		buffer.pop(size);
+		buffer.pop(ptn);
 
 		enforce!PxtoneException(ptn.rrr <= 1, "fmt unknown");
 		enforce!PxtoneException(ptn.rrr >= 0, "fmt unknown");
@@ -711,7 +710,7 @@ public:
 			PxtnVoiceUnit* voiceUnit = &voices[0];
 
 			voiceUnit.type = PxtnVoiceType.noise;
-			voiceUnit.ptn.read(pDoc);
+			voiceUnit.ptn.read(buffer);
 			type = PxtnWoiceType.ptn;
 			voiceUnit.voiceFlags = ptn.voiceFlags;
 			voiceUnit.basicKey = ptn.basicKey;
@@ -723,7 +722,7 @@ public:
 	}
 
 	///
-	void ioMatePTVWrite(ref PxtnDescriptor pDoc) const @safe {
+	void ioMatePTVWrite(R)(ref R output) const @safe {
 		MaterialStructPTV ptv;
 		int headSize = MaterialStructPTV.sizeof + int.sizeof;
 		int size = 0;
@@ -733,29 +732,25 @@ public:
 		ptv.x3xTuning = 0; //1.0f;//pW.tuning;
 		ptv.size = 0;
 
-		// pre write
-		pDoc.write(size);
-		pDoc.write(ptv);
-		ptvWrite(pDoc, &ptv.size);
-
-		pDoc.seek(PxtnSeek.cur, -(ptv.size + headSize));
+		// write ptv to separate buffer so we can calculate size
+		Appender!(ubyte[]) tmp;
+		ptvWrite(tmp, &ptv.size);
 
 		size = cast(int)(ptv.size + MaterialStructPTV.sizeof);
-		pDoc.write(size);
-		pDoc.write(ptv);
-
-		pDoc.seek(PxtnSeek.cur, ptv.size);
+		output.write(size);
+		output.write(ptv);
+		output.write(tmp[]);
 	}
 
 	///
-	void ioMatePTVRead(ref PxtnDescriptor pDoc) @safe {
+	void ioMatePTVRead(ref const(ubyte)[] buffer) @safe {
 		MaterialStructPTV ptv;
 		int size = 0;
 
-		pDoc.read(size);
-		pDoc.read(ptv);
+		buffer.pop(size);
+		buffer.pop(ptv);
 		enforce!PxtoneException(!ptv.rrr, "fmt unknown");
-		ptvRead(pDoc);
+		ptvRead(buffer);
 
 		if (ptv.x3xTuning != 1.0) {
 			x3xTuning = ptv.x3xTuning;
@@ -766,7 +761,7 @@ public:
 
 	version (WithOggVorbis) {
 		///
-		void ioMateOGGVWrite(ref PxtnDescriptor pDoc) const @safe {
+		void ioMateOGGVWrite(R)(ref R output) const @safe {
 			enforce!PxtoneException(voices, "No voices");
 
 			MaterialStructOGGV mate;
@@ -779,18 +774,18 @@ public:
 			mate.basicKey = cast(ushort) voiceUnit.basicKey;
 
 			uint size = cast(uint)(MaterialStructOGGV.sizeof + oggVSize);
-			pDoc.write(size);
-			pDoc.write(mate);
-			voiceUnit.oggV.pxtnWrite(pDoc);
+			output.write(size);
+			output.write(mate);
+			voiceUnit.oggV.pxtnWrite(output);
 		}
 
 		///
-		void ioMateOGGVRead(ref PxtnDescriptor pDoc) @safe {
+		void ioMateOGGVRead(ref const(ubyte)[] buffer) @safe {
 			MaterialStructOGGV mate;
 			int size = 0;
 
-			pDoc.read(size);
-			pDoc.read(mate);
+			buffer.pop(size);
+			buffer.pop(mate);
 
 			enforce!PxtoneException(((cast(int) mate.voiceFlags) & PTVVoiceFlag.uncovered) == 0, "fmt unknown");
 
@@ -803,7 +798,7 @@ public:
 				PxtnVoiceUnit* voiceUnit = &voices[0];
 				voiceUnit.type = PxtnVoiceType.oggVorbis;
 
-				voiceUnit.oggV.pxtnRead(pDoc);
+				voiceUnit.oggV.pxtnRead(buffer);
 
 				voiceUnit.voiceFlags = mate.voiceFlags;
 				voiceUnit.basicKey = mate.basicKey;

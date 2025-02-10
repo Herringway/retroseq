@@ -882,7 +882,7 @@ public:
 	// ------------
 
 	///
-	void ioWrite(ref PxtnDescriptor pDoc, int rough) const @safe {
+	void ioWrite(R)(ref R output, int rough) const @safe {
 		int eveNum = getCount();
 		int relativeSize = 0;
 		int absolute = 0;
@@ -901,8 +901,8 @@ public:
 		}
 
 		int size = cast(int)(int.sizeof + relativeSize);
-		pDoc.write(size);
-		pDoc.write(eveNum);
+		output.write(size);
+		output.write(eveNum);
 
 		absolute = 0;
 
@@ -915,22 +915,22 @@ public:
 				value = p.value;
 			}
 
-			pDoc.writeVarInt(clock / rough);
-			pDoc.write(p.unitNumber);
-			pDoc.write(p.kind);
-			pDoc.writeVarInt(value);
+			output.writeVarInt(clock / rough);
+			output.write(p.unitNumber);
+			output.write(p.kind);
+			output.writeVarInt(value);
 
 			absolute = p.clock;
 		}
 	}
 
 	///
-	void ioRead(ref PxtnDescriptor pDoc) @safe {
+	void ioRead(ref const(ubyte)[] buffer) @safe {
 		int size = 0;
 		int eveNum = 0;
 
-		pDoc.read(size);
-		pDoc.read(eveNum);
+		buffer.pop(size);
+		buffer.pop(eveNum);
 
 		int clock = 0;
 		int absolute = 0;
@@ -939,10 +939,10 @@ public:
 		int value = 0;
 
 		for (int e = 0; e < eveNum; e++) {
-			pDoc.readVarInt(clock);
-			pDoc.read(unitNumber);
-			pDoc.read(kind);
-			pDoc.readVarInt(value);
+			buffer.popVarInt(clock);
+			buffer.pop(unitNumber);
+			buffer.pop(kind);
+			buffer.popVarInt(value);
 			absolute += clock;
 			clock = absolute;
 			linearAdd(clock, unitNumber, kind, value);
@@ -950,12 +950,12 @@ public:
 	}
 
 	///
-	int ioReadEventNum(ref PxtnDescriptor pDoc) const @safe {
+	int ioReadEventNum(ref const(ubyte)[] buffer) const @safe {
 		int size = 0;
 		int eveNum = 0;
 
-		pDoc.read(size);
-		pDoc.read(eveNum);
+		buffer.pop(size);
+		buffer.pop(eveNum);
 
 		int count = 0;
 		int clock = 0;
@@ -964,10 +964,10 @@ public:
 		int value = 0;
 
 		for (int e = 0; e < eveNum; e++) {
-			pDoc.readVarInt(clock);
-			pDoc.read(unitNumber);
-			pDoc.read(kind);
-			pDoc.readVarInt(value);
+			buffer.popVarInt(clock);
+			buffer.pop(unitNumber);
+			buffer.pop(kind);
+			buffer.popVarInt(value);
 			count++;
 		}
 		if (count != eveNum) {
@@ -1055,7 +1055,7 @@ public:
 	}
 
 	/// write event.
-	void ioUnitReadX4xEvent(ref PxtnDescriptor pDoc, bool bTailAbsolute, bool bCheckRRR) @safe {
+	void ioUnitReadX4xEvent(ref const(ubyte)[] buffer, bool bTailAbsolute, bool bCheckRRR) @safe {
 		EventStructure evnt;
 		int clock = 0;
 		int value = 0;
@@ -1063,8 +1063,8 @@ public:
 		int e = 0;
 		int size = 0;
 
-		pDoc.read(size);
-		pDoc.read(evnt);
+		buffer.pop(size);
+		buffer.pop(evnt);
 
 		enforce!PxtoneException(evnt.dataNumber == 2, "fmt unknown");
 		enforce!PxtoneException(evnt.eventKind < EventKind.num, "fmt unknown");
@@ -1072,8 +1072,8 @@ public:
 
 		absolute = 0;
 		for (e = 0; e < cast(int) evnt.eventNumber; e++) {
-			pDoc.readVarInt(clock);
-			pDoc.readVarInt(value);
+			buffer.popVarInt(clock);
+			buffer.popVarInt(value);
 			absolute += clock;
 			clock = absolute;
 			x4xReadAdd(clock, cast(ubyte) evnt.unitIndex, cast(ubyte) evnt.eventKind, value);
@@ -1087,21 +1087,21 @@ public:
 	}
 
 	///
-	void ioReadX4xEventNum(ref PxtnDescriptor pDoc, out int pNum) const @safe {
+	void ioReadX4xEventNum(ref const(ubyte)[] buffer, out int pNum) const @safe {
 		EventStructure evnt;
 		int work = 0;
 		int e = 0;
 		int size = 0;
 
-		pDoc.read(size);
-		pDoc.read(evnt);
+		buffer.pop(size);
+		buffer.pop(evnt);
 
 		// support only 2
 		enforce!PxtoneException(evnt.dataNumber == 2, "fmt unknown");
 
 		for (e = 0; e < cast(int) evnt.eventNumber; e++) {
-			pDoc.readVarInt(work);
-			pDoc.readVarInt(work);
+			buffer.pop(work);
+			buffer.pop(work);
 		}
 		enforce!PxtoneException(e == evnt.eventNumber ,"desc broken");
 

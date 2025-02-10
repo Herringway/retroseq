@@ -64,10 +64,10 @@ struct PxtoneNoise {
 	}
 
 	///
-	void generate(ref PxtnDescriptor pDoc, out void[] ppBuf, out int pSize) const @safe {
+	void generate(ref const(ubyte)[] buffer, out void[] ppBuf, out int pSize) const @safe {
 		PxtnPulseNoise noise;
 
-		noise.read(pDoc);
+		noise.read(buffer);
 		PxtnPulsePCM pcm = bldr.buildNoise(noise, channels, sps, bps);
 
 		pSize = pcm.getBufferSize();

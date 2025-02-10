@@ -765,13 +765,13 @@ public:
 	}
 
 	///
-	void woiceRead(int idx, ref PxtnDescriptor desc, PxtnWoiceType type) @safe {
+	void woiceRead(int idx, ref const(ubyte)[] buffer, PxtnWoiceType type) @safe {
 		enforce!PxtoneException(isInitialized, "pxtnService not initialized");
 		enforce!PxtoneException((idx >= 0) && (idx < woices.length), "woice index out of range");
 		if (idx == woices.length) {
 			woices ~= new pxtnWoice();
 		}
-		woices[idx].read(desc, type);
+		woices[idx].read(buffer, type);
 	}
 
 	///

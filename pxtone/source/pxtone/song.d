@@ -15,7 +15,7 @@ import pxtone.unit;
 
 import std.exception;
 import std.format;
-import std.stdio;
+import std.range;
 import std.string;
 
 ///
@@ -31,27 +31,17 @@ struct PxToneSong {
 	PxtnUnit[] units; ///
 
 	///
-	this(ubyte[] buffer) @safe {
-		PxtnDescriptor desc;
-		desc.setMemoryReadOnly(buffer);
-		read(desc);
+	this(const(ubyte)[] buffer) @safe {
+		read(buffer);
 	}
 
 	///
-	this(File fd) @safe {
-		PxtnDescriptor desc;
-		desc.setFileReadOnly(fd);
-		read(desc);
-	}
-	///
-	static bool detect(ubyte[] buffer) @safe {
+	static bool detect(const(ubyte)[] buffer) @safe {
 		PxToneSong tmpSong;
-		PxtnDescriptor desc;
-		desc.setMemoryReadOnly(buffer);
 		FMTVER fmtVer;
 		ushort exeVer;
 		try {
-			tmpSong.readVersion(desc, fmtVer, exeVer);
+			tmpSong.readVersion(buffer, fmtVer, exeVer);
 		} catch(Exception) {
 			return false;
 		}
@@ -74,7 +64,7 @@ struct PxToneSong {
 		evels.release();
 	}
 	///
-	void read(ref PxtnDescriptor pDoc) @safe {
+	void read(ref const(ubyte)[] buffer) @safe {
 		ushort exeVer = 0;
 		FMTVER fmtVer = FMTVER.unknown;
 		int eventNum = 0;
@@ -84,13 +74,12 @@ struct PxToneSong {
 		scope(failure) {
 			clear();
 		}
-
-		preCountEvent(pDoc, eventNum);
-		pDoc.seek(PxtnSeek.set, 0);
+		auto tmpBuffer = buffer;
+		preCountEvent(tmpBuffer, eventNum);
 
 		evels.allocate(eventNum);
 
-		readVersion(pDoc, fmtVer, exeVer);
+		readVersion(buffer, fmtVer, exeVer);
 
 		if (fmtVer >= FMTVER.v5) {
 			evels.linearStart();
@@ -98,7 +87,7 @@ struct PxToneSong {
 			evels.x4xReadStart();
 		}
 
-		readTuneItems(pDoc);
+		readTuneItems(buffer);
 
 		if (fmtVer >= FMTVER.v5) {
 			evels.linearEnd(true);
@@ -126,45 +115,45 @@ struct PxToneSong {
 	////////////////////////////////////////
 
 	///
-	void write(ref PxtnDescriptor pDoc, bool bTune, ushort exeVer) @safe {
+	void write(T)(ref T output, bool bTune, ushort exeVer) @safe if (isOutputRange!(T, ubyte)) {
 		bool bRet = false;
 		int rough = bTune ? 10 : 1;
 		ushort rrr = 0;
 
 		// format version
 		if (bTune) {
-			pDoc.write(identifierCodeTuneV5);
+			output.write(identifierCodeTuneV5);
 		} else {
-			pDoc.write(identifierCodeProjectV5);
+			output.write(identifierCodeProjectV5);
 		}
 
 		// exe version
-		pDoc.write(exeVer);
-		pDoc.write(rrr);
+		output.write(exeVer);
+		output.write(rrr);
 
 		// master
-		pDoc.write(identifierCodeMasterV5);
-		master.ioWrite(pDoc, rough);
+		output.write(identifierCodeMasterV5);
+		master.ioWrite(output, rough);
 
 		// event
-		pDoc.write(identifierCodeEventV5);
-		evels.ioWrite(pDoc, rough);
+		output.write(identifierCodeEventV5);
+		evels.ioWrite(output, rough);
 
 		// name
 		if (text.isNameBuf()) {
-			pDoc.write(identifierCodeTextNAME);
-			write4Tag(text.getNameBuf(), pDoc);
+			output.write(identifierCodeTextNAME);
+			write4Tag(text.getNameBuf(), output);
 		}
 
 		// comment
 		if (text.isCommentBuf()) {
-			pDoc.write(identifierCodeTextCOMM);
-			write4Tag(text.getCommentBuf(), pDoc);
+			output.write(identifierCodeTextCOMM);
+			write4Tag(text.getCommentBuf(), output);
 		}
 
 		// delay
 		for (int d = 0; d < delays.length; d++) {
-			pDoc.write(identifierCodeEffeDELA);
+			output.write(identifierCodeEffeDELA);
 
 			Delay dela;
 			int size;
@@ -176,14 +165,14 @@ struct PxToneSong {
 
 			// dela ----------
 			size = Delay.sizeof;
-			pDoc.write(size);
-			pDoc.write(dela);
+			output.write(size);
+			output.write(dela);
 		}
 
 		// overdrive
 		for (int o = 0; o < overdrives.length; o++) {
-			pDoc.write(identifierCodeEffeOVER);
-			overdrives[o].write(pDoc);
+			output.write(identifierCodeEffeOVER);
+			overdrives[o].write(output);
 		}
 
 		// woice
@@ -192,22 +181,22 @@ struct PxToneSong {
 
 			switch (woice.getType()) {
 			case PxtnWoiceType.pcm:
-				pDoc.write(identifierCodeMatePCM);
-				woice.ioMatePCMWrite(pDoc);
+				output.write(identifierCodeMatePCM);
+				woice.ioMatePCMWrite(output);
 				break;
 			case PxtnWoiceType.ptv:
-				pDoc.write(identifierCodeMatePTV);
-				woice.ioMatePTVWrite(pDoc);
+				output.write(identifierCodeMatePTV);
+				woice.ioMatePTVWrite(output);
 				break;
 			case PxtnWoiceType.ptn:
-				pDoc.write(identifierCodeMatePTN);
-				woice.ioMatePTNWrite(pDoc);
+				output.write(identifierCodeMatePTN);
+				woice.ioMatePTNWrite(output);
 				break;
 			case PxtnWoiceType.oggVorbis:
 
 				version (WithOggVorbis) {
-					pDoc.write(identifierCodeMateOGGV);
-					woice.ioMateOGGVWrite(pDoc);
+					output.write(identifierCodeMateOGGV);
+					woice.ioMateOGGVWrite(output);
 					break;
 				} else {
 					throw new PxtoneException("Ogg vorbis support is required");
@@ -217,26 +206,26 @@ struct PxToneSong {
 			}
 
 			if (!bTune && woice.isNameBuf()) {
-				pDoc.write(identifierCodeAssiWOIC);
-				ioAssistWoiceWrite(pDoc, w);
+				output.write(identifierCodeAssiWOIC);
+				ioAssistWoiceWrite(output, w);
 			}
 		}
 
 		// unit
-		pDoc.write(identifierCodeNumUNIT);
-		ioUnitNumberWrite(pDoc);
+		output.write(identifierCodeNumUNIT);
+		ioUnitNumberWrite(output);
 
 		for (int u = 0; u < units.length; u++) {
 			if (!bTune && units[u].isNameBuf()) {
-				pDoc.write(identifierCodeAssiUNIT);
-				ioAssistUnitWrite(pDoc, u);
+				output.write(identifierCodeAssiUNIT);
+				ioAssistUnitWrite(output, u);
 			}
 		}
 
 		{
 			int endSize = 0;
-			pDoc.write(identifierCodePxtoneND);
-			pDoc.write(endSize);
+			output.write(identifierCodePxtoneND);
+			output.write(endSize);
 		}
 	}
 	////////////////////////////////////////
@@ -244,13 +233,13 @@ struct PxToneSong {
 	////////////////////////////////////////
 
 	///
-	private void readTuneItems(ref PxtnDescriptor pDoc) @safe {
+	private void readTuneItems(ref const(ubyte)[] buffer) @safe {
 		bool bEnd = false;
 		char[identifierCodeSize + 1] code = '\0';
 
 		/// must the unit before the voice.
 		while (!bEnd) {
-			pDoc.read(code[0 ..identifierCodeSize]);
+			buffer.pop(code[0 ..identifierCodeSize]);
 
 			Tag tag = checkTagCode(code);
 			switch (tag) {
@@ -260,53 +249,53 @@ struct PxToneSong {
 				// new -------
 			case Tag.numUnit: {
 					int num = 0;
-					ioUnitNumberRead(pDoc, num);
+					ioUnitNumberRead(buffer, num);
 					units.length = num;
 					break;
 				}
 			case Tag.MasterV5:
-				master.ioRead(pDoc);
+				master.ioRead(buffer);
 				break;
 			case Tag.EventV5:
-				evels.ioRead(pDoc);
+				evels.ioRead(buffer);
 				break;
 
 			case Tag.matePCM:
-				ioReadWoice(pDoc, PxtnWoiceType.pcm);
+				ioReadWoice(buffer, PxtnWoiceType.pcm);
 				break;
 			case Tag.matePTV:
-				ioReadWoice(pDoc, PxtnWoiceType.ptv);
+				ioReadWoice(buffer, PxtnWoiceType.ptv);
 				break;
 			case Tag.matePTN:
-				ioReadWoice(pDoc, PxtnWoiceType.ptn);
+				ioReadWoice(buffer, PxtnWoiceType.ptn);
 				break;
 
 			case Tag.mateOGGV:
 
 				version (WithOggVorbis) {
-					ioReadWoice(pDoc, PxtnWoiceType.oggVorbis);
+					ioReadWoice(buffer, PxtnWoiceType.oggVorbis);
 					break;
 				} else {
 					throw new PxtoneException("Ogg Vorbis support is required");
 				}
 
 			case Tag.effeDELA:
-				ioReadDelay(pDoc);
+				ioReadDelay(buffer);
 				break;
 			case Tag.effeOVER:
-				ioReadOverDrive(pDoc);
+				ioReadOverDrive(buffer);
 				break;
 			case Tag.textNAME:
-				text.setNameBuf(read4Tag(pDoc));
+				text.setNameBuf(read4Tag(buffer));
 				break;
 			case Tag.textCOMM:
-				text.setCommentBuf(read4Tag(pDoc));
+				text.setCommentBuf(read4Tag(buffer));
 				break;
 			case Tag.assiWOIC:
-				ioAssistWoiceRead(pDoc);
+				ioAssistWoiceRead(buffer);
 				break;
 			case Tag.assiUNIT:
-				ioAssistUnitRead(pDoc);
+				ioAssistUnitRead(buffer);
 				break;
 			case Tag.pxtoneND:
 				bEnd = true;
@@ -314,25 +303,25 @@ struct PxToneSong {
 
 				// old -------
 			case Tag.x4xEvenMAST:
-				master.ioReadOld(pDoc);
+				master.ioReadOld(buffer);
 				break;
 			case Tag.x4xEvenUNIT:
-				evels.ioUnitReadX4xEvent(pDoc, false, true);
+				evels.ioUnitReadX4xEvent(buffer, false, true);
 				break;
 			case Tag.x3xPxtnUNIT:
-				ioReadOldUnit(pDoc, 3);
+				ioReadOldUnit(buffer, 3);
 				break;
 			case Tag.x1xPROJ:
-				x1xProjectRead(pDoc);
+				x1xProjectRead(buffer);
 				break;
 			case Tag.x1xUNIT:
-				ioReadOldUnit(pDoc, 1);
+				ioReadOldUnit(buffer, 1);
 				break;
 			case Tag.x1xPCM:
-				ioReadWoice(pDoc, PxtnWoiceType.pcm);
+				ioReadWoice(buffer, PxtnWoiceType.pcm);
 				break;
 			case Tag.x1xEVEN:
-				evels.ioUnitReadX4xEvent(pDoc, true, false);
+				evels.ioUnitReadX4xEvent(buffer, true, false);
 				break;
 			case Tag.x1xEND:
 				bEnd = true;
@@ -345,11 +334,11 @@ struct PxToneSong {
 	}
 
 	///
-	void readVersion(ref PxtnDescriptor pDoc, out FMTVER pFmtVer, out ushort pExeVer) @safe {
+	void readVersion(ref const(ubyte)[] pDoc, out FMTVER pFmtVer, out ushort pExeVer) @safe {
 		char[versionSize] gotVersion = '\0';
 		ushort dummy;
 
-		pDoc.read(gotVersion[]);
+		pDoc.pop(gotVersion[]);
 
 		// fmt version
 		if (gotVersion[] == identifierCodeProjectX1x) {
@@ -381,19 +370,19 @@ struct PxToneSong {
 		}
 
 		// exe version
-		pDoc.read(pExeVer);
-		pDoc.read(dummy);
+		pDoc.pop(pExeVer);
+		pDoc.pop(dummy);
 	}
 
 	///
-	private void x1xProjectRead(ref PxtnDescriptor pDoc) @safe {
+	private void x1xProjectRead(ref const(ubyte)[] buffer) @safe {
 		Project prjc;
 		int beatNum, beatClock;
 		int size;
 		float beatTempo;
 
-		pDoc.read(size);
-		pDoc.read(prjc);
+		buffer.pop(size);
+		buffer.pop(prjc);
 
 		beatNum = prjc.x1xBeatNum;
 		beatTempo = prjc.x1xBeatTempo;
@@ -411,14 +400,14 @@ struct PxToneSong {
 	}
 
 	///
-	private void ioReadDelay(ref PxtnDescriptor pDoc) @safe {
+	private void ioReadDelay(ref const(ubyte)[] buffer) @safe {
 		enforce!PxtoneException(pxtnMaxTuneDelayStruct >= delays.length, "fmt unknown");
 
 		Delay delay;
 		int size = 0;
 
-		pDoc.read(size);
-		pDoc.read(delay);
+		buffer.pop(size);
+		buffer.pop(delay);
 		enforce!PxtoneException(delay.unit < DelayUnit.num, "fmt unknown");
 
 		if (delay.group >= pxtnMaxTuneGroupNumber) {
@@ -429,33 +418,33 @@ struct PxToneSong {
 	}
 
 	///
-	private void ioReadOverDrive(ref PxtnDescriptor pDoc) @safe {
+	private void ioReadOverDrive(ref const(ubyte)[] buffer) @safe {
 		enforce!PxtoneException(pxtnMaxTuneOverdriveStruct >= overdrives.length, "fmt unknown");
 
 		pxtnOverDrive* ovdrv = new pxtnOverDrive();
-		ovdrv.read(pDoc);
+		ovdrv.read(buffer);
 		overdrives ~= ovdrv;
 	}
 
 	///
-	private void ioReadWoice(ref PxtnDescriptor pDoc, PxtnWoiceType type) @safe {
+	private void ioReadWoice(ref const(ubyte)[] buffer, PxtnWoiceType type) @safe {
 		enforce!PxtoneException(pxtnMaxTuneWoiceStruct >= woices.length, "Too many woices");
 
 		pxtnWoice* woice = new pxtnWoice();
 
 		switch (type) {
 		case PxtnWoiceType.pcm:
-			woice.ioMatePCMRead(pDoc);
+			woice.ioMatePCMRead(buffer);
 			break;
 		case PxtnWoiceType.ptv:
-			woice.ioMatePTVRead(pDoc);
+			woice.ioMatePTVRead(buffer);
 			break;
 		case PxtnWoiceType.ptn:
-			woice.ioMatePTNRead(pDoc);
+			woice.ioMatePTNRead(buffer);
 			break;
 		case PxtnWoiceType.oggVorbis:
 			version (WithOggVorbis) {
-				woice.ioMateOGGVRead(pDoc);
+				woice.ioMateOGGVRead(buffer);
 				break;
 			} else {
 				throw new PxtoneException("Ogg Vorbis support is required");
@@ -468,17 +457,17 @@ struct PxToneSong {
 	}
 
 	///
-	private void ioReadOldUnit(ref PxtnDescriptor pDoc, int ver) @safe {
+	private void ioReadOldUnit(ref const(ubyte)[] buffer, int ver) @safe {
 		enforce!PxtoneException(pxtnMaxTuneUnitStruct >= units.length, "fmt unknown");
 
 		PxtnUnit* unit = new PxtnUnit();
 		int group = 0;
 		switch (ver) {
 		case 1:
-			unit.readOld(pDoc, group);
+			unit.readOld(buffer, group);
 			break;
 		case 3:
-			unit.read(pDoc, group);
+			unit.read(buffer, group);
 			break;
 		default:
 			throw new PxtoneException("fmt unknown");
@@ -501,21 +490,21 @@ struct PxToneSong {
 	/////////////
 
 	///
-	const(char)[] read4Tag(ref PxtnDescriptor pDoc) @safe {
+	const(char)[] read4Tag(ref const(ubyte)[] buffer) @safe {
 		char[] result;
 		int pBufferSize;
-		pDoc.read(pBufferSize);
+		buffer.pop(pBufferSize);
 		enforce(pBufferSize >= 0, "Invalid string size");
 
 		if (pBufferSize) {
 			result = new char[](pBufferSize);
-			pDoc.read(result[0 .. pBufferSize]);
+			buffer.pop(result[0 .. pBufferSize]);
 		}
 		return result;
 	}
-	private void write4Tag(const char[] p, ref PxtnDescriptor pDoc) @safe {
-		pDoc.write(cast(int)p.length);
-		pDoc.write(p);
+	private void write4Tag(R)(const char[] p, ref R output) @safe {
+		output.write(cast(int)p.length);
+		output.write(p);
 	}
 
 	/////////////
@@ -523,7 +512,7 @@ struct PxToneSong {
 	/////////////
 
 	///
-	private void ioAssistWoiceWrite(ref PxtnDescriptor pDoc, int idx) const @safe {
+	private void ioAssistWoiceWrite(R)(ref R output, int idx) const @safe {
 		AssistWoice assi;
 		int size;
 		const char[] pName = woices[idx].getNameBuf();
@@ -534,18 +523,18 @@ struct PxToneSong {
 		assi.woiceIndex = cast(ushort) idx;
 
 		size = AssistWoice.sizeof;
-		pDoc.write(size);
-		pDoc.write(assi);
+		output.write(size);
+		output.write(assi);
 	}
 
 	///
-	void ioAssistWoiceRead(ref PxtnDescriptor pDoc) @safe {
+	void ioAssistWoiceRead(ref const(ubyte)[] buffer) @safe {
 		AssistWoice assi;
 		int size = 0;
 
-		pDoc.read(size);
+		buffer.pop(size);
 		enforce!PxtoneException(size == assi.sizeof, "fmt unknown");
-		pDoc.read(assi);
+		buffer.pop(assi);
 		enforce!PxtoneException(!assi.rrr, "fmt unknown");
 		enforce!PxtoneException(assi.woiceIndex < woices.length, "fmt unknown");
 
@@ -556,7 +545,7 @@ struct PxToneSong {
 	// -----
 
 	///
-	private void ioAssistUnitWrite(ref PxtnDescriptor pDoc, int idx) const @safe {
+	private void ioAssistUnitWrite(R)(ref R output, int idx) const @safe {
 		AssistUnit assi;
 		int size;
 		const(char)[] pName = units[idx].getNameBuf();
@@ -565,18 +554,18 @@ struct PxToneSong {
 		assi.unitIndex = cast(ushort) idx;
 
 		size = assi.sizeof;
-		pDoc.write(size);
-		pDoc.write(assi);
+		output.write(size);
+		output.write(assi);
 	}
 
 	///
-	private void ioAssistUnitRead(ref PxtnDescriptor pDoc) @safe {
+	private void ioAssistUnitRead(ref const(ubyte)[] buffer) @safe {
 		AssistUnit assi;
 		int size;
 
-		pDoc.read(size);
+		buffer.pop(size);
 		enforce!PxtoneException(size == assi.sizeof, "fmt unknown");
-		pDoc.read(assi);
+		buffer.pop(assi);
 		enforce!PxtoneException(!assi.rrr, "fmt unknown");
 		enforce!PxtoneException(assi.unitIndex < units.length, "fmt unknown");
 
@@ -587,25 +576,25 @@ struct PxToneSong {
 	// -----
 
 	///
-	private void ioUnitNumberWrite(ref PxtnDescriptor pDoc) const @safe {
+	private void ioUnitNumberWrite(R)(ref R output) const @safe {
 		NumUnit data;
 		int size;
 
 		data.num = cast(short) units.length;
 
 		size = NumUnit.sizeof;
-		pDoc.write(size);
-		pDoc.write(data);
+		output.write(size);
+		output.write(data);
 	}
 
 	///
-	private void ioUnitNumberRead(ref PxtnDescriptor pDoc, out int pNum) @safe {
+	private void ioUnitNumberRead(ref const(ubyte)[] buffer, out int pNum) @safe {
 		NumUnit data;
 		int size = 0;
 
-		pDoc.read(size);
+		buffer.pop(size);
 		enforce!PxtoneException(size == NumUnit.sizeof, "fmt unknown");
-		pDoc.read(data);
+		buffer.pop(data);
 		enforce!PxtoneException(!data.rrr, "fmt unknown");
 		enforce!PxtoneException(data.num <= pxtnMaxTuneUnitStruct, "fmt new");
 		enforce!PxtoneException(data.num >= 0, "fmt unknown");
@@ -652,7 +641,7 @@ struct PxToneSong {
 	}
 
 	///
-	private void preCountEvent(ref PxtnDescriptor pDoc, out int pCount) @safe {
+	private void preCountEvent(ref const(ubyte)[] buffer, out int pCount) @safe {
 		bool bEnd = false;
 
 		int count = 0;
@@ -667,7 +656,7 @@ struct PxToneSong {
 			pCount = 0;
 		}
 
-		readVersion(pDoc, fmtVer, exeVer);
+		readVersion(buffer, fmtVer, exeVer);
 
 		if (fmtVer == FMTVER.x1x) {
 			pCount = 10000;
@@ -675,20 +664,19 @@ struct PxToneSong {
 		}
 
 		while (!bEnd) {
-			pDoc.read(code[0 .. identifierCodeSize]);
-
+			buffer.pop(code[0 .. identifierCodeSize]);
 			switch (checkTagCode(code)) {
 			case Tag.EventV5:
-				count += evels.ioReadEventNum(pDoc);
+				count += evels.ioReadEventNum(buffer);
 				break;
 			case Tag.MasterV5:
-				count += master.ioReadEventNumber(pDoc);
+				count += master.ioReadEventNumber(buffer);
 				break;
 			case Tag.x4xEvenMAST:
-				count += master.ioReadOldEventNumber(pDoc);
+				count += master.ioReadOldEventNumber(buffer);
 				break;
 			case Tag.x4xEvenUNIT:
-				evels.ioReadX4xEventNum(pDoc, c);
+				evels.ioReadX4xEventNum(buffer, c);
 				count += c;
 				break;
 			case Tag.pxtoneND:
@@ -710,8 +698,8 @@ struct PxToneSong {
 			case Tag.assiUNIT:
 			case Tag.assiWOIC:
 
-				pDoc.read(size);
-				pDoc.seek(PxtnSeek.cur, size);
+				buffer.pop(size);
+				buffer = buffer[size .. $];
 				break;
 
 				// ignore
@@ -722,7 +710,7 @@ struct PxToneSong {
 			case Tag.x1xEND:
 				throw new PxtoneException("x1x ignore");
 			default:
-				throw new PxtoneException("FATAL");
+				throw new PxtoneException("Unknown tag: "~ code.idup);
 			}
 		}
 
@@ -739,12 +727,21 @@ struct PxToneSong {
 		import std.file : read;
 		return cast(ubyte[])read(filename);
 	}
+	import std.array : Appender;
 	import std.algorithm.comparison : equal;
 	import std.algorithm.iteration : map;
 	auto song = PxToneSong(trustedRead("pxtone/sample data/sample.ptcop"));
 	assert(song.text.getCommentBuf() == "boss03\r\n13/03/07\r\n13/06/27 fix tr1 maes9-\r\n");
 	assert(song.text.getNameBuf() == "Hard Cording");
 	assert(song.units.map!(x => x.getNameBuf().dup).equal(["Brass", "Techno", "Middle", "Bass", "Dr Hi Hat", "u-drum_snare2", "Dr Bass"]));
+
+	Appender!(ubyte[]) outfile;
+	song.write(outfile, false, 931);
+
+	const finalData = outfile[];
+	const rtSong = PxToneSong(finalData);
+	assert(rtSong.text.getNameBuf() == "Hard Cording");
+	// TODO: make a more complete comparison
 }
 
 

@@ -13,25 +13,25 @@ import pxtone.woice;
 immutable int expectedVersion = 20060111; /// support no-envelope
 
 ///
-void writeWave(ref PxtnDescriptor pDoc, const(PxtnVoiceUnit)* voiceUnit, ref int pTotal) @safe {
+void writeWave(R)(ref R output, const(PxtnVoiceUnit)* voiceUnit, ref int pTotal) @safe {
 	int num, i, size;
 	byte sc;
 	ubyte uc;
 
-	pDoc.writeVarInt(voiceUnit.type, pTotal);
+	output.writeVarInt(voiceUnit.type, pTotal);
 
 	switch (voiceUnit.type) {
 		// coordinate (3)
 	case PxtnVoiceType.coordinate:
-		pDoc.writeVarInt(voiceUnit.wave.num, pTotal);
-		pDoc.writeVarInt(voiceUnit.wave.reso, pTotal);
+		output.writeVarInt(voiceUnit.wave.num, pTotal);
+		output.writeVarInt(voiceUnit.wave.reso, pTotal);
 		num = voiceUnit.wave.num;
 		for (i = 0; i < num; i++) {
 			uc = cast(byte) voiceUnit.wave.points[i].x;
-			pDoc.write(uc);
+			output.write(uc);
 			pTotal++;
 			sc = cast(byte) voiceUnit.wave.points[i].y;
-			pDoc.write(sc);
+			output.write(sc);
 			pTotal++;
 		}
 		break;
@@ -39,26 +39,26 @@ void writeWave(ref PxtnDescriptor pDoc, const(PxtnVoiceUnit)* voiceUnit, ref int
 		// Overtone (2)
 	case PxtnVoiceType.overtone:
 
-		pDoc.writeVarInt(voiceUnit.wave.num, pTotal);
+		output.writeVarInt(voiceUnit.wave.num, pTotal);
 		num = voiceUnit.wave.num;
 		for (i = 0; i < num; i++) {
-			pDoc.writeVarInt(voiceUnit.wave.points[i].x, pTotal);
-			pDoc.writeVarInt(voiceUnit.wave.points[i].y, pTotal);
+			output.writeVarInt(voiceUnit.wave.points[i].x, pTotal);
+			output.writeVarInt(voiceUnit.wave.points[i].y, pTotal);
 		}
 		break;
 
 		// sampling (7)
 	case PxtnVoiceType.sampling:
-		pDoc.writeVarInt(voiceUnit.pcm.getChannels(), pTotal);
-		pDoc.writeVarInt(voiceUnit.pcm.getBPS(), pTotal);
-		pDoc.writeVarInt(voiceUnit.pcm.getSPS(), pTotal);
-		pDoc.writeVarInt(0, pTotal);
-		pDoc.writeVarInt(voiceUnit.pcm.getSampleBody(), pTotal);
-		pDoc.writeVarInt(0, pTotal);
+		output.writeVarInt(voiceUnit.pcm.getChannels(), pTotal);
+		output.writeVarInt(voiceUnit.pcm.getBPS(), pTotal);
+		output.writeVarInt(voiceUnit.pcm.getSPS(), pTotal);
+		output.writeVarInt(0, pTotal);
+		output.writeVarInt(voiceUnit.pcm.getSampleBody(), pTotal);
+		output.writeVarInt(0, pTotal);
 
 		size = voiceUnit.pcm.getBufferSize();
 
-		pDoc.write(voiceUnit.pcm.getPCMBuffer());
+		output.write(voiceUnit.pcm.getPCMBuffer());
 		pTotal += size;
 		break;
 
@@ -70,41 +70,41 @@ void writeWave(ref PxtnDescriptor pDoc, const(PxtnVoiceUnit)* voiceUnit, ref int
 }
 
 ///
-void writeEnvelope(ref PxtnDescriptor pDoc, const(PxtnVoiceUnit)* voiceUnit, ref int pTotal) @safe {
+void writeEnvelope(R)(ref R output, const(PxtnVoiceUnit)* voiceUnit, ref int pTotal) @safe {
 	int num, i;
 
 	// envelope. (5)
-	pDoc.writeVarInt(voiceUnit.envelope.fps, pTotal);
-	pDoc.writeVarInt(voiceUnit.envelope.headNumber, pTotal);
-	pDoc.writeVarInt(voiceUnit.envelope.bodyNumber, pTotal);
-	pDoc.writeVarInt(voiceUnit.envelope.tailNumber, pTotal);
+	output.writeVarInt(voiceUnit.envelope.fps, pTotal);
+	output.writeVarInt(voiceUnit.envelope.headNumber, pTotal);
+	output.writeVarInt(voiceUnit.envelope.bodyNumber, pTotal);
+	output.writeVarInt(voiceUnit.envelope.tailNumber, pTotal);
 
 	num = voiceUnit.envelope.headNumber + voiceUnit.envelope.bodyNumber + voiceUnit.envelope.tailNumber;
 	for (i = 0; i < num; i++) {
-		pDoc.writeVarInt(voiceUnit.envelope.points[i].x, pTotal);
-		pDoc.writeVarInt(voiceUnit.envelope.points[i].y, pTotal);
+		output.writeVarInt(voiceUnit.envelope.points[i].x, pTotal);
+		output.writeVarInt(voiceUnit.envelope.points[i].y, pTotal);
 	}
 }
 
 ///
-void readWave(ref PxtnDescriptor pDoc, PxtnVoiceUnit* voiceUnit) @safe {
+void readWave(ref const(ubyte)[] buffer, PxtnVoiceUnit* voiceUnit) @safe {
 	int i, num;
 	byte sc;
 	ubyte uc;
 
-	pDoc.readVarInt(*cast(int*)&voiceUnit.type);
+	buffer.popVarInt(*cast(int*)&voiceUnit.type);
 
 	switch (voiceUnit.type) {
 		// coodinate (3)
 	case PxtnVoiceType.coordinate:
-		pDoc.readVarInt(voiceUnit.wave.num);
-		pDoc.readVarInt(voiceUnit.wave.reso);
+		buffer.popVarInt(voiceUnit.wave.num);
+		buffer.popVarInt(voiceUnit.wave.reso);
 		num = voiceUnit.wave.num;
 		voiceUnit.wave.points = new PxtnPoint[](num);
 		for (i = 0; i < num; i++) {
-			pDoc.read(uc);
+			buffer.pop(uc);
 			voiceUnit.wave.points[i].x = uc;
-			pDoc.read(sc);
+			buffer.pop(sc);
 			voiceUnit.wave.points[i].y = sc;
 		}
 		num = voiceUnit.wave.num;
@@ -112,12 +112,12 @@ void readWave(ref PxtnDescriptor pDoc, PxtnVoiceUnit* voiceUnit) @safe {
 		// overtone (2)
 	case PxtnVoiceType.overtone:
 
-		pDoc.readVarInt(voiceUnit.wave.num);
+		buffer.popVarInt(voiceUnit.wave.num);
 		num = voiceUnit.wave.num;
 		voiceUnit.wave.points = new PxtnPoint[](num);
 		for (i = 0; i < num; i++) {
-			pDoc.readVarInt(voiceUnit.wave.points[i].x);
-			pDoc.readVarInt(voiceUnit.wave.points[i].y);
+			buffer.popVarInt(voiceUnit.wave.points[i].x);
+			buffer.popVarInt(voiceUnit.wave.points[i].y);
 		}
 		break;
 
@@ -125,15 +125,15 @@ void readWave(ref PxtnDescriptor pDoc, PxtnVoiceUnit* voiceUnit) @safe {
 	case PxtnVoiceType.sampling:
 		throw new PxtoneException("fmt unknown"); // un-support
 
-		//pDoc.readVarInt(voiceUnit.pcm.ch);
-		//pDoc.readVarInt(voiceUnit.pcm.bps);
-		//pDoc.readVarInt(voiceUnit.pcm.sps);
-		//pDoc.readVarInt(voiceUnit.pcm.sampleHead);
-		//pDoc.readVarInt(voiceUnit.pcm.sampleBody);
-		//pDoc.readVarInt(voiceUnit.pcm.sampleTail);
+		//buffer.popVarInt(voiceUnit.pcm.ch);
+		//buffer.popVarInt(voiceUnit.pcm.bps);
+		//buffer.popVarInt(voiceUnit.pcm.sps);
+		//buffer.popVarInt(voiceUnit.pcm.sampleHead);
+		//buffer.popVarInt(voiceUnit.pcm.sampleBody);
+		//buffer.popVarInt(voiceUnit.pcm.sampleTail);
 		//size = ( voiceUnit.pcm.sampleHead + voiceUnit.pcm.sampleBody + voiceUnit.pcm.sampleTail ) * voiceUnit.pcm.ch * voiceUnit.pcm.bps / 8;
 		//if( !_malloc_zero( (void **)&voiceUnit.pcm.p_smp,    size )          ) goto End;
-		//if( !pDoc.read(        voiceUnit.pcm.p_smp, 1, size ) ) goto End;
+		//if( !buffer.pop(        voiceUnit.pcm.p_smp, 1, size ) ) goto End;
 		//break;
 
 	default:
@@ -142,24 +142,24 @@ void readWave(ref PxtnDescriptor pDoc, PxtnVoiceUnit* voiceUnit) @safe {
 }
 
 ///
-void readEnvelope(ref PxtnDescriptor pDoc, PxtnVoiceUnit* voiceUnit) @safe {
+void readEnvelope(ref const(ubyte)[] buffer, PxtnVoiceUnit* voiceUnit) @safe {
 	int num, i;
 
 	scope(failure) {
 		voiceUnit.envelope.points = null;
 	}
 	//voiceUnit.envelope. (5)
-	pDoc.readVarInt(voiceUnit.envelope.fps);
-	pDoc.readVarInt(voiceUnit.envelope.headNumber);
-	pDoc.readVarInt(voiceUnit.envelope.bodyNumber);
-	pDoc.readVarInt(voiceUnit.envelope.tailNumber);
+	buffer.popVarInt(voiceUnit.envelope.fps);
+	buffer.popVarInt(voiceUnit.envelope.headNumber);
+	buffer.popVarInt(voiceUnit.envelope.bodyNumber);
+	buffer.popVarInt(voiceUnit.envelope.tailNumber);
 	enforce!PxtoneException(!voiceUnit.envelope.bodyNumber, "fmt unknown");
 	enforce!PxtoneException(voiceUnit.envelope.tailNumber == 1, "fmt unknown");
 
 	num = voiceUnit.envelope.headNumber + voiceUnit.envelope.bodyNumber + voiceUnit.envelope.tailNumber;
 	voiceUnit.envelope.points = new PxtnPoint[](num);
 	for (i = 0; i < num; i++) {
-		pDoc.readVarInt(voiceUnit.envelope.points[i].x);
-		pDoc.readVarInt(voiceUnit.envelope.points[i].y);
+		buffer.popVarInt(voiceUnit.envelope.points[i].x);
+		buffer.popVarInt(voiceUnit.envelope.points[i].y);
 	}
 }

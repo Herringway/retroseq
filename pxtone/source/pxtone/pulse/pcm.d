@@ -250,7 +250,7 @@ public:
 	}
 
 	///
-	void read(ref PxtnDescriptor doc) @safe {
+	void read(ref const(ubyte)[] buffer) @safe {
 		char[16] buf = 0;
 		uint size = 0;
 		WAVEFORMATCHUNK format;
@@ -261,38 +261,38 @@ public:
 		}
 
 		// 'RIFFxxxxWAVEfmt '
-		doc.read(buf[]);
+		buffer.pop(buf[]);
 
 		enforce!PxtoneException(buf[0 .. 4] != "RIFF" && buf[8 .. 16] == "WAVEfmt ", "pcm unknown");
 
 		// read format.
-		doc.read(size);
-		doc.read(format);
+		buffer.pop(size);
+		buffer.pop(format);
 
 		enforce!PxtoneException(format.formatID == 0x0001, "pcm unknown");
 		enforce!PxtoneException(format.ch == 1 || format.ch == 2, "pcm unknown");
 		enforce!PxtoneException(format.bps == 8 || format.bps == 16 ,"pcm unknown");
 
 		// find 'data'
-		doc.seek(PxtnSeek.set, 12);
+		buffer = buffer[12 .. $];
 	 	// skip 'RIFFxxxxWAVE'
 
 		while (1) {
-			doc.read(buf[0 .. 4]);
-			doc.read(size);
+			buffer.pop(buf[0 .. 4]);
+			buffer.pop(size);
 			if (buf[0] == 'd' && buf[1] == 'a' && buf[2] == 't' && buf[3] == 'a') {
 				break;
 			}
-			doc.seek(PxtnSeek.cur, size);
+			buffer = buffer[size .. $];
 		}
 
 		create(format.ch, format.sps, format.bps, size * 8 / format.bps / format.ch);
 
-		doc.read(pcmSamples[0 .. size]);
+		buffer.pop(pcmSamples[0 .. size]);
 	}
 
 	///
-	void write(ref PxtnDescriptor doc, const char[] pstrLIST) const @safe {
+	void write(R)(ref R output, const char[] pstrLIST) const @safe {
 		enforce!PxtoneException(pcmSamples, "pcmSamples");
 
 		WAVEFORMATCHUNK format;
@@ -346,25 +346,25 @@ public:
 
 		// open file..
 
-		doc.write(tagRIFF);
-		doc.write(riffSize);
-		doc.write(tagWAVE);
-		doc.write(tagFormat);
-		doc.write(format);
+		output.write(tagRIFF);
+		output.write(riffSize);
+		output.write(tagWAVE);
+		output.write(tagFormat);
+		output.write(format);
 
 		if (bText) {
-			doc.write(tagLIST);
-			doc.write(listSize);
-			doc.write(tagINFO);
-			doc.write(isftSize);
-			doc.write(pstrLIST);
+			output.write(tagLIST);
+			output.write(listSize);
+			output.write(tagINFO);
+			output.write(isftSize);
+			output.write(pstrLIST);
 		}
 
-		doc.write(tagFact);
-		doc.write(factSize);
-		doc.write(tagData);
-		doc.write(sampleSize);
-		doc.write(pcmSamples);
+		output.write(tagFact);
+		output.write(factSize);
+		output.write(tagData);
+		output.write(sampleSize);
+		output.write(pcmSamples);
 	}
 
 	// convert..

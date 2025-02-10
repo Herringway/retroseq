@@ -372,23 +372,23 @@ public:
 	}
 
 	///
-	void read(ref PxtnDescriptor pDoc, out int pGroup) @safe {
+	void read(ref const(ubyte)[] buffer, out int pGroup) @safe {
 		Unit unit;
 		int size = 0;
 
-		pDoc.read(size);
-		pDoc.read(unit);
+		buffer.pop(size);
+		buffer.pop(unit);
 		enforce!PxtoneException(cast(PxtnWoiceType) unit.type == PxtnWoiceType.pcm || cast(PxtnWoiceType) unit.type == PxtnWoiceType.ptv || cast(PxtnWoiceType) unit.type == PxtnWoiceType.ptn, "fmt unknown");
 		pGroup = unit.group;
 	}
 
 	///
-	void readOld(ref PxtnDescriptor pDoc, out int pGroup) @safe {
+	void readOld(ref const(ubyte)[] buffer, out int pGroup) @safe {
 		UnitVersion1 unit;
 		int size;
 
-		pDoc.read(size);
-		pDoc.read(unit);
+		buffer.pop(size);
+		buffer.pop(unit);
 		enforce!PxtoneException(cast(PxtnWoiceType) unit.type == PxtnWoiceType.pcm, "Expecting a PCM unit");
 
 		nameBuf[0 .. pxtnMaxTuneUnitName] = unit.name[0 .. pxtnMaxTuneUnitName];

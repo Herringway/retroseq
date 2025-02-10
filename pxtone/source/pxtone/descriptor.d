@@ -23,236 +23,129 @@ enum PxtnSeek {
 	num ///
 }
 
+void write(R, T)(ref R output, T value) if (!is(T: A[], A)) {
+	T[1] tmp = value;
+	write(output, tmp[]);
+}
+
+void write(R, T)(ref R output, T[] data) {
+	import std.range : put;
+	put(output, cast(const(ubyte)[])data);
+}
+void writeVarInt(R)(ref R output, int val) @safe {
+	int _;
+	writeVarInt(output, val, _);
+}
+void writeVarInt(R)(ref R output, int val, ref int pAdd) @safe {
+	import std.range : put;
+
+	ubyte[5] a = 0;
+	ubyte[5] b = 0;
+	uint us = cast(uint) val;
+	int bytes = 0;
+
+	(cast(uint[])(a[0 .. uint.sizeof]))[0] = us;
+	a[4] = 0;
+
+	// 1byte(7bit)
+	if (us < 0x00000080) {
+		bytes = 1;
+		b[0] = a[0];
+	}  // 2byte(14bit)
+	else if (us < 0x00004000) {
+		bytes = 2;
+		b[0] = ((a[0] << 0) & 0x7F) | 0x80;
+		b[1] = (a[0] >> 7) | ((a[1] << 1) & 0x7F);
+	}  // 3byte(21bit)
+	else if (us < 0x00200000) {
+		bytes = 3;
+		b[0] = ((a[0] << 0) & 0x7F) | 0x80;
+		b[1] = (a[0] >> 7) | ((a[1] << 1) & 0x7F) | 0x80;
+		b[2] = (a[1] >> 6) | ((a[2] << 2) & 0x7F);
+	}  // 4byte(28bit)
+	else if (us < 0x10000000) {
+		bytes = 4;
+		b[0] = ((a[0] << 0) & 0x7F) | 0x80;
+		b[1] = (a[0] >> 7) | ((a[1] << 1) & 0x7F) | 0x80;
+		b[2] = (a[1] >> 6) | ((a[2] << 2) & 0x7F) | 0x80;
+		b[3] = (a[2] >> 5) | ((a[3] << 3) & 0x7F);
+	}  // 5byte(32bit)
+	else {
+		bytes = 5;
+		b[0] = ((a[0] << 0) & 0x7F) | 0x80;
+		b[1] = (a[0] >> 7) | ((a[1] << 1) & 0x7F) | 0x80;
+		b[2] = (a[1] >> 6) | ((a[2] << 2) & 0x7F) | 0x80;
+		b[3] = (a[2] >> 5) | ((a[3] << 3) & 0x7F) | 0x80;
+		b[4] = (a[3] >> 4) | ((a[4] << 4) & 0x7F);
+	}
+	put(output, b[0 .. bytes]);
+	pAdd += bytes;
+}
+
+void pop(T)(ref const(ubyte)[] buffer, ref T dest) if (!is(T: A[], A)) {
+	T[1] value;
+	pop(buffer, value[]);
+	dest = value[0];
+}
+
+T pop(T)(ref const(ubyte)[] buffer) {
+	T[1] value;
+	pop(buffer, value[]);
+	return value[0];
+}
+
+void pop(T)(ref const(ubyte)[] buffer, T[] destination) {
+	scope(exit) buffer = buffer[T.sizeof * destination.length .. $];
+	destination[] = cast(const(T)[])buffer[0 .. T.sizeof * destination.length];
+}
+
+// 可変長読み込み（int  までを保証）
 ///
-struct PxtnDescriptor {
-private:
-	ubyte[] buffer; ///
-	File file; ///
-	bool isFile; ///
-	bool readOnly; ///
-	int size; ///
-	int currentPosition; ///
+void popVarInt(T)(ref const(ubyte)[] buffer, ref T p) {
+	int i;
+	ubyte[5] a = 0;
+	ubyte[5] b = 0;
 
-	///
-	bool isOpen() nothrow @safe {
-		return (buffer != null) || file.isOpen;
-	}
-public:
-	///
-	void setFileReadOnly(ref File fd) @safe {
-		enforce!PxtoneException(fd.isOpen, "File must be opened for reading");
-
-		fd.seek(0, SEEK_END);
-		ulong sz = fd.tell;
-		fd.seek(0, SEEK_SET);
-		file = fd;
-
-		size = cast(int) sz;
-
-		isFile = true;
-		readOnly = true;
-		currentPosition = 0;
-	}
-
-	///
-	void setFileWritable(ref File fd) @safe {
-		file = fd;
-		size = 0;
-		isFile = true;
-		readOnly = false;
-		currentPosition = 0;
-	}
-
-	///
-	void setMemoryReadOnly(ubyte[] buf) @safe {
-		enforce!PxtoneException(buf.length >= 1, "No data to read in buffer");
-		buffer = buf;
-		isFile = false;
-		readOnly = true;
-		currentPosition = 0;
-	}
-
-	///
-	void seek(PxtnSeek mode, int val) @safe {
-		if (isFile) {
-			static immutable int[PxtnSeek.num] seekMapping = [SEEK_SET, SEEK_CUR, SEEK_END];
-			file.seek(val, seekMapping[mode]);
-		} else {
-			switch (mode) {
-			case PxtnSeek.set:
-				enforce!PxtoneException(val < buffer.length, "Unexpected end of data");
-				enforce!PxtoneException(val >= 0, "Cannot seek to negative position");
-				currentPosition = val;
-				break;
-			case PxtnSeek.cur:
-				enforce!PxtoneException(currentPosition + val < buffer.length, "Unexpected end of data");
-				enforce!PxtoneException(currentPosition + val >= 0, "Cannot seek to negative position");
-				currentPosition += val;
-				break;
-			case PxtnSeek.end:
-				enforce!PxtoneException(buffer.length + val < buffer.length, "Unexpected end of data");
-				enforce!PxtoneException(buffer.length + val >= 0, "Cannot seek to negative position");
-				currentPosition = cast(int)buffer.length + val;
-				break;
-			default:
-				break;
-			}
-		}
-	}
-
-	///
-	void write(T)(const T p) @safe if (!is(T : U[], U)) {
-		union RawAccess {
-			T t;
-			ubyte[T.sizeof] bytes;
-		}
-		write(RawAccess(p).bytes);
-	}
-
-	///
-	void write(T)(scope const(T)[] p) @safe {
-		enforce!PxtoneException(isOpen && isFile && !readOnly, "File must be opened for writing");
-
-		file.trustedWrite(p);
-		size += p.length * T.sizeof;
-	}
-
-	///
-	void read(T)(T[] p) @safe {
-		enforce!PxtoneException(isOpen, "File must be opened for reading");
-		enforce!PxtoneException(readOnly, "File must be opened for reading");
-
-		if (isFile) {
-			file.trustedRead(p);
-		} else {
-			for (int i = 0; i < p.length; i++) {
-				enforce!PxtoneException(currentPosition + T.sizeof < buffer.length, "Unexpected end of buffer");
-				p[i] = (cast(T[])buffer[currentPosition .. currentPosition + T.sizeof])[0];
-				currentPosition += T.sizeof;
-			}
-		}
-	}
-
-	///
-	void read(T)(ref T p) @safe if (!is(T : U[], U)) {
-		enforce!PxtoneException(isOpen, "File must be opened for reading");
-		enforce!PxtoneException(readOnly, "File must be opened for reading");
-
-		if (isFile) {
-			p = file.trustedRead!T();
-		} else {
-			enforce!PxtoneException(currentPosition + T.sizeof < buffer.length, "Unexpected end of buffer");
-			p = (cast(T[])buffer[currentPosition .. currentPosition + T.sizeof])[0];
-			currentPosition += T.sizeof;
-		}
-	}
-
-	// ..uint
-	///
-	void writeVarInt(int val) @safe {
-		int dummy;
-		writeVarInt(val, dummy);
-	}
-	void writeVarInt(int val, ref int pAdd) @safe {
-		enforce!PxtoneException(isOpen && isFile && !readOnly, "File must be opened for writing");
-
-		ubyte[5] a = 0;
-		ubyte[5] b = 0;
-		uint us = cast(uint) val;
-		int bytes = 0;
-
-		(cast(uint[])(a[0 .. uint.sizeof]))[0] = us;
-		a[4] = 0;
-
-		// 1byte(7bit)
-		if (us < 0x00000080) {
-			bytes = 1;
-			b[0] = a[0];
-		}  // 2byte(14bit)
-		else if (us < 0x00004000) {
-			bytes = 2;
-			b[0] = ((a[0] << 0) & 0x7F) | 0x80;
-			b[1] = (a[0] >> 7) | ((a[1] << 1) & 0x7F);
-		}  // 3byte(21bit)
-		else if (us < 0x00200000) {
-			bytes = 3;
-			b[0] = ((a[0] << 0) & 0x7F) | 0x80;
-			b[1] = (a[0] >> 7) | ((a[1] << 1) & 0x7F) | 0x80;
-			b[2] = (a[1] >> 6) | ((a[2] << 2) & 0x7F);
-		}  // 4byte(28bit)
-		else if (us < 0x10000000) {
-			bytes = 4;
-			b[0] = ((a[0] << 0) & 0x7F) | 0x80;
-			b[1] = (a[0] >> 7) | ((a[1] << 1) & 0x7F) | 0x80;
-			b[2] = (a[1] >> 6) | ((a[2] << 2) & 0x7F) | 0x80;
-			b[3] = (a[2] >> 5) | ((a[3] << 3) & 0x7F);
-		}  // 5byte(32bit)
-		else {
-			bytes = 5;
-			b[0] = ((a[0] << 0) & 0x7F) | 0x80;
-			b[1] = (a[0] >> 7) | ((a[1] << 1) & 0x7F) | 0x80;
-			b[2] = (a[1] >> 6) | ((a[2] << 2) & 0x7F) | 0x80;
-			b[3] = (a[2] >> 5) | ((a[3] << 3) & 0x7F) | 0x80;
-			b[4] = (a[3] >> 4) | ((a[4] << 4) & 0x7F);
-		}
-		file.trustedWrite(b[0 .. bytes]);
-		pAdd += bytes;
-		size += bytes;
-	}
-	// 可変長読み込み（int  までを保証）
-	///
-	void readVarInt(T)(ref T p) {
-		enforce!PxtoneException(isOpen && readOnly, "File must be opened for reading");
-
-		int i;
-		ubyte[5] a = 0;
-		ubyte[5] b = 0;
-
-		for (i = 0; i < 5; i++) {
-			read(a[i]);
-			if (!(a[i] & 0x80)) {
-				break;
-			}
-		}
-		switch (i) {
-		case 0:
-			b[0] = (a[0] & 0x7F) >> 0;
-			break;
-		case 1:
-			b[0] = cast(ubyte)(((a[0] & 0x7F) >> 0) | (a[1] << 7));
-			b[1] = (a[1] & 0x7F) >> 1;
-			break;
-		case 2:
-			b[0] = cast(ubyte)(((a[0] & 0x7F) >> 0) | (a[1] << 7));
-			b[1] = cast(ubyte)(((a[1] & 0x7F) >> 1) | (a[2] << 6));
-			b[2] = (a[2] & 0x7F) >> 2;
-			break;
-		case 3:
-			b[0] = cast(ubyte)(((a[0] & 0x7F) >> 0) | (a[1] << 7));
-			b[1] = cast(ubyte)(((a[1] & 0x7F) >> 1) | (a[2] << 6));
-			b[2] = cast(ubyte)(((a[2] & 0x7F) >> 2) | (a[3] << 5));
-			b[3] = (a[3] & 0x7F) >> 3;
-			break;
-		case 4:
-			b[0] = cast(ubyte)(((a[0] & 0x7F) >> 0) | (a[1] << 7));
-			b[1] = cast(ubyte)(((a[1] & 0x7F) >> 1) | (a[2] << 6));
-			b[2] = cast(ubyte)(((a[2] & 0x7F) >> 2) | (a[3] << 5));
-			b[3] = cast(ubyte)(((a[3] & 0x7F) >> 3) | (a[4] << 4));
-			b[4] = (a[4] & 0x7F) >> 4;
-			break;
-		case 5:
-			throw new PxtoneException("Integer too large");
-		default:
+	for (i = 0; i < 5; i++) {
+		a[i] = buffer[i];
+		if (!(a[i] & 0x80)) {
 			break;
 		}
-
-		p = (cast(int[]) b[0 .. 4])[0];
+	}
+	buffer = buffer[i + 1 .. $];
+	switch (i) {
+	case 0:
+		b[0] = (a[0] & 0x7F) >> 0;
+		break;
+	case 1:
+		b[0] = cast(ubyte)(((a[0] & 0x7F) >> 0) | (a[1] << 7));
+		b[1] = (a[1] & 0x7F) >> 1;
+		break;
+	case 2:
+		b[0] = cast(ubyte)(((a[0] & 0x7F) >> 0) | (a[1] << 7));
+		b[1] = cast(ubyte)(((a[1] & 0x7F) >> 1) | (a[2] << 6));
+		b[2] = (a[2] & 0x7F) >> 2;
+		break;
+	case 3:
+		b[0] = cast(ubyte)(((a[0] & 0x7F) >> 0) | (a[1] << 7));
+		b[1] = cast(ubyte)(((a[1] & 0x7F) >> 1) | (a[2] << 6));
+		b[2] = cast(ubyte)(((a[2] & 0x7F) >> 2) | (a[3] << 5));
+		b[3] = (a[3] & 0x7F) >> 3;
+		break;
+	case 4:
+		b[0] = cast(ubyte)(((a[0] & 0x7F) >> 0) | (a[1] << 7));
+		b[1] = cast(ubyte)(((a[1] & 0x7F) >> 1) | (a[2] << 6));
+		b[2] = cast(ubyte)(((a[2] & 0x7F) >> 2) | (a[3] << 5));
+		b[3] = cast(ubyte)(((a[3] & 0x7F) >> 3) | (a[4] << 4));
+		b[4] = (a[4] & 0x7F) >> 4;
+		break;
+	case 5:
+		throw new PxtoneException("Integer too large");
+	default:
+		break;
 	}
 
-	///
-	int getByteSize() const nothrow @safe {
-		return isFile ? size : cast(int)buffer.length;
-	}
+	p = (cast(int[]) b[0 .. 4])[0];
 }
 
 ///

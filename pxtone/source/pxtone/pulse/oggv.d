@@ -249,40 +249,40 @@ public:
 	}
 
 	///
-	void oggWrite(ref PxtnDescriptor desc) const @safe {
-		desc.write(pData);
+	void oggWrite(R)(ref R output) const @safe {
+		output.write(pData);
 	}
 
 	///
-	void oggRead(ref PxtnDescriptor desc) @safe {
-		size = desc.getByteSize();
+	void oggRead(ref const(ubyte)[] buffer) @safe {
+		size = cast(int)buffer.length;
 		enforce!PxtoneException(size, "desc r");
 		pData = new ubyte[](size);
 		scope(failure) {
 			pData = null;
 			size = 0;
 		}
-		desc.read(pData);
+		buffer.pop(pData);
 		setInformation();
 	}
 
 	///
-	void pxtnWrite(ref PxtnDescriptor pDoc) const @safe {
+	void pxtnWrite(R)(ref R output) const @safe {
 		enforce!PxtoneException(pData, "No data");
 
-		pDoc.write(ch);
-		pDoc.write(sps2);
-		pDoc.write(smpNum);
-		pDoc.write(size);
-		pDoc.write(pData);
+		output.write(ch);
+		output.write(sps2);
+		output.write(smpNum);
+		output.write(size);
+		output.write(pData);
 	}
 
 	///
-	void pxtnRead(ref PxtnDescriptor pDoc) @safe {
-		pDoc.read(ch);
-		pDoc.read(sps2);
-		pDoc.read(smpNum);
-		pDoc.read(size);
+	void pxtnRead(ref const(ubyte)[] buffer) @safe {
+		buffer.pop(ch);
+		buffer.pop(sps2);
+		buffer.pop(smpNum);
+		buffer.pop(size);
 
 		enforce!PxtoneException(size, "Invalid size read");
 
@@ -291,7 +291,7 @@ public:
 			pData = null;
 			size = 0;
 		}
-		pDoc.read(pData);
+		buffer.pop(pData);
 	}
 
 	///

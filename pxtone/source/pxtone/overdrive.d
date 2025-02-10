@@ -83,7 +83,7 @@ struct pxtnOverDrive {
 	}
 
 	///
-	void write(ref PxtnDescriptor pDoc) const @safe {
+	void write(R)(ref R output) const @safe {
 		Overdrive over;
 		int size;
 
@@ -93,17 +93,17 @@ struct pxtnOverDrive {
 
 		// dela ----------
 		size = Overdrive.sizeof;
-		pDoc.write(size);
-		pDoc.write(over);
+		output.write(size);
+		output.write(over);
 	}
 
 	///
-	void read(ref PxtnDescriptor pDoc) @safe {
+	void read(ref const(ubyte)[] buffer) @safe {
 		Overdrive over;
 		int size = 0;
 
-		pDoc.read(size);
-		pDoc.read(over);
+		buffer.pop(size);
+		buffer.pop(over);
 
 		enforce!PxtoneException(!over.xxx, "fmt unknown");
 		enforce!PxtoneException(!over.yyy, "fmt unknown");

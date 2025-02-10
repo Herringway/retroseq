@@ -164,23 +164,23 @@ public:
 	}
 
 	///
-	void ioWrite(ref PxtnDescriptor pDoc, int rough) const @safe {
+	void ioWrite(R)(ref R output, int rough) const @safe {
 		uint size = 15;
 		short bclock = cast(short)(beatClock / rough);
 		int clockRepeat = bclock * beatNum * getRepeatMeas();
 		int clockLast = bclock * beatNum * getLastMeas();
 		byte bnum = cast(byte) beatNum;
 		float btempo = beatTempo;
-		pDoc.write(size);
-		pDoc.write(bclock);
-		pDoc.write(bnum);
-		pDoc.write(btempo);
-		pDoc.write(clockRepeat);
-		pDoc.write(clockLast);
+		output.write(size);
+		output.write(bclock);
+		output.write(bnum);
+		output.write(btempo);
+		output.write(clockRepeat);
+		output.write(clockLast);
 	}
 
 	///
-	void ioRead(ref PxtnDescriptor pDoc) @safe {
+	void ioRead(ref const(ubyte)[] buffer) @safe {
 		short beatClock = 0;
 		byte beatNum = 0;
 		float beatTempo = 0;
@@ -189,14 +189,14 @@ public:
 
 		uint size = 0;
 
-		pDoc.read(size);
+		buffer.pop(size);
 		enforce!PxtoneException(size == 15, "fmt unknown");
 
-		pDoc.read(beatClock);
-		pDoc.read(beatNum);
-		pDoc.read(beatTempo);
-		pDoc.read(clockRepeat);
-		pDoc.read(clockLast);
+		buffer.pop(beatClock);
+		buffer.pop(beatNum);
+		buffer.pop(beatTempo);
+		buffer.pop(clockRepeat);
+		buffer.pop(clockLast);
 
 		this.beatClock = beatClock;
 		this.beatNum = beatNum;
@@ -207,19 +207,19 @@ public:
 	}
 
 	///
-	int ioReadEventNumber(ref PxtnDescriptor pDoc) @safe {
+	int ioReadEventNumber(ref const(ubyte)[] buffer) @safe {
 		uint size;
-		pDoc.read(size);
+		buffer.pop(size);
 		if (size != 15) {
 			return 0;
 		}
 		byte[15] buf;
-		pDoc.read(buf[]);
+		buffer.pop(buf[]);
 		return 5;
 	}
 
 	///
-	void ioReadOld(ref PxtnDescriptor pDoc) @safe {
+	void ioReadOld(ref const(ubyte)[] buffer) @safe {
 		Master mast;
 		int size = 0;
 		int e = 0;
@@ -231,8 +231,8 @@ public:
 		int beatClock, beatNum, repeatClock, lastClock;
 		float beatTempo = 0;
 
-		pDoc.read(size);
-		pDoc.read(mast);
+		buffer.pop(size);
+		buffer.pop(mast);
 
 		// unknown format
 		enforce!PxtoneException(mast.dataNumber == 3, "fmt unknown");
@@ -247,9 +247,9 @@ public:
 		absolute = 0;
 
 		for (e = 0; e < cast(int) mast.eventNumber; e++) {
-			pDoc.readVarInt(status);
-			pDoc.readVarInt(clock);
-			pDoc.readVarInt(volume);
+			buffer.popVarInt(status);
+			buffer.popVarInt(clock);
+			buffer.popVarInt(volume);
 			absolute += clock;
 			clock = absolute;
 
@@ -290,23 +290,23 @@ public:
 	}
 
 	///
-	int ioReadOldEventNumber(ref PxtnDescriptor pDoc) @safe {
+	int ioReadOldEventNumber(ref const(ubyte)[] buffer) @safe {
 		Master mast;
 		int size;
 		int work;
 		int e;
 
-		pDoc.read(size);
-		pDoc.read(mast);
+		buffer.pop(size);
+		buffer.pop(mast);
 
 		if (mast.dataNumber != 3) {
 			return 0;
 		}
 
 		for (e = 0; e < cast(int) mast.eventNumber; e++) {
-			pDoc.readVarInt(work);
-			pDoc.readVarInt(work);
-			pDoc.readVarInt(work);
+			buffer.popVarInt(work);
+			buffer.popVarInt(work);
+			buffer.popVarInt(work);
 		}
 
 		return mast.eventNumber;
