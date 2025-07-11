@@ -1255,88 +1255,89 @@ static ubyte SseqCommandByteCount(int cmd) @safe
 }
 
 ///
-private short varFuncSet(short, short value) @safe { return value; };
-///
-private short varFuncAdd(short var, short value) @safe { return cast(short)(var + value); };
-///
-private short varFuncSub(short var, short value) @safe { return cast(short)(var - value); };
-///
-private short varFuncMul(short var, short value) @safe { return cast(short)(var * value); };
-///
-private short varFuncDiv(short var, short value) @safe { return cast(short)(var / value); };
-///
-private short varFuncShift(short var, short value) @safe
-{
-	if (value < 0)
-		return var >> -value;
-	else
-		return cast(short)(var << value);
-};
-///
-private short varFuncRand(short, short value) @safe {
-	if (value < 0)
-		return cast(short)(-uniform(0, -value + 1));
-	else
-		return cast(short)uniform(0, value + 1);
-};
-
-///
 private short function(short, short) @safe VarFunc(int cmd) @safe
+	in((cmd >= SseqCommand.SSEQ_CMD_SETVAR) && (cmd <= SseqCommand.SSEQ_CMD_RANDVAR), "Invalid variable operation")
 {
-	switch (cmd)
-	{
-		case SseqCommand.SSEQ_CMD_SETVAR:
-			return &varFuncSet;
-		case SseqCommand.SSEQ_CMD_ADDVAR:
-			return &varFuncAdd;
-		case SseqCommand.SSEQ_CMD_SUBVAR:
-			return &varFuncSub;
-		case SseqCommand.SSEQ_CMD_MULVAR:
-			return &varFuncMul;
-		case SseqCommand.SSEQ_CMD_DIVVAR:
-			return &varFuncDiv;
-		case SseqCommand.SSEQ_CMD_SHIFTVAR:
-			return &varFuncShift;
-		case SseqCommand.SSEQ_CMD_RANDVAR:
-			return &varFuncRand;
-		default:
-			return null;
-	}
+	static immutable short function(short, short) @safe[] funcs = [
+		SseqCommand.SSEQ_CMD_SETVAR: (var, value) => value,
+		SseqCommand.SSEQ_CMD_ADDVAR: (var, value) => cast(short)(var + value),
+		SseqCommand.SSEQ_CMD_SUBVAR: (var, value) => cast(short)(var - value),
+		SseqCommand.SSEQ_CMD_MULVAR: (var, value) => cast(short)(var * value),
+		SseqCommand.SSEQ_CMD_DIVVAR: (var, value) => cast(short)(var / value),
+		SseqCommand.SSEQ_CMD_SHIFTVAR: (var, value) => cast(short)((value < 0) ? (var >> -value) : (var << value)),
+		SseqCommand.SSEQ_CMD_RANDVAR: (var, value) => cast(short)uniform(0, abs(value) + 1),
+	];
+	return funcs[cmd];
+}
+
+@safe unittest {
+	assert(VarFunc(SseqCommand.SSEQ_CMD_SETVAR)(4, 0) == 0);
+	assert(VarFunc(SseqCommand.SSEQ_CMD_SETVAR)(4, 1) == 1);
+
+	assert(VarFunc(SseqCommand.SSEQ_CMD_ADDVAR)(3, 0) == 3);
+	assert(VarFunc(SseqCommand.SSEQ_CMD_ADDVAR)(3, 1) == 4);
+
+	assert(VarFunc(SseqCommand.SSEQ_CMD_SUBVAR)(3, 0) == 3);
+	assert(VarFunc(SseqCommand.SSEQ_CMD_SUBVAR)(3, 1) == 2);
+
+	assert(VarFunc(SseqCommand.SSEQ_CMD_MULVAR)(3, 0) == 0);
+	assert(VarFunc(SseqCommand.SSEQ_CMD_MULVAR)(3, 1) == 3);
+	assert(VarFunc(SseqCommand.SSEQ_CMD_MULVAR)(3, 2) == 6);
+
+	assert(VarFunc(SseqCommand.SSEQ_CMD_DIVVAR)(3, -1) == -3);
+	assert(VarFunc(SseqCommand.SSEQ_CMD_DIVVAR)(3, 1) == 3);
+	assert(VarFunc(SseqCommand.SSEQ_CMD_DIVVAR)(3, 2) == 1);
+
+	assert(VarFunc(SseqCommand.SSEQ_CMD_SHIFTVAR)(3, -1) == 1);
+	assert(VarFunc(SseqCommand.SSEQ_CMD_SHIFTVAR)(3, 0) == 3);
+	assert(VarFunc(SseqCommand.SSEQ_CMD_SHIFTVAR)(3, 1) == 6);
+	assert(VarFunc(SseqCommand.SSEQ_CMD_SHIFTVAR)(3, 2) == 12);
+
+	assert(VarFunc(SseqCommand.SSEQ_CMD_RANDVAR)(3, -1) < 2);
+	assert(VarFunc(SseqCommand.SSEQ_CMD_RANDVAR)(3, 0) < 1);
+	assert(VarFunc(SseqCommand.SSEQ_CMD_RANDVAR)(3, 1) < 2);
+	assert(VarFunc(SseqCommand.SSEQ_CMD_RANDVAR)(3, 2) < 3);
 }
 
 ///
-private bool compareFuncEq(short a, short b) @safe { return a == b; }
-///
-private bool compareFuncGe(short a, short b) @safe { return a >= b; }
-///
-private bool compareFuncGt(short a, short b) @safe { return a > b; }
-///
-private bool compareFuncLe(short a, short b) @safe { return a <= b; }
-///
-private bool compareFuncLt(short a, short b) @safe { return a < b; }
-///
-private bool compareFuncNe(short a, short b) @safe { return a != b; }
-
-///
 private bool function(short, short) @safe CompareFunc(int cmd) @safe
+	in((cmd >= SseqCommand.SSEQ_CMD_CMP_EQ) && (cmd <= SseqCommand.SSEQ_CMD_CMP_NE), "Invalid comparison")
 {
-	switch (cmd)
-	{
-		case SseqCommand.SSEQ_CMD_CMP_EQ:
-			return &compareFuncEq;
-		case SseqCommand.SSEQ_CMD_CMP_GE:
-			return &compareFuncGe;
-		case SseqCommand.SSEQ_CMD_CMP_GT:
-			return &compareFuncGt;
-		case SseqCommand.SSEQ_CMD_CMP_LE:
-			return &compareFuncLe;
-		case SseqCommand.SSEQ_CMD_CMP_LT:
-			return &compareFuncLt;
-		case SseqCommand.SSEQ_CMD_CMP_NE:
-			return &compareFuncNe;
-		default:
-			return null;
-	}
+	static immutable bool function(short, short) @safe[] funcs = [
+		SseqCommand.SSEQ_CMD_CMP_EQ: (a, b) => a == b,
+		SseqCommand.SSEQ_CMD_CMP_GE: (a, b) => a >= b,
+		SseqCommand.SSEQ_CMD_CMP_GT: (a, b) => a > b,
+		SseqCommand.SSEQ_CMD_CMP_LE: (a, b) => a <= b,
+		SseqCommand.SSEQ_CMD_CMP_LT: (a, b) => a < b,
+		SseqCommand.SSEQ_CMD_CMP_NE: (a, b) => a != b,
+	];
+	return funcs[cmd];
+}
+
+unittest {
+	assert(!CompareFunc(SseqCommand.SSEQ_CMD_CMP_EQ)(-1, 0));
+	assert(CompareFunc(SseqCommand.SSEQ_CMD_CMP_EQ)(0, 0));
+	assert(!CompareFunc(SseqCommand.SSEQ_CMD_CMP_EQ)(1, 0));
+
+	assert(!CompareFunc(SseqCommand.SSEQ_CMD_CMP_GE)(-1, 0));
+	assert(CompareFunc(SseqCommand.SSEQ_CMD_CMP_GE)(0, 0));
+	assert(CompareFunc(SseqCommand.SSEQ_CMD_CMP_GE)(1, 0));
+
+	assert(!CompareFunc(SseqCommand.SSEQ_CMD_CMP_GT)(-1, 0));
+	assert(!CompareFunc(SseqCommand.SSEQ_CMD_CMP_GT)(0, 0));
+	assert(CompareFunc(SseqCommand.SSEQ_CMD_CMP_GT)(1, 0));
+
+	assert(CompareFunc(SseqCommand.SSEQ_CMD_CMP_LE)(-1, 0));
+	assert(CompareFunc(SseqCommand.SSEQ_CMD_CMP_LE)(0, 0));
+	assert(!CompareFunc(SseqCommand.SSEQ_CMD_CMP_LE)(1, 0));
+
+	assert(CompareFunc(SseqCommand.SSEQ_CMD_CMP_LT)(-1, 0));
+	assert(!CompareFunc(SseqCommand.SSEQ_CMD_CMP_LT)(0, 0));
+	assert(!CompareFunc(SseqCommand.SSEQ_CMD_CMP_LT)(1, 0));
+
+	assert(CompareFunc(SseqCommand.SSEQ_CMD_CMP_NE)(-1, 0));
+	assert(!CompareFunc(SseqCommand.SSEQ_CMD_CMP_NE)(0, 0));
+	assert(CompareFunc(SseqCommand.SSEQ_CMD_CMP_NE)(1, 0));
 }
 
 ///
