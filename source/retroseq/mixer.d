@@ -135,6 +135,10 @@ struct Mixer {
 		callbackFrequency = duration;
 		samplesUntilNextCallback = (duration.total!"msecs" * outputFrequency) / 1000;
 	}
+	///
+	void setCallback(typeof(callback) callback) @safe pure nothrow {
+		this.callback = callback;
+	}
 	/// Get the next pair of mixed samples
 	short[2] front() const @safe pure nothrow {
 		short[2] result;

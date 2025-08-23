@@ -114,12 +114,19 @@ struct TrackState {
 	int nowLength; ///
 }
 
+alias OrganyaMixer = Organya!true;
+alias OrganyaNoMixer = Organya!false;
+
 ///
-struct Organya {
+private struct Organya(bool refMixer) {
 	private size_t[2][8][8] allocatedSounds; ///
-	private size_t[512] secondaryAllocatedSounds; ///
+	size_t[512] secondaryAllocatedSounds; ///
 	private const(OrganyaSong)[] song;
-	private Mixer mixer; ///
+	static if (refMixer) {
+		private Mixer* mixer; ///
+	} else {
+		private Mixer mixer; ///
+	}
 	private const(PixtoneObject)[] pixtoneObjects = defaultPixtoneObjects; /// Pixtone objects to use for instrumentation. Only used during initialization.
 
 	// Play data
@@ -142,9 +149,19 @@ struct Organya {
 		assert(song.length == 1, "No song loaded");
 		return song[0].info;
 	}
-	///
-	public void initialize(uint outputFrequency, InterpolationMethod method) @safe {
-		mixer = Mixer(method, outputFrequency, &playData);
+	static if (refMixer) {
+		public void initialize(Mixer* mixer) @safe {
+			this.mixer = mixer;
+			initializeCommon();
+		}
+	} else {
+		///
+		public void initialize(uint outputFrequency, InterpolationMethod method) @safe {
+			mixer = Mixer(method, outputFrequency, &playData);
+			initializeCommon();
+		}
+	}
+	public void initializeCommon() @safe {
 		foreach (obj; pixtoneObjects) {
 			makePixToneObject(obj.params, obj.id);
 		}
@@ -152,7 +169,7 @@ struct Organya {
 
 	// 以下は再生 (The following is playback)
 	///
-	private void playData() @safe nothrow {
+	void playData() @safe nothrow {
 		// Handle fading out
 		if (fading && globalVolume) {
 			globalVolume -= 2;
@@ -441,7 +458,11 @@ struct Organya {
 
 	///
 	public void fillBuffer(scope short[2][] finalBuffer) nothrow @safe {
-		mixer.mixSounds(finalBuffer);
+		static if (refMixer) {
+			mixSounds(*mixer, finalBuffer);
+		} else {
+			mixer.mixSounds(finalBuffer);
+		}
 	}
 	/// Overrides the instrumentation with custom pixtone objects. Be sure to call this BEFORE initialization!
 	public void loadData(const(PixtoneObject)[] data) @safe {

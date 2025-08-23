@@ -53,8 +53,11 @@ private struct Header {
 }
 static assert(Header.sizeof == 0x418);
 
+alias PiyoPiyoMixer = PiyoPiyo!true;
+alias PiyoPiyoNoMixer = PiyoPiyo!false;
+
 ///
-struct PiyoPiyo {
+private struct PiyoPiyo(bool refMixer) {
 	//Loaded header
 	private Header header; ///
 
@@ -67,10 +70,24 @@ struct PiyoPiyo {
 	private int volume; ///
 	private bool fading; ///
 	private size_t[int] loadedSamples; ///
-	private Mixer mixer; ///
-	///
-	public void initialize(uint sampleRate, InterpolationMethod interpolationMethod) @safe {
-		mixer = Mixer(interpolationMethod, sampleRate, &update);
+	static if (refMixer) {
+		Mixer* mixer; ///
+	} else {
+		Mixer mixer; ///
+	}
+	static if (refMixer) {
+		public void initialize(Mixer* mixer) @safe {
+			this.mixer = mixer;
+			initializeCommon();
+		}
+	} else {
+		///
+		public void initialize(uint sampleRate, InterpolationMethod interpolationMethod) @safe {
+			mixer = Mixer(interpolationMethod, sampleRate, &update);
+			initializeCommon();
+		}
+	}
+	public void initializeCommon() @safe {
 		loadedSamples[472] = loadWav(wavBASS1);
 		loadedSamples[473] = loadWav(wavBASS1);
 		loadedSamples[474] = loadWav(wavBASS2);
@@ -114,7 +131,7 @@ struct PiyoPiyo {
 		return true;
 	}
 	///
-	private void update() @safe nothrow {
+	void update() @safe nothrow {
 		static immutable int[8] panTable = [
 			0, 96, 180, 224, 256, 288, 332, 420
 		];
@@ -306,7 +323,11 @@ struct PiyoPiyo {
 
 	///
 	public void fillBuffer(scope short[2][] finalBuffer) @safe nothrow {
-		mixer.mixSounds(finalBuffer);
+		static if (refMixer) {
+			mixSounds(*mixer, finalBuffer);
+		} else {
+			mixer.mixSounds(finalBuffer);
+		}
 	}
 
 	///
