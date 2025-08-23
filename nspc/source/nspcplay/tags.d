@@ -70,7 +70,7 @@ struct TagPair {
 	private bool _binary; ///
 	private const(ubyte)[] _value; ///
 	///
-	this(string key, string value) @safe pure {
+	this(string key, const(char)[] value) @safe pure {
 		this.key = key;
 		this._binary = false;
 		this._value = cast(const(ubyte)[])value;
@@ -87,6 +87,12 @@ struct TagPair {
 			return "";
 		}
 		return cast(const(char)[])_value;
+	}
+	///
+	void str(const(char)[] newStr) @safe pure
+		in(!_binary, "Not a text string!")
+	{
+		_value = cast(const(ubyte)[])newStr;
 	}
 	///
 	const(ubyte)[] binary() const @safe pure {
