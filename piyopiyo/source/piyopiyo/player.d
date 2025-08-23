@@ -40,7 +40,7 @@ static assert(TrackHeader.sizeof == 0x154);
 ///
 private struct Header {
 	char[3] magic; ///
-	bool writable; ///
+	ubyte writable; ///
 	uint pTrack1; ///
 	uint wait; ///
 	int repeatX; ///
