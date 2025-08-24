@@ -3,7 +3,7 @@ module nspcplay.song;
 
 import std.algorithm.comparison : among, max, min;
 import std.algorithm.sorting : sort;
-import std.algorithm.searching : canFind;
+import std.algorithm.searching;
 import std.conv : to;
 import std.exception : enforce;
 import std.experimental.logger;
@@ -13,7 +13,10 @@ import std.range : only;
 import nspcplay.common;
 import nspcplay.samples;
 import nspcplay.sequence;
+import nspcplay.nspc1;
+import nspcplay.nspc2;
 import nspcplay.tags;
+import retroseq.utility;
 
 private enum maxInstruments = 128; ///
 private enum maxSampleCount = 128; ///
@@ -26,33 +29,6 @@ enum PhraseType {
 	end, ///
 	fastForwardOn, ///
 	fastForwardOff, ///
-}
-///
-struct NSPCFileHeader {
-	align(1):
-	static union Extra {
-		struct { // Variant.prototype, addmusick
-			ushort percussionBase; ///
-			ushort customInstruments; /// addmusick only
-		}
-		ubyte[19] reserved; ///
-	}
-	/// Which version of NSPC to use
-	Variant variant;
-	/// Base SPC address of the song's sequence data
-	ushort songBase;
-	/// Base SPC address of the instruments
-	ushort instrumentBase;
-	/// Base SPC address of the samples
-	ushort sampleBase;
-	/// Release table to use
-	ReleaseTable releaseTable;
-	/// Volume table to use
-	VolumeTable volumeTable;
-	/// Extra information for variants
-	Extra extra;
-	/// Number of FIR coefficient tables
-	ubyte firCoefficientTableCount;
 }
 
 ///
@@ -92,7 +68,10 @@ struct Track {
 
 ///
 struct Song {
-	private NSPCFileHeader header; ///
+	ushort songBase;
+	ushort instrumentBase;
+	ushort sampleBase;
+	ushort customInstruments; /// addmusick only
 	Phrase[] order; ///
 	ushort[8][ushort] trackLists; ///
 	Track[ushort] tracks; ///
@@ -146,26 +125,18 @@ struct Song {
 	}
 	///
 	void initializeInstruments(scope const ubyte[] buffer, ushort instrumentBase, ushort sampleBase) @safe {
-		NSPCFileHeader fakeHeader;
-		fakeHeader.instrumentBase = instrumentBase;
-		fakeHeader.sampleBase = sampleBase;
-		processInstruments(this, buffer, fakeHeader);
+		this.instrumentBase = instrumentBase;
+		this.sampleBase = sampleBase;
+		processInstruments(this, buffer);
 	}
 	///
-	void loadNSPC(const NSPCFileHeader header, scope const ubyte[] data, ushort[] phrases = []) @safe {
-		debug(nspclogging) tracef("Loading NSPC - so: %X, i: %X, sa: %X, variant: %s", header.songBase, header.instrumentBase, header.sampleBase, header.variant);
-		this.header = header;
-		variant = header.variant;
-		assert(header.volumeTable < volumeTables.length, "Invalid volume table");
-		assert(header.releaseTable < releaseTables.length, "Invalid release table");
-		volumeTable = volumeTables[header.volumeTable];
-		releaseTable = releaseTables[header.releaseTable];
+	void loadNSPC(scope const ubyte[] data, ushort[] phrases = []) @safe {
+		debug(nspclogging) tracef("Loading NSPC - so: %X, i: %X, sa: %X, variant: %s", songBase, instrumentBase, sampleBase, variant);
 		if (variant == Variant.addmusick) {
 			altReleaseTable = releaseTables[0]; // AMK allows the 'default' release table to be used as well
 		}
-		debug(nspclogging) tracef("Release table: %s, volume table: %s", header.releaseTable, header.volumeTable);
-		processInstruments(this, data, header);
-		order = phrases == null ? decompilePhrases(data[], header.songBase) : interpretPhrases(phrases, header.songBase);
+		processInstruments(this, data);
+		order = phrases == null ? decompilePhrases(data[], songBase) : interpretPhrases(phrases, songBase);
 		decompileSong(data[], this);
 		debug(nspclogging) tracef("FIR coefficients: %s", firCoefficients);
 
@@ -379,7 +350,7 @@ private struct PrototypePercussion {
 }
 
 /// note style tables, from 6F80
-package immutable ubyte[8][] releaseTables = [
+immutable ubyte[8][] releaseTables = [
 	[0x32, 0x65, 0x7F, 0x98, 0xB2, 0xCB, 0xE5, 0xFC],
 	[0x33, 0x66, 0x7F, 0x99, 0xB2, 0xCC, 0xE5, 0xFC], // HAL (Earthbound)
 	[0x65, 0x7F, 0x98, 0xB2, 0xCB, 0xE5, 0xF2, 0xFC], // HAL (Kirby Super Star)
@@ -388,7 +359,7 @@ package immutable ubyte[8][] releaseTables = [
 	[0x33, 0x66, 0x80, 0x99, 0xB3, 0xCC, 0xE6, 0xFF], // Nintendo (Prototype)
 ];
 ///
-package immutable ubyte[16][] volumeTables = [
+immutable ubyte[16][] volumeTables = [
 	[0x19, 0x32, 0x4C, 0x65, 0x72, 0x7F, 0x8C, 0x98, 0xA5, 0xB2, 0xBF, 0xCB, 0xD8, 0xE5, 0xF2, 0xFC],
 	[0x19, 0x33, 0x4C, 0x66, 0x72, 0x7F, 0x8C, 0x99, 0xA5, 0xB2, 0xBF, 0xCC, 0xD8, 0xE5, 0xF2, 0xFC], // HAL (Earthbound)
 	[0x4C, 0x59, 0x6D, 0x7F, 0x87, 0x8E, 0x98, 0xA0, 0xA8, 0xB2, 0xBF, 0xCB, 0xD8, 0xE5, 0xF2, 0xFC], // HAL (Kirby Super Star)
@@ -397,13 +368,30 @@ package immutable ubyte[16][] volumeTables = [
 	[0x08, 0x12, 0x1B, 0x24, 0x2C, 0x35, 0x3E, 0x47, 0x51, 0x5A, 0x62, 0x6B, 0x7D, 0x8F, 0xA1, 0xB3], // Nintendo (Prototype)
 ];
 ///
-package immutable ubyte[8][] defaultFIRCoefficients = [
+immutable ubyte[8][] defaultFIRCoefficients = [
 	[0x7F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
 	[0x58, 0xBF, 0xDB, 0xF0, 0xFE, 0x07, 0x0C, 0x0C],
 	[0x0C, 0x21, 0x2B, 0x2B, 0x13, 0xFE, 0xF3, 0xF9],
 	[0x34, 0x33, 0x00, 0xD9, 0xE5, 0x01, 0xFC, 0xEB],
 ];
 
+///
+void loadPack(scope ubyte[] buffer, return scope const(ubyte)[] pack) @safe {
+	if (pack.length == 0) {
+		return;
+	}
+	const size = read!ushort(pack);
+	if (size == 0) {
+		return;
+	}
+	const base = read!ushort(pack, 2);
+	debug(nspclogging) tracef("Loading subpack to %X (%s bytes)", base, size);
+	if (size + base > ushort.max) {
+		infof("Loading %s bytes to $%04X will overflow - truncating", size, base);
+	}
+	const truncated = min(ushort.max, base + size) - base;
+	buffer[base .. base + truncated] = pack[4 .. truncated + 4];
+}
 ///
 const(ubyte)[] loadAllSubpacks(scope ubyte[] buffer, return scope const(ubyte)[] pack) @safe {
 	ushort size, base;
@@ -427,28 +415,37 @@ const(ubyte)[] loadAllSubpacks(scope ubyte[] buffer, return scope const(ubyte)[]
 	return pack[2 .. $];
 }
 /// Load an NSPC file
-Song loadNSPCFile(const(ubyte)[] data, ushort[] phrases = []) @safe {
-	Song song;
-	ubyte[65536] buffer;
-	auto header = read!NSPCFileHeader(data);
-	const remaining = loadAllSubpacks(buffer[], data[NSPCFileHeader.sizeof .. $]);
-	if (header.firCoefficientTableCount == 0) {
-		song.firCoefficients = defaultFIRCoefficients;
-	} else {
-		song.firCoefficients = cast(const(ubyte[8])[])remaining[0 .. 8 * header.firCoefficientTableCount].dup;
+Song[] loadNSPCFile(const(ubyte)[] data, ushort[] phrases = []) @safe {
+	try {
+		return loadNSPC2File(data, phrases);
+	} catch (Exception e) {
+		debug infof("%s", e);
+		return [loadNSPC1File(data, phrases)];
 	}
-	song.tags = readTags(remaining[8 * header.firCoefficientTableCount .. $]);
-	foreach (tagPair; song.tags) {
-		switch (tagPair.key) {
-			case "_masterVolume":
-				song.masterVolume = tagPair.str.to!byte;
-				break;
-			default:
-				break;
-		}
+}
+package void handleSpecialTag(ref Song song, const TagPair pair) @safe pure {
+	switch (pair.key) {
+		case "_masterVolume":
+			song.masterVolume = pair.str.to!byte;
+			break;
+		case "_volumeTable":
+			song.volumeTable = pair.binary;
+			break;
+		case "_releaseTable":
+			song.releaseTable = pair.binary;
+			break;
+		case "_firCoefficients":
+			song.firCoefficients = (cast(const(ubyte[8])[])pair.binary);
+			break;
+		case "_variant":
+			song.variant = pair.str.to!Variant;
+			break;
+		case "_percussionBase":
+			song.percussionBase = pair.binary.read!ushort;
+			break;
+		default:
+			break;
 	}
-	song.loadNSPC(header, buffer[]);
-	return song;
 }
 ///
 private Phrase[] decompilePhrases(scope const(ubyte)[] data, ushort startAddress) @safe {
@@ -471,7 +468,7 @@ private Phrase[] decompilePhrases(scope const(ubyte)[] data, ushort startAddress
 		phraseCount++;
 		index++;
 	}
-	enforce!NSPCException(phraseCount > 0, "No phrases in song");
+	//enforce!NSPCException(phraseCount > 0, "No phrases in song");
 	return interpretPhrases(wpO[0 .. index + 1], startAddress);
 }
 ///
@@ -580,30 +577,30 @@ private Track decompileTrack(immutable(ubyte)[] data, ushort start, ref Song son
 	return track;
 }
 ///
-private void processInstruments(ref Song song, scope const ubyte[] buffer, const NSPCFileHeader header) @safe {
-	decodeSamples(song, buffer, cast(const(ushort[2])[])(buffer[header.sampleBase .. header.sampleBase + maxSampleCount * 4]));
+private void processInstruments(ref Song song, scope const ubyte[] buffer) @safe {
+	decodeSamples(song, buffer, cast(const(ushort[2])[])(buffer[song.sampleBase .. song.sampleBase + maxSampleCount * 4]));
 	song.instruments = [];
 	song.instruments.reserve(maxInstruments);
 	if (song.variant == Variant.prototype) {
 		size_t instrumentCount = maxInstruments;
-		if (header.instrumentBase < header.extra.percussionBase) {
-			instrumentCount = min(instrumentCount, (header.extra.percussionBase - header.instrumentBase) / PrototypeInstrument.sizeof);
+		if (song.instrumentBase < song.percussionBase) {
+			instrumentCount = min(instrumentCount, (song.percussionBase - song.instrumentBase) / PrototypeInstrument.sizeof);
 		}
-		foreach (idx, instrument; cast(const(PrototypeInstrument)[])(buffer[header.instrumentBase .. header.instrumentBase + instrumentCount * PrototypeInstrument.sizeof])) {
+		foreach (idx, instrument; cast(const(PrototypeInstrument)[])(buffer[song.instrumentBase .. song.instrumentBase + instrumentCount * PrototypeInstrument.sizeof])) {
 			song.instruments ~= cast(Instrument)instrument;
 		}
-		song.percussionBase = instrumentCount;
-		foreach (idx, percussion; cast(const(PrototypePercussion)[])(buffer[header.extra.percussionBase .. header.extra.percussionBase + maxInstruments * PrototypePercussion.sizeof])) {
+		foreach (idx, percussion; cast(const(PrototypePercussion)[])(buffer[song.percussionBase .. song.percussionBase + maxInstruments * PrototypePercussion.sizeof])) {
 			song.instruments ~= cast(Instrument)percussion;
 			song.percussionNotes[idx] = cast(ubyte)(percussion.note - 0x80);
 		}
+		song.percussionBase = instrumentCount;
 	} else if (song.variant == Variant.addmusick) {
-		song.instruments ~= cast(const(Instrument)[])(buffer[header.instrumentBase .. header.instrumentBase + 19 * Instrument.sizeof]);
+		song.instruments ~= cast(const(Instrument)[])(buffer[song.instrumentBase .. song.instrumentBase + 19 * Instrument.sizeof]);
 		song.instruments.length = 30; //custom instruments start at 30
-		song.instruments ~= cast(const(Instrument)[])(buffer[header.extra.customInstruments .. header.extra.customInstruments + (maxInstruments - 19) * Instrument.sizeof]);
+		song.instruments ~= cast(const(Instrument)[])(buffer[song.customInstruments .. song.customInstruments + (maxInstruments - 19) * Instrument.sizeof]);
 		song.percussionNotes = 0x24;
 	} else {
-		song.instruments ~= cast(const(Instrument)[])(buffer[header.instrumentBase .. header.instrumentBase + maxInstruments * Instrument.sizeof]);
+		song.instruments ~= cast(const(Instrument)[])(buffer[song.instrumentBase .. song.instrumentBase + maxInstruments * Instrument.sizeof]);
 		song.percussionNotes = 0x24;
 	}
 	debug(nspclogging) foreach (idx, instrument; song.instruments) {
@@ -646,46 +643,6 @@ struct Pack {
 	}
 }
 
-///
-struct NSPCWriter {
-	private static immutable ubyte[] packTerminator = [0, 0]; ///
-	NSPCFileHeader header; ///
-	const(Pack)[] packs; ///
-	const(ubyte[8])[] firCoefficients; ///
-	const(TagPair)[] tags; ///
-	///
-	void toBytes(W)(ref W writer) const {
-		import std.bitmanip : nativeToLittleEndian;
-		import std.range : put;
-		put(writer, (cast(const(ubyte)[NSPCFileHeader.sizeof])header)[]);
-		foreach (pack; packs) {
-			put(writer, nativeToLittleEndian(pack.size)[]);
-			put(writer, nativeToLittleEndian(pack.address)[]);
-			put(writer, pack.data);
-		}
-		put(writer, packTerminator);
-		foreach (coeff; firCoefficients) {
-			put(writer, coeff[]);
-		}
-		if (tags) {
-			put(writer, tagsToBytes(tags));
-		}
-	}
-}
-@safe pure unittest {
-	import std.array : Appender;
-	static immutable ubyte[] pack1 = [1, 2, 3, 4, 5];
-	static immutable ubyte[] pack2 = [5, 4, 3, 2, 1, 0];
-	Appender!(ubyte[]) buffer;
-	NSPCWriter writer;
-	writer.packs ~= Pack(0x1234, pack1);
-	writer.packs ~= Pack(0x5678, pack2);
-	writer.header.songBase = 0x2345;
-	writer.header.instrumentBase = 0x6789;
-	writer.header.sampleBase = 0x0123;
-	writer.toBytes(buffer);
-	assert(buffer[] == [0x00, 0x00, 0x00, 0x00, 0x45, 0x23, 0x89, 0x67, 0x23, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x00, 0x34, 0x12, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x00, 0x78, 0x56, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00, 0x00, 0x00]);
-}
 ///
 const(Pack)[] parsePacks(const(ubyte)[] input) {
 	const(Pack)[] result;

@@ -54,6 +54,11 @@ align(1) struct Flags {
 	Encoding encoding() const @safe pure {
 		return cast(Encoding)((flags >> 1) & 3);
 	}
+	///
+	void encoding(Encoding newValue) @safe pure {
+		flags &= ~(3 << 1);
+		flags |= newValue << 1;
+	}
 }
 
 ///
@@ -99,6 +104,10 @@ struct TagPair {
 		if (!_binary) {
 			return [];
 		}
+		return _value;
+	}
+	///
+	const(ubyte)[] rawValue() const @safe pure {
 		return _value;
 	}
 }
@@ -147,6 +156,7 @@ const(ubyte)[] tagsToBytes(scope const(TagPair)[] tags) @safe pure {
 		const(ubyte)[] result;
 		TagHeader[1] header;
 		assert(tag._value.length < uint.max);
+		header[0].flags.encoding = tag._binary ? Encoding.binary : Encoding.utf8;
 		header[0].size = cast(uint)tag._value.length;
 		result ~= cast(const(ubyte)[])header[];
 		result ~= tag.key;

@@ -2,7 +2,8 @@
 module nspcplay.spc;
 
 import nspcplay.common : ReleaseTable, Variant, VolumeTable;
-import nspcplay.song : NSPCFileHeader, releaseTables, Song, volumeTables;
+import nspcplay.nspc1;
+import nspcplay.song : releaseTables, Song, volumeTables;
 import nspcplay.tags : TagPair;
 
 import std.algorithm;
@@ -65,12 +66,13 @@ Song loadSPCFile(scope const ubyte[] file) @safe {
 		}
 	}
 	auto header = detectParameters(spc[], dsp[]).header;
+	loadOldHeader(song, header);
 	infof("Detected variant: %s", header.variant);
 	infof("Detected instruments: %04X", header.instrumentBase);
 	infof("Detected samples: %04X", header.sampleBase);
 	infof("Detected song: %04X", header.songBase);
 	infof("Detected release table: %s, volume table: %s", header.releaseTable, header.volumeTable);
-	song.loadNSPC(header, spc[]);
+	song.loadNSPC(spc[]);
 	return song;
 }
 ///

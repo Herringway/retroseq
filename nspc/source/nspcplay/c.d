@@ -64,7 +64,7 @@ int nspcplayInitializeInstruments(scope Song* song, const scope ubyte* buffer, u
 ///
 int nspcplayLoadNSPCFile(scope NSPCPlayer* player, const scope ubyte* data, size_t dataLength) {
 	try {
-		player.loadSong(loadNSPCFile(data[0 .. dataLength]));
+		player.loadSong(loadNSPCFile(data[0 .. dataLength])[0]);
 	} catch (Exception e) {
 		lastError = e.msg.toStringz;
 		return 1;

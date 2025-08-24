@@ -95,6 +95,10 @@ int main(string[] args) {
 
 	auto filePath = args[1];
 	auto file = cast(ubyte[])read(args[1]);
+	size_t subSong = 0;
+	if (args.length > 2) {
+		subSong = args[2].to!uint;
+	}
 
 	auto nspc = NSPCPlayer(sampleRate);
 	// initialization
@@ -105,21 +109,13 @@ int main(string[] args) {
 	foreach (phrasePortion; phraseString.splitter(",")) {
 		phrases ~= phrasePortion.to!ushort(16);
 	}
-	Song song;
+	Song[] songs;
 	if (filePath.extension == ".spc") {
-		song = loadSPCFile(file);
+		songs = [loadSPCFile(file)];
 	} else {
-		song = loadNSPCFile(file, phrases);
+		songs = loadNSPCFile(file, phrases);
 	}
-	if (song.tags) {
-		info("Tags:");
-		foreach (pair; song.tags) {
-			if (pair.key.startsWith("_")) {
-				continue;
-			}
-			infof("%s: %s", pair.key, pair.str);
-		}
-	}
+	bool playingNewSong = true;
 	if (channelsEnabled.length != 8) {
 		stderr.writeln("Channel string must be exactly 8 characters long!");
 		return 1;
@@ -128,7 +124,7 @@ int main(string[] args) {
 
 	nspc.interpolation = interpolation;
 	if (replaceSamples != "") {
-		foreach(idx, sample; song.getSamples) {
+		foreach(idx, sample; songs[subSong].getSamples) {
 			const glob = format!"%s.brr.wav"(sample.hash.toHexString);
 			auto matched = dirEntries(replaceSamples, glob, SpanMode.shallow);
 			if (!matched.empty) {
@@ -185,27 +181,19 @@ int main(string[] args) {
 					warningf("Loop end (%s) != sample count (%s), unexpected results may occur!", loopEnd, newSample.length);
 				}
 				infof("Replacing sample with %s", matched.front.name);
-				song.replaceSample(idx, newSample, newLoop);
+				songs[subSong].replaceSample(idx, newSample, newLoop);
 			}
 		}
 	}
-
-	nspc.loadSong(song);
-	foreach (idx, channel; channelsEnabled) {
-		nspc.setChannelEnabled(cast(ubyte)idx, channel != '0');
-	}
-	nspc.play();
-	trace("Playing NSPC music");
-
 
 	if (!dumpBRRFiles && (outfile != "")) {
 		dumpNSPCWav(nspc, sampleRate, channels, outfile);
 	} else if (printSong) {
 		writeln("Instruments:");
-		foreach (idx, instrument; song.instruments) {
-			if ((instrument.sampleID < song.samples.length) && song.samples[instrument.sampleID].isValid && (instrument.tuning != 0)) {
-				const sample = song.samples[instrument.sampleID];
-				writef!"%s (%s) - Sample: %s (%s, samples: %s, "(idx, ((song.percussionBase > 0) && (idx > song.percussionBase)) ? "Percussion" : "Standard", instrument.sampleID, sample.hash.toHexString, sample.data.length);
+		foreach (idx, instrument; songs[subSong].instruments) {
+			if ((instrument.sampleID < songs[subSong].samples.length) && songs[subSong].samples[instrument.sampleID].isValid && (instrument.tuning != 0)) {
+				const sample = songs[subSong].samples[instrument.sampleID];
+				writef!"%s (%s) - Sample: %s (%s, samples: %s, "(idx, ((songs[subSong].percussionBase > 0) && (idx > songs[subSong].percussionBase)) ? "Percussion" : "Standard", instrument.sampleID, sample.hash.toHexString, sample.data.length);
 				if (sample.loopLength) {
 					writef!"Loop: %s-%s"(sample.loopLength, sample.data.length);
 				} else {
@@ -215,12 +203,12 @@ int main(string[] args) {
 			}
 		}
 		writeln("Sequence:");
-		writeln(song);
+		writeln(songs[subSong]);
 	} else if (dumpBRRFiles) {
 		if (!outfile.exists) {
 			mkdirRecurse(outfile);
 		}
-		foreach(idx, sample; song.getSamples) {
+		foreach(idx, sample; songs[subSong].getSamples) {
 			const filename = buildPath(outfile, format!"%s.brr.wav"(sample.hash.toHexString));
 			if (!filename.exists) {
 				SampleChunk smpl;
@@ -280,11 +268,40 @@ int main(string[] args) {
 
 		writeln("Press enter to exit");
 		while(true) {
-			if (kbhit()) {
-				getch(); //make sure the key press is actually consumed
-				break;
+			if (playingNewSong) {
+				subSong = min(subSong, songs.length - 1);
+				nspc.loadSong(songs[subSong]);
+				nspc.play();
+				if (songs[subSong].tags) {
+					const(char)[] album;
+					const(char)[] title;
+					auto albumTag = songs[subSong].tags.find!(x => x.key == "album")();
+					if (!albumTag.empty) {
+						album = albumTag.front.str;
+					}
+					auto titleTag = songs[subSong].tags.find!(x => x.key == "title")();
+					if (!titleTag.empty) {
+						title = titleTag.front.str;
+					}
+					infof("Now playing %s: %s - %s", subSong, album, title);
+				}
+				playingNewSong = false;
 			}
-			if (!nspc.isPlaying) {
+			if (getch() == 224) {
+				const arrow = getch();
+				if (arrow == 72) { // up
+					subSong++;
+				} else if (arrow == 75) { // left
+					subSong -= min(subSong, 10);
+				} else if (arrow == 77) { // right
+					subSong += 10;
+				} else if (arrow == 80) { // down
+					subSong--;
+				} else {
+					break;
+				}
+				playingNewSong = true;
+			} else {
 				break;
 			}
 		}
