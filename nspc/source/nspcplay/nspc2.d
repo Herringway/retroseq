@@ -69,7 +69,7 @@ Song[] loadNSPC2File(const(ubyte)[] data, ushort[] phrases = []) @safe {
 	auto subSongs = cast(const(NSPC2SubSong)[])(data[subSongStart .. packListStart]);
 	auto packLists = cast(const(NSPC2PackListHeader)[])(data[packListStart .. packListDataStart]);
 	auto packs = cast(const(NSPC2PackHeader)[])(data[packStart .. packDataStart]);
-	auto tags = readTags(data[header.tagStart .. $]);
+	auto tags = readTags(data);
 	foreach (subSongID, subSong; subSongs) {
 		debug(nspclogging) tracef("Loading subsong %s", subSongID);
 		Song song;
@@ -106,7 +106,6 @@ struct NSPC2Writer {
 	const(uint[])[] packLists;
 	const(NSPC2SubSong)[] subSongs; ///
 	const(Pack)[] packs; ///
-	//const(ubyte[8])[] firCoefficients; ///
 	const(TagPair)[][] tags; ///
 	///
 	void toBytes(W)(ref W writer) const {
