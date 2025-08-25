@@ -354,8 +354,9 @@ version(purePlayer) {
 ///
 struct NSPCPlayer {
 	enum defaultSpeed = 500; ///
-
-	const(Song)* currentSong; ///
+	private size_t songIndex;
+	ref currentSong() inout => loadedSongs[songIndex];
+	const(Song)[] loadedSongs; ///
 	SongState state; ///
 	private SongState backupState; ///
 	private int _mixrate = nativeSamplingRate; ///
@@ -797,7 +798,7 @@ struct NSPCPlayer {
 			auto p = c.parser;
 			bool done;
 			while (!done && !p.empty) {
-				const tmpCommand = p.popCommand(*currentSong, done, state.enchantedReadahead);
+				const tmpCommand = p.popCommand(currentSong, done, state.enchantedReadahead);
 				if (tmpCommand.type.among(VCMDClass.note, VCMDClass.tie, VCMDClass.rest, VCMDClass.percussion)) {
 					nextNote = tmpCommand.type;
 					break;
@@ -939,7 +940,7 @@ struct NSPCPlayer {
 	private bool execute(ref Parser parser, ref ChannelState channel) nothrow pure @safe {
 		while (!parser.empty) {
 			bool done;
-			const command = parser.popCommand(*currentSong, done);
+			const command = parser.popCommand(currentSong, done);
 			if (executeCommand(channel, command, done)) {
 				return done;
 			}
@@ -999,7 +1000,7 @@ struct NSPCPlayer {
 					const command = channel.parser.sequenceData.data[0];
 					if (command.special == VCMD.pitchSlideToNote) {
 						doCommand(channel, command);
-						channel.parser.popCommand(*currentSong);
+						channel.parser.popCommand(currentSong);
 					}
 				}
 			}
@@ -1121,7 +1122,7 @@ struct NSPCPlayer {
 	void initialize()() {
 		state = state.init;
 
-		if (currentSong) {
+		if (loadedSongs.length > 0) {
 			state.percussionBase = cast(ubyte)currentSong.percussionBase;
 			if (currentSong.order.length) {
 				loadPattern();
@@ -1160,10 +1161,21 @@ struct NSPCPlayer {
 	}
 	///
 	void loadSong()(const Song song) {
+		loadSongs([song]);
+	}
+	///
+	void loadSongs()(const(Song)[] songs, size_t initial = 0) {
 		if (songPlaying) {
 			stop();
 		}
-		currentSong = &[song][0];
+		loadedSongs = songs;
+		changeTrack(initial);
+	}
+	public void changeTrack()(size_t track) {
+		if (songPlaying) {
+			stop();
+		}
+		songIndex = track;
 		initialize();
 	}
 	/// Sets the playback speed. Default value is NSPCPlayer.defaultSpeed.
