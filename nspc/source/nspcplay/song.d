@@ -87,6 +87,7 @@ struct Song {
 	size_t percussionBase; ///
 	byte masterVolume = 0x70; ///
 	TagPair[] tags; ///
+	ushort[13] noteFrequencyTable = [0x085F, 0x08DE, 0x0965, 0x09F4, 0x0A8C, 0x0B2C, 0x0BD6, 0x0C8B, 0x0D4A, 0x0E14, 0x0EEA, 0x0FCD, 0x10BE];
 	/// Load a single sequence pack at a given address
 	void loadSequencePack(const(ubyte)[] data, ushort base) @safe {
 		loadSequence(data, base);
@@ -436,6 +437,9 @@ package void handleSpecialTag(ref Song song, const TagPair pair) @safe pure {
 			break;
 		case "_firCoefficients":
 			song.firCoefficients = (cast(const(ubyte[8])[])pair.binary);
+			break;
+		case "_pitchTable":
+			song.noteFrequencyTable = (cast(const(ushort[13])[])pair.binary)[0];
 			break;
 		case "_variant":
 			song.variant = pair.str.to!Variant;

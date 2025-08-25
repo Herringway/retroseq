@@ -503,7 +503,6 @@ struct NSPCPlayer {
 
 	/// calculate how far to advance the sample pointer on each output sample
 	private void setFrequency(ref ChannelState c, int note16) const nothrow pure @safe {
-		static immutable ushort[13] noteFrequencyTable = [0x085F, 0x08DE, 0x0965, 0x09F4, 0x0A8C, 0x0B2C, 0x0BD6, 0x0C8B, 0x0D4A, 0x0E14, 0x0EEA, 0x0FCD, 0x10BE];
 
 		// What is this for???
 		if (note16 >= 0x3400) {
@@ -519,8 +518,8 @@ struct NSPCPlayer {
 
 		int octave = (note16 >> 8) / 12;
 		int tone = (note16 >> 8) % 12;
-		int freq = noteFrequencyTable[tone];
-		freq += (noteFrequencyTable[tone + 1] - freq) * (note16 & 0xFF) >> 8;
+		int freq = currentSong.noteFrequencyTable[tone];
+		freq += (currentSong.noteFrequencyTable[tone + 1] - freq) * (note16 & 0xFF) >> 8;
 		freq <<= 1;
 		freq >>= 6 - octave;
 
