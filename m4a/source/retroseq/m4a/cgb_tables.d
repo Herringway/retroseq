@@ -1,5 +1,5 @@
 ///
-module m4a.cgb_tables;
+module retroseq.m4a.cgb_tables;
 
 ///
 immutable short[32] PU0 = [

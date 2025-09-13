@@ -1,6 +1,6 @@
-import m4a;
-import m4a.m4a;
-import m4a.sound_mixer;
+import retroseq.m4a;
+import retroseq.m4a.m4a;
+import retroseq.m4a.sound_mixer;
 
 import std.algorithm.comparison;
 import std.algorithm.iteration;

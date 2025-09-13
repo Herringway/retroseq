@@ -1,12 +1,12 @@
 ///
-module m4a.music_player;
+module retroseq.m4a.music_player;
 
 import retroseq.utility;
 
-import m4a.mp2k_common;
-import m4a.internal;
-import m4a.m4a;
-import m4a.m4a_tables;
+import retroseq.m4a.mp2k_common;
+import retroseq.m4a.internal;
+import retroseq.m4a.m4a;
+import retroseq.m4a.m4a_tables;
 
 ///
 uint umul3232H32(uint a, uint b) @safe pure {

@@ -1,8 +1,8 @@
 ///
-module m4a.cgb_audio;
+module retroseq.m4a.cgb_audio;
 
-import m4a.cgb_tables;
-import m4a.internal;
+import retroseq.m4a.cgb_tables;
+import retroseq.m4a.internal;
 
 ///
 struct AudioCGB {

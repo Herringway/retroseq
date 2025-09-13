@@ -1,9 +1,9 @@
 ///
-module m4a.internal;
+module retroseq.m4a.internal;
 
 import retroseq.utility;
 
-import m4a.m4a;
+import retroseq.m4a.m4a;
 
 alias RelativePointer(Element, Offset) = retroseq.utility.RelativePointer!(Element, Offset, 0x8000000, 0xA000000);
 

@@ -1,5 +1,5 @@
 ///
-module m4a.mp2k_common;
+module retroseq.m4a.mp2k_common;
 
 ///
 int FLOOR_DIV_POW2(int a, ubyte b) @safe pure {

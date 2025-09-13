@@ -1,10 +1,10 @@
 ///
-module m4a.sound_mixer;
+module retroseq.m4a.sound_mixer;
 
-import m4a.mp2k_common;
-import m4a.cgb_audio;
-import m4a.internal;
-import m4a.m4a;
+import retroseq.m4a.mp2k_common;
+import retroseq.m4a.cgb_audio;
+import retroseq.m4a.internal;
+import retroseq.m4a.m4a;
 
 ///
 void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure

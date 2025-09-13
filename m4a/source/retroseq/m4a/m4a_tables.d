@@ -1,11 +1,11 @@
 ///
-module m4a.m4a_tables;
+module retroseq.m4a.m4a_tables;
 
 import retroseq.utility;
 
-import m4a.internal;
-import m4a.m4a;
-import m4a.music_player;
+import retroseq.m4a.internal;
+import retroseq.m4a.m4a;
+import retroseq.m4a.music_player;
 
 /// Some of these functions have different signatures, so we need to make this
 /// an array of void pointers or a struct. It's simpler to just make it an array
