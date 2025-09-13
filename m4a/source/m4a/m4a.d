@@ -262,7 +262,7 @@ struct M4APlayer {
 	}
 
 	///
-	void MPlayOpen(ref MusicPlayerInfo* mplayInfo, MusicPlayerTrack[] tracks, ubyte trackCount) @safe pure {
+	void MPlayOpen(MusicPlayerInfo* mplayInfo, MusicPlayerTrack[] tracks, ubyte trackCount) @safe pure {
 		if (trackCount == 0) {
 			return;
 		}
