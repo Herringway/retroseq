@@ -1,7 +1,7 @@
 ///
-module sseq.swav;
+module retroseq.sseq.swav;
 
-import sseq.common;
+import retroseq.sseq.common;
 
 ///
 struct SWAV

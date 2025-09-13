@@ -1,12 +1,12 @@
 ///
-module sseq.swar;
+module retroseq.sseq.swar;
 
 import retroseq.utility;
 
-import sseq.swav;
-import sseq.infosection;
-import sseq.ndsstdheader;
-import sseq.common;
+import retroseq.sseq.swav;
+import retroseq.sseq.infosection;
+import retroseq.sseq.ndsstdheader;
+import retroseq.sseq.common;
 
 ///
 struct SWAR

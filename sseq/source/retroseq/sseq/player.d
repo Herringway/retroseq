@@ -1,13 +1,13 @@
 ///
-module sseq.player;
+module retroseq.sseq.player;
 
-import sseq.common;
-import sseq.sseq;
-import sseq.sbnk;
-import sseq.track;
-import sseq.channel;
-import sseq.sdat;
-import sseq.consts;
+import retroseq.sseq.common;
+import retroseq.sseq.sseq;
+import retroseq.sseq.sbnk;
+import retroseq.sseq.track;
+import retroseq.sseq.channel;
+import retroseq.sseq.sdat;
+import retroseq.sseq.consts;
 
 import retroseq.fixedpoint;
 

@@ -1,5 +1,5 @@
 ///
-module sseq.common;
+module retroseq.sseq.common;
 
 /**
  * The following function is used to convert an integer into a hexidecimal

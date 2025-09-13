@@ -1,5 +1,5 @@
 
-import sseq;
+import retroseq.sseq;
 
 import std.algorithm.comparison;
 import std.algorithm.iteration;

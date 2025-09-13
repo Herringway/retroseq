@@ -1,7 +1,7 @@
 ///
-module sseq.infosection;
+module retroseq.sseq.infosection;
 
-import sseq.common;
+import retroseq.sseq.common;
 
 ///
 struct INFOSection {

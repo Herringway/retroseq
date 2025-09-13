@@ -1,7 +1,7 @@
 ///
-module sseq.fatsection;
+module retroseq.sseq.fatsection;
 
-import sseq.common;
+import retroseq.sseq.common;
 
 import std.format;
 

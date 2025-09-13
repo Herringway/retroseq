@@ -1,7 +1,7 @@
 ///
-module sseq.symbsection;
+module retroseq.sseq.symbsection;
 
-import sseq.common;
+import retroseq.sseq.common;
 import std.string;
 
 ///

@@ -1,10 +1,10 @@
 ///
-module sseq.sseq;
+module retroseq.sseq.sseq;
 
-import sseq.sbnk;
-import sseq.infosection;
-import sseq.ndsstdheader;
-import sseq.common;
+import retroseq.sseq.sbnk;
+import retroseq.sseq.infosection;
+import retroseq.sseq.ndsstdheader;
+import retroseq.sseq.common;
 
 ///
 struct SSEQ {

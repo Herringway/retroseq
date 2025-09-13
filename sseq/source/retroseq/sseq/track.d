@@ -1,11 +1,11 @@
 ///
-module sseq.track;
+module retroseq.sseq.track;
 
-import sseq.channel;
-import sseq.common;
-import sseq.consts;
-import sseq.player;
-import sseq.sbnk;
+import retroseq.sseq.channel;
+import retroseq.sseq.common;
+import retroseq.sseq.consts;
+import retroseq.sseq.player;
+import retroseq.sseq.sbnk;
 
 import std.random;
 import std.typecons;

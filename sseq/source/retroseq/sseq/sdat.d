@@ -1,5 +1,5 @@
 ///
-module sseq.sdat;
+module retroseq.sseq.sdat;
 
 import std.algorithm.iteration;
 import std.algorithm.sorting;
@@ -10,14 +10,14 @@ import std.typecons;
 
 import retroseq.utility;
 
-import sseq.common;
-import sseq.fatsection;
-import sseq.infosection;
-import sseq.ndsstdheader;
-import sseq.symbsection;
-import sseq.sbnk;
-import sseq.sseq;
-import sseq.swar;
+import retroseq.sseq.common;
+import retroseq.sseq.fatsection;
+import retroseq.sseq.infosection;
+import retroseq.sseq.ndsstdheader;
+import retroseq.sseq.symbsection;
+import retroseq.sseq.sbnk;
+import retroseq.sseq.sseq;
+import retroseq.sseq.swar;
 
 ///
 struct Song {

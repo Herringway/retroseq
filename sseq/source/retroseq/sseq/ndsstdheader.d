@@ -1,7 +1,7 @@
 ///
-module sseq.ndsstdheader;
+module retroseq.sseq.ndsstdheader;
 
-import sseq.common;
+import retroseq.sseq.common;
 import std.exception;
 
 ///

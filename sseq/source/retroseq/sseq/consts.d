@@ -1,5 +1,5 @@
 ///
-module sseq.consts;
+module retroseq.sseq.consts;
 
 ///
 enum TrackState {

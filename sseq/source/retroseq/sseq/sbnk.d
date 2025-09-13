@@ -1,12 +1,12 @@
 ///
-module sseq.sbnk;
+module retroseq.sseq.sbnk;
 
 import retroseq.utility;
 
-import sseq.swar;
-import sseq.infosection;
-import sseq.ndsstdheader;
-import sseq.common;
+import retroseq.sseq.swar;
+import retroseq.sseq.infosection;
+import retroseq.sseq.ndsstdheader;
+import retroseq.sseq.common;
 
 ///
 struct SBNKInstrumentRange {

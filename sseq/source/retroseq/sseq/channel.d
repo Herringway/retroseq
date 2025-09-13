@@ -1,10 +1,10 @@
-module sseq.channel;
+module retroseq.sseq.channel;
 
-import sseq.common;
-import sseq.consts;
-import sseq.player;
-import sseq.swav;
-import sseq.track;
+import retroseq.sseq.common;
+import retroseq.sseq.consts;
+import retroseq.sseq.player;
+import retroseq.sseq.swav;
+import retroseq.sseq.track;
 
 import std.math;
 
