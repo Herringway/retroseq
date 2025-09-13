@@ -110,6 +110,7 @@ struct SDAT
 				const record = fatSection.file(fatSectionData, id);
 				return sdatData[record.offset .. record.offset + record.size];
 			}
+			size_t length() const @safe pure => infoSection.SEQrecord(infoSectionData).length;
 		}
 		return Result(infoSection, fatSection, sdatData, symbSection, symbSectionData, fatSectionData, infoSectionData);
 	}
