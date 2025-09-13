@@ -1,4 +1,4 @@
-import piyopiyo;
+import retroseq.piyopiyo;
 
 import std.algorithm.comparison;
 import std.experimental.logger;

@@ -1,5 +1,5 @@
 ///
-module piyopiyo.player;
+module retroseq.piyopiyo.player;
 
 import std.algorithm.comparison;
 import std.experimental.logger;
