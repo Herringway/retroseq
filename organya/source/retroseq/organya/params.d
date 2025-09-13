@@ -1,6 +1,6 @@
-module organya.params;
+module retroseq.organya.params;
 
-import organya.pixtone;
+import retroseq.organya.pixtone;
 
 immutable defaultPixtoneObjects = [
 	PixtoneObject(id: 1, params: [

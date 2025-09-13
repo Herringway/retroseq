@@ -1,5 +1,5 @@
 ///
-module organya.organya;
+module retroseq.organya.organya;
 
 import core.time;
 import std.algorithm.comparison;
@@ -9,9 +9,9 @@ import std.math;
 
 import retroseq.interpolation;
 import retroseq.mixer;
+import retroseq.organya.params;
+import retroseq.organya.pixtone;
 import retroseq.utility;
-import organya.params;
-import organya.pixtone;
 
 public import retroseq.interpolation : InterpolationMethod;
 

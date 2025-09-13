@@ -1,4 +1,4 @@
-import organya;
+import retroseq.organya;
 
 import std.algorithm.comparison;
 import std.experimental.logger;

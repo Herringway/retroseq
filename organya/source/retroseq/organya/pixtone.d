@@ -1,9 +1,9 @@
 ///
-module organya.pixtone;
+module retroseq.organya.pixtone;
 
 import std.random;
 import std.math;
-import organya.organya;
+import retroseq.organya.organya;
 
 struct PixtoneObject {
 	int id;
