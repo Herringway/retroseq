@@ -114,11 +114,12 @@ struct TrackState {
 	int nowLength; ///
 }
 
-alias OrganyaMixer = Organya!true;
-alias OrganyaNoMixer = Organya!false;
+deprecated("Use OrganyaNoMixer") alias Organya = OrganyaNoMixer;
+alias OrganyaMixer = OrganyaBase!true;
+alias OrganyaNoMixer = OrganyaBase!false;
 
 ///
-private struct Organya(bool refMixer) {
+private struct OrganyaBase(bool refMixer) {
 	private size_t[2][8][8] allocatedSounds; ///
 	size_t[512] secondaryAllocatedSounds; ///
 	private const(OrganyaSong)[] song;

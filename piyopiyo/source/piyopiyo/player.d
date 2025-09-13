@@ -53,11 +53,12 @@ private struct Header {
 }
 static assert(Header.sizeof == 0x418);
 
-alias PiyoPiyoMixer = PiyoPiyo!true;
-alias PiyoPiyoNoMixer = PiyoPiyo!false;
+deprecated("Use PiyoPiyoNoMixer") alias PiyoPiyo = PiyoPiyoNoMixer;
+alias PiyoPiyoMixer = PiyoPiyoBase!true;
+alias PiyoPiyoNoMixer = PiyoPiyoBase!false;
 
 ///
-private struct PiyoPiyo(bool refMixer) {
+private struct PiyoPiyoBase(bool refMixer) {
 	//Loaded header
 	private Header header; ///
 
