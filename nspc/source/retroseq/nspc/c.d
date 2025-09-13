@@ -1,6 +1,6 @@
 ///
-module nspcplay.c;
-import nspcplay;
+module retroseq.nspc.c;
+import retroseq.nspc;
 import std.experimental.allocator;
 import std.string;
 import core.sys.windows.windows;

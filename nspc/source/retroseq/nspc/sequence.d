@@ -1,10 +1,10 @@
 ///
-module nspcplay.sequence;
+module retroseq.nspc.sequence;
 
 import std.experimental.logger;
 import std.format : FormatSpec;
 
-import nspcplay.common;
+import retroseq.nspc.common;
 
 ///
 enum VCMDClass {

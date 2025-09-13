@@ -1,5 +1,5 @@
 ///
-module nspcplay.tags;
+module retroseq.nspc.tags;
 
 import std.experimental.logger;
 

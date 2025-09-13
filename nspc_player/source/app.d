@@ -1,4 +1,4 @@
-import nspcplay;
+import retroseq.nspc;
 
 import std.algorithm.comparison;
 import std.algorithm.iteration;

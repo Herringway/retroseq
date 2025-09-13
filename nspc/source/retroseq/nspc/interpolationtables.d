@@ -1,5 +1,5 @@
 ///
-module nspcplay.interpolationtables;
+module retroseq.nspc.interpolationtables;
 
 ///
 immutable short[512] gauss = [

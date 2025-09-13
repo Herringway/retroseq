@@ -1,8 +1,8 @@
 ///
-module nspcplay.samples;
+module retroseq.nspc.samples;
 
-import nspcplay.common;
-import nspcplay.interpolationtables;
+import retroseq.nspc.common;
+import retroseq.nspc.interpolationtables;
 import std.bitmanip;
 import std.exception;
 import std.range;

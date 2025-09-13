@@ -1,10 +1,10 @@
 ///
-module nspcplay.player;
+module retroseq.nspc.player;
 
-import nspcplay.common;
-import nspcplay.song;
-import nspcplay.sequence;
-import nspcplay.samples;
+import retroseq.nspc.common;
+import retroseq.nspc.song;
+import retroseq.nspc.sequence;
+import retroseq.nspc.samples;
 
 import std.algorithm.comparison;
 import std.exception;

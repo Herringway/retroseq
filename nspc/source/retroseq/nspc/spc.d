@@ -1,10 +1,10 @@
 ///
-module nspcplay.spc;
+module retroseq.nspc.spc;
 
-import nspcplay.common : ReleaseTable, Variant, VolumeTable;
-import nspcplay.nspc1;
-import nspcplay.song : Pack, releaseTables, Song, volumeTables;
-import nspcplay.tags : TagPair;
+import retroseq.nspc.common : ReleaseTable, Variant, VolumeTable;
+import retroseq.nspc.nspc1;
+import retroseq.nspc.song : Pack, releaseTables, Song, volumeTables;
+import retroseq.nspc.tags : TagPair;
 
 import std.algorithm;
 import std.exception;
@@ -195,7 +195,7 @@ DetectionResult detectParameters(scope const(ubyte)[] data, scope const(ubyte)[]
 	DetectionResult result;
 	result.header.sampleBase = dsp[0x5D] << 8;
 	if (data[0x400 .. 0x410].among(earlyAMK, laterAMK)) {
-		result.header.variant = nspcplay.Variant.addmusick;
+		result.header.variant = retroseq.nspc.Variant.addmusick;
 		auto foundPreTable = data;
 		if (!findSkip(foundPreTable, amkPreTable)) {
 			enforce(findSkip(foundPreTable, amkPreTable109), "AMK detected, but song table location failed!");

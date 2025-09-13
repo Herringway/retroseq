@@ -1,5 +1,5 @@
 ///
-module nspcplay.common;
+module retroseq.nspc.common;
 
 ///
 enum Variant : uint {

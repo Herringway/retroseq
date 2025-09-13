@@ -1,5 +1,5 @@
 module midi;
-import nspcplay : NSPCPlayer;
+import retroseq.nspc : NSPCPlayer;
 version(Windows) {
 	import core.sys.windows.windows;
 	import core.sys.windows.mmsystem;

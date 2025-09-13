@@ -1,5 +1,5 @@
 ///
-module nspcplay.song;
+module retroseq.nspc.song;
 
 import std.algorithm.comparison : among, max, min;
 import std.algorithm.sorting : sort;
@@ -10,12 +10,12 @@ import std.experimental.logger;
 import std.format : format;
 import std.range : only;
 
-import nspcplay.common;
-import nspcplay.samples;
-import nspcplay.sequence;
-import nspcplay.nspc1;
-import nspcplay.nspc2;
-import nspcplay.tags;
+import retroseq.nspc.common;
+import retroseq.nspc.samples;
+import retroseq.nspc.sequence;
+import retroseq.nspc.nspc1;
+import retroseq.nspc.nspc2;
+import retroseq.nspc.tags;
 import retroseq.utility;
 
 private enum maxInstruments = 128; ///

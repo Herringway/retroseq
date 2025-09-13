@@ -1,9 +1,9 @@
 ///
-module nspcplay.nspc2;
+module retroseq.nspc.nspc2;
 
-import nspcplay.common;
-import nspcplay.song;
-import nspcplay.tags;
+import retroseq.nspc.common;
+import retroseq.nspc.song;
+import retroseq.nspc.tags;
 import retroseq.utility;
 
 import std.algorithm.searching;
