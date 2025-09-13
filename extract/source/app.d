@@ -35,18 +35,21 @@ align(1) static struct PackPointerLH {
 	align(1):
 	ushort addr;
 	ubyte bank;
-	uint full() const {
+	uint full() const @safe pure {
 		return addr + ((cast(uint)bank) << 16);
 	}
 }
 
 int main(string[] args) {
+		(cast()sharedLog).logLevel = LogLevel.trace;
 	const rom = readROM(args[1]);
 	NSPC2Writer writer;
 	if (rom.title == "KIRBY SUPER DELUXE   ") {
 		extractKSS(writer, rom.data);
 	} else if (rom.title == "Kirby's Dream Course ") {
 		extractKDC(writer, rom.data);
+	} else if (rom.title == "KIRBY'S DREAM LAND 3 ") {
+		extractKDL3(writer, rom.data);
 	} else if (rom.title == "EARTH BOUND          ") {
 		extractEarthbound(writer, rom.data, false, 0x4F947, 0x4F70A);
 	} else if (rom.title == "MOTHER-2             ") {
@@ -65,6 +68,8 @@ int main(string[] args) {
 		extractSMAS(writer, rom.data);
 	} else if (rom.title == "Super Metroid        ") {
 		extractSMET(writer, rom.data);
+	} else if (rom.title == "YOSHI'S ISLAND       ") {
+		extractYI(writer, rom.data);
 	} else {
 		writefln!"I don't know what '%s' is."(rom.title);
 		return 1;
@@ -72,7 +77,8 @@ int main(string[] args) {
 	Appender!(ubyte[]) buffer;
 	writer.toBytes(buffer);
 	infof("Validating...");
-	const loadedSong = loadNSPCFile(buffer.data);
+	(cast()sharedLog).logLevel = LogLevel.info;
+	const loadedSong = loadNSPC2File(buffer.data);
 	infof("Writing %s", args[2]);
 	File(args[2], "w").rawWrite(buffer.data);
 	return 0;
@@ -179,7 +185,11 @@ void extractKDC(ref NSPC2Writer writer, const scope ubyte[] data) {
 }
 
 uint loromToPC(uint addr) @safe pure {
-	return (((addr & 0x7FFFFF) >> 1) & 0xFF8000) + (addr & 0x7FFF);
+	if (addr < 0x400000) {
+		return (((addr & 0x7FFFFF) >> 1) & 0xFF8000) + (addr & 0x7FFF);
+	} else {
+		return addr - 0x400000;
+	}
 }
 
 @safe unittest {
@@ -250,6 +260,9 @@ void extractSMW(ref NSPC2Writer writer, const scope ubyte[] data) {
 	size_t songID;
 	ushort[1] percussionBase = [ushort(0x5FA5)];
 	foreach (bank, pack; chain(parsedProg, parsedSeq1, parsedSeq2, parsedSeq3).enumerate) {
+		if (bank == 3) {
+			continue;
+		}
 		auto packs = packLists[bank];
 		if (pack.address == 0x1360) {
 			ushort currentOffset = tableBase;
@@ -420,7 +433,6 @@ void extractSMET(ref NSPC2Writer writer, const scope ubyte[] data) {
 	enum songs = 25;
 	enum packTableOffset = 0x7E7E1;
 	const table = cast(const(PackPointerLH)[])(data[packTableOffset .. packTableOffset + songs * PackPointerLH.sizeof]);
-	debug infof("%s", table);
 	const first = parsePacks(data[loromToPC(table[0].full) .. $]);
 	const firCoefficients = cast(const(ubyte[8])[])(first[2].data[0x1E32 - 0x1500 .. 0x1E32 - 0x1500 + 8 * 11]); //there only seem to be 4, but songs are relying on an invalid 11th preset?
 	writer.packs = first;
@@ -432,17 +444,14 @@ void extractSMET(ref NSPC2Writer writer, const scope ubyte[] data) {
 		writer.packLists ~= packList;
 		writer.packs ~= packs;
 		const(ushort)[] packSongs;
-		uint packSongIndex;
 		foreach (sp; packs) {
 			if (sp.address == 0x5820) { // initial pack contains 4 'always loaded' songs and one dynamic
 				packSongs = cast(const(ushort)[])(sp.data[0 .. 14]);
-				packSongIndex = 0;
 				break;
 			}
 			if (sp.address == 0x5828) { // all other packs have a single dynamically loaded song
 				const firstSong = (cast(const(ushort)[])(sp.data[0 .. 2]))[0];
 				packSongs = cast(const(ushort)[])(sp.data[0 .. firstSong - 0x5828]);
-				packSongIndex = 4;
 				break;
 			}
 		}
@@ -460,5 +469,130 @@ void extractSMET(ref NSPC2Writer writer, const scope ubyte[] data) {
 			writer.tags ~= tags;
 			writer.subSongs ~= subSong;
 		}
+	}
+}
+
+void extractYI(ref NSPC2Writer writer, const scope ubyte[] data) {
+	static immutable metadata = import("yi.json").fromString!(SongMetadata, JSON, DeSiryulize.optionalByDefault);
+	enum tableBase = 0x4AC;
+	enum packSets = 13;
+	enum packs = 20;
+	enum itemBlockTableSize = 19;
+	enum trackPackCount = 20; // there are actually more than this - many entries include extra tracks
+	enum extraSongs = 6;
+	enum packTableOffset = tableBase + PackPointerLH.sizeof * packs;
+	enum songTableOffset = packTableOffset + packSets * (ubyte[4]).sizeof + itemBlockTableSize;
+	enum spcSongTableOffset;
+	auto table = cast(const(PackPointerLH)[])(data[tableBase .. packTableOffset]);
+	auto packTable = cast(const(ubyte[4])[])(data[packTableOffset .. packTableOffset + (ubyte[4]).sizeof * packSets]);
+	auto songPackTable = cast(const(ubyte)[])(data[songTableOffset .. songTableOffset + ubyte.sizeof * trackPackCount]);
+	uint[][] packMap;
+	uint packOffset;
+	foreach (i, packPtr; table) {
+		auto foundPacks = parsePacks(data[loromToPC(packPtr.full) .. $]);
+		packMap ~= iota(packOffset, packOffset + cast(uint)foundPacks.length).array;
+		writer.packs ~= foundPacks;
+		packOffset += foundPacks.length;
+	}
+	size_t songID;
+	bool[ubyte[4]] seenSongs;
+	foreach (idx, songPackIndex; songPackTable) {
+		auto songPacks = packTable[songPackIndex / 4];
+		if (seenSongs.get(songPacks, false)) {
+			continue;
+		}
+		seenSongs[songPacks] = true;
+		uint[] packList = packMap[14]; // 14 (title) includes the sound program and other important data
+		const(ushort)[] subSongs;
+		if (idx == 12) {
+			packList ~= packMap[12]; // assumes sfx were already loaded
+		}
+		foreach (songPack; songPacks) {
+			if (songPack == 0xFF) {
+				continue;
+			}
+			const actualPackIndex = (songPack - 1) / PackPointerLH.sizeof;
+			foreach (usedPack; packMap[actualPackIndex]) {
+				const subPack = writer.packs[usedPack];
+				if (subPack.address.among(0xFF90, 0xFFA0)) {
+					subSongs ~= cast(const(ushort)[])subPack.data;
+				}
+			}
+			packList ~= packMap[actualPackIndex];
+		}
+		foreach (subSongAddress; subSongs) {
+			NSPC2SubSong subSong;
+			subSong.songBase = subSongAddress;
+			subSong.sampleBase = 0x3C00;
+			subSong.instrumentBase = 0x3D00;
+			subSong.packList = cast(uint)writer.packLists.length;
+			auto tags = metadata.tags(songID++);
+			tags ~= TagPair("_variant", "standard");
+			tags ~= TagPair("_firCoefficients", cast(const(ubyte)[])defaultFIRCoefficients);
+			tags ~= TagPair("_volumeTable", volumeTables[VolumeTable.nintendo1]);
+			tags ~= TagPair("_releaseTable", releaseTables[ReleaseTable.nintendo1]);
+			writer.tags ~= tags;
+			writer.subSongs ~= subSong;
+		}
+		writer.packLists ~= packList;
+	}
+}
+
+void extractKDL3(ref NSPC2Writer writer, const scope ubyte[] data) {
+	static immutable metadata = import("kdl3.json").fromString!(SongMetadata, JSON, DeSiryulize.optionalByDefault);
+	enum songs = 44;
+	const packs1 = parsePacks(data[0xE0000 .. $]);
+	const packs2 = parsePacks(data[0xEA0EF .. $]);
+	enum songTableOffset = 0x5EAF;
+	enum pack2TableOffset = 0x5F69;
+	enum extraPackTableOffset = 0x10CA2D;
+	const table = cast(const(PackPointerLH)[])(data[songTableOffset .. songTableOffset + songs * PackPointerLH.sizeof]);
+	const table2 = cast(const(PackPointerLH)[])(data[pack2TableOffset .. pack2TableOffset + 11 * PackPointerLH.sizeof]);
+	const extraPackTable = data[extraPackTableOffset .. extraPackTableOffset + songs * ubyte.sizeof];
+	writer.packs ~= packs1;
+	writer.packs ~= packs2;
+	auto basePacks = iota(0, cast(uint)writer.packs.length).array;
+	size_t idx;
+	const pack2Base = cast(uint)writer.packs.length;
+	uint[][] extraPacks;
+	foreach (pack2Pointer; table2) {
+		if (pack2Pointer.full == 0) {
+			extraPacks.length++;
+		} else {
+			const packs = parsePacks(data[pack2Pointer.full - 0xC00000 .. $]);
+			extraPacks ~= iota(cast(uint)writer.packs.length, cast(uint)(writer.packs.length + packs.length)).array;
+			writer.packs ~= packs;
+		}
+	}
+	foreach (realTrack, sequencePackPointer; table) {
+		auto packs = basePacks;
+		const extraPack = (extraPackTable[realTrack] & 0x7F);
+		packs ~= extraPacks[extraPack];
+		if (sequencePackPointer.full != 0) {
+			packs ~= cast(uint)writer.packs.length;
+			writer.packs ~= parsePacks(data[sequencePackPointer.full - 0xC00000 .. $]);
+		}
+		ushort songBase;
+		foreach (songPack; packs.map!(x => writer.packs[x])) {
+			enum songTableEntry = 0x32FE + 0x76 * 2; // always song 0x76
+			if ((songPack.address <= songTableEntry) && (songTableEntry <= songPack.address + songPack.size)) {
+				const offset = songTableEntry - songPack.address;
+				songBase = (cast(const(ushort)[])songPack.data[offset .. offset + ushort.sizeof])[0];
+			}
+		}
+		NSPC2SubSong subSong;
+		auto tags = metadata.tags(idx);
+		subSong.songBase = songBase;
+		subSong.sampleBase = 0x300;
+		subSong.instrumentBase = 0x500;
+		subSong.packList = cast(uint)idx;
+		tags ~= TagPair("_variant", "standard");
+		tags ~= TagPair("_firCoefficients", cast(const(ubyte)[])defaultFIRCoefficients);
+		tags ~= TagPair("_volumeTable", volumeTables[VolumeTable.hal2]);
+		tags ~= TagPair("_releaseTable", releaseTables[ReleaseTable.hal2]);
+		writer.tags ~= tags;
+		writer.subSongs ~= subSong;
+		writer.packLists ~= packs;
+		idx++;
 	}
 }
