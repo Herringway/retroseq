@@ -88,41 +88,14 @@ struct Song {
 	byte masterVolume = 0x70; ///
 	TagPair[] tags; ///
 	ushort[13] noteFrequencyTable = [0x085F, 0x08DE, 0x0965, 0x09F4, 0x0A8C, 0x0B2C, 0x0BD6, 0x0C8B, 0x0D4A, 0x0E14, 0x0EEA, 0x0FCD, 0x10BE];
-	/// Load a single sequence pack at a given address
-	void loadSequencePack(const(ubyte)[] data, ushort base) @safe {
-		loadSequence(data, base);
-	}
-	/// Load a single sequence pack, automatically detecting the address from the pack header
-	void loadSequencePack(const(ubyte)[] data) @safe {
-		ushort base = read!ushort(data, 2);
-		loadSequence(data, base);
+	const(Pack)[] packs; /// Original packs used for song
+	///
+	void loadPacks(scope const ubyte[] packData) pure @safe {
+		packs ~= parsePacks(packData);
 	}
 	///
-	private void loadSequence(const(ubyte)[] data, ushort base) @safe {
-		ubyte[65536] buffer;
-		loadAllSubpacks(buffer, data);
-		loadSequenceBuffer(buffer[], base);
-	}
-	///
-	void loadSequenceBuffer(scope const(ubyte)[] buffer, ushort base) @safe {
-		order = decompilePhrases(buffer[], base);
-		decompileSong(buffer[], this);
-	}
-	/// Load instruments from provided packs at the given addresses
-	void loadInstruments(scope ubyte[] buffer, ushort instrumentBase, ushort sampleBase) @safe {
-		initializeInstruments(buffer, instrumentBase, sampleBase);
-	}
-	///
-	void loadInstruments(const(ubyte)[][] packs, ushort instrumentBase, ushort sampleBase) @safe {
-		ubyte[65536] buffer;
-		foreach (pack; packs) {
-			loadInstrumentPack(buffer, pack);
-		}
-		loadInstruments(buffer[], instrumentBase, sampleBase);
-	}
-	/// Load instruments from provided packs at the given addresses
-	void loadInstrumentPack(scope ref ubyte[65536] buffer, const(ubyte)[] pack) @safe {
-		loadAllSubpacks(buffer[], pack);
+	void loadPacks(const Pack[] packs) pure @safe {
+		this.packs ~= packs;
 	}
 	///
 	void initializeInstruments(scope const ubyte[] buffer, ushort instrumentBase, ushort sampleBase) @safe {
@@ -131,19 +104,22 @@ struct Song {
 		processInstruments(this, buffer);
 	}
 	///
-	void loadNSPC(scope const ubyte[] data, ushort[] phrases = []) @safe {
+	void loadNSPC(ushort[] phrases = []) @safe pure {
+		ubyte[65536] buffer;
+		foreach (pack; packs) {
+			buffer[pack.address .. pack.address + pack.data.length] = pack.data;
+		}
 		debug(nspclogging) tracef("Loading NSPC - so: %X, i: %X, sa: %X, variant: %s", songBase, instrumentBase, sampleBase, variant);
 		if (variant == Variant.addmusick) {
 			altReleaseTable = releaseTables[0]; // AMK allows the 'default' release table to be used as well
 		}
-		processInstruments(this, data);
-		order = phrases == null ? decompilePhrases(data[], songBase) : interpretPhrases(phrases, songBase);
-		decompileSong(data[], this);
+		processInstruments(this, buffer[]);
+		order = phrases == null ? decompilePhrases(buffer[], songBase) : interpretPhrases(phrases, songBase);
+		decompileSong(buffer[], this);
 		debug(nspclogging) tracef("FIR coefficients: %s", firCoefficients);
-
 	}
 	///
-	private void validatePhrases() @safe {
+	private void validatePhrases() @safe pure {
 		import std.algorithm.comparison : among;
 		bool endFound;
 		foreach (phrase; order) {
@@ -167,18 +143,18 @@ struct Song {
 		enforce!NSPCException(order[$ - 1].type.among(PhraseType.end, PhraseType.jump), "Phrase list must have an end phrase");
 	}
 	///
-	private void validateInstrument(size_t id) @safe {
+	private void validateInstrument(size_t id) @safe pure {
 		enforce!NSPCException(id < instruments.length, format!"Invalid instrument %s - Index out of bounds"(id));
 		const idata = instruments[id];
 		if (idata.sampleID < 0x7F) {
 			enforce!NSPCException(samples[idata.sampleID].isValid, format!"Invalid instrument %s - Invalid sample %s"(id, idata.sampleID));
 			if (idata.tuning == 0) {
-				tracef("Suspicious instrument %s - no tuning (will be silent)", id);
+				debug(nspclogging) tracef("Suspicious instrument %s - no tuning (will be silent)", id);
 			}
 		}
 	}
 	///
-	void validateTrack(scope const Track track, bool isSub, ref ubyte tmpPercussionBase) @safe {
+	void validateTrack(scope const Track track, bool isSub, ref ubyte tmpPercussionBase) @safe pure {
 		const(Command)[] data = track.data;
 		bool endReached;
 		while (data.length > 0) {
@@ -377,51 +353,38 @@ immutable ubyte[8][] defaultFIRCoefficients = [
 ];
 
 ///
-void loadPack(scope ubyte[] buffer, return scope const(ubyte)[] pack) @safe {
-	if (pack.length == 0) {
-		return;
-	}
-	const size = read!ushort(pack);
-	if (size == 0) {
-		return;
-	}
-	const base = read!ushort(pack, 2);
-	debug(nspclogging) tracef("Loading subpack to %X (%s bytes)", base, size);
-	if (size + base > ushort.max) {
-		infof("Loading %s bytes to $%04X will overflow - truncating", size, base);
-	}
-	const truncated = min(ushort.max, base + size) - base;
-	buffer[base .. base + truncated] = pack[4 .. truncated + 4];
-}
-///
-const(ubyte)[] loadAllSubpacks(scope ubyte[] buffer, return scope const(ubyte)[] pack) @safe {
-	ushort size, base;
+const(ubyte)[] readAllSubpacks(out Pack[] packs, return scope const(ubyte)[] pack) @safe pure {
 	while (true) {
 		if (pack.length == 0) {
 			break;
 		}
-		size = read!ushort(pack);
+		const size = read!ushort(pack);
 		if (size == 0) {
 			break;
 		}
-		base = read!ushort(pack, 2);
-		debug(nspclogging) tracef("Loading subpack to %X (%s bytes)", base, size);
-		if (size + base > 65535) {
-			infof("Loading %s bytes to $%04X will overflow - truncating", size, base);
-		}
+		const base = read!ushort(pack, 2);
 		const truncated = min(65535, base + size) - base;
-		buffer[base .. base + truncated] = pack[4 .. truncated + 4];
+		packs ~= Pack(base, pack[4 .. truncated + 4]);
 		pack = pack[size + 4 .. $];
 	}
-	return pack[2 .. $];
+	return pack[min($, 2) .. $];
 }
+Pack[] readPacks(return const(ubyte)[] data) @safe pure {
+	Pack[] result;
+	readAllSubpacks(result, data);
+	return result;
+}
+
 /// Load an NSPC file
 Song[] loadNSPCFile(const(ubyte)[] data, ushort[] phrases = []) @safe {
 	try {
 		return loadNSPC2File(data, phrases);
 	} catch (Exception e) {
-		debug infof("%s", e);
-		return [loadNSPC1File(data, phrases)];
+		try {
+			return [loadNSPC1File(data, phrases)];
+		} catch (Exception e2) {
+			throw new NSPCException("Failed to load NSPC file");
+		}
 	}
 }
 package void handleSpecialTag(ref Song song, const TagPair pair) @safe pure {
@@ -452,7 +415,7 @@ package void handleSpecialTag(ref Song song, const TagPair pair) @safe pure {
 	}
 }
 ///
-private Phrase[] decompilePhrases(scope const(ubyte)[] data, ushort startAddress) @safe {
+private Phrase[] decompilePhrases(scope const(ubyte)[] data, ushort startAddress) @safe pure {
 	// Get order length and repeat info (at this point, we don't know how
 	// many patterns there are, so the pattern pointers aren't validated yet)
 	const ushort[] wpO = cast(const(ushort)[]) data[startAddress .. $ -  ($ - startAddress) % 2];
@@ -476,7 +439,7 @@ private Phrase[] decompilePhrases(scope const(ubyte)[] data, ushort startAddress
 	return interpretPhrases(wpO[0 .. index + 1], startAddress);
 }
 ///
-private Phrase[] interpretPhrases(const scope ushort[] addresses, ushort startAddress) @safe {
+private Phrase[] interpretPhrases(const scope ushort[] addresses, ushort startAddress) @safe pure {
 	ushort phraseID(ushort address) {
 		ushort id;
 		const offset = (address - startAddress) >> 1;
@@ -525,7 +488,7 @@ private Phrase[] interpretPhrases(const scope ushort[] addresses, ushort startAd
 	return newPhrases;
 }
 ///
-private void decompileSong(scope const(ubyte)[] data, ref Song song) @safe {
+private void decompileSong(scope const(ubyte)[] data, ref Song song) @safe pure {
 	immutable copyData = data.idup;
 
 	debug(nspclogging) tracef("Phrases: %(%s, %)", song.order);
@@ -552,7 +515,7 @@ private void decompileSong(scope const(ubyte)[] data, ref Song song) @safe {
 	}
 }
 ///
-private Track decompileTrack(immutable(ubyte)[] data, ushort start, ref Song song, ref ubyte tmpPercussionBase, bool recurse) @safe {
+private Track decompileTrack(immutable(ubyte)[] data, ushort start, ref Song song, ref ubyte tmpPercussionBase, bool recurse) @safe pure {
 	Track track;
 	// Determine the end of the track.
 	const(ubyte)[] trackEnd = data[start .. $];
@@ -581,7 +544,7 @@ private Track decompileTrack(immutable(ubyte)[] data, ushort start, ref Song son
 	return track;
 }
 ///
-private void processInstruments(ref Song song, scope const ubyte[] buffer) @safe {
+private void processInstruments(ref Song song, scope const ubyte[] buffer) @safe pure {
 	decodeSamples(song, buffer, cast(const(ushort[2])[])(buffer[song.sampleBase .. song.sampleBase + maxSampleCount * 4]));
 	song.instruments = [];
 	song.instruments.reserve(maxInstruments);
@@ -614,7 +577,7 @@ private void processInstruments(ref Song song, scope const ubyte[] buffer) @safe
 	}
 }
 ///
-private void decodeSamples(ref Song song, scope const ubyte[] buffer, const scope ushort[2][] ptrtable) nothrow @safe {
+private void decodeSamples(ref Song song, scope const ubyte[] buffer, const scope ushort[2][] ptrtable) nothrow @safe pure {
 	foreach (idx, ref sample; song.samples) {
 		const start = ptrtable[idx][0];
 		const loop = ptrtable[idx][1];
@@ -628,7 +591,7 @@ private void decodeSamples(ref Song song, scope const ubyte[] buffer, const scop
 				tracef("Sample %s: %s (Loop: %s)", idx, sample.hash.toHexString, sample.loopLength);
 			}
 		} catch (Exception e) {
-			debug tracef("Couldn't load sample %d: %s", idx, e.msg);
+			debug(nspclogging) tracef("Couldn't load sample %d: %s", idx, e.msg);
 		}
 	}
 }
@@ -639,25 +602,25 @@ struct Pack {
 	ushort address; ///
 	const(ubyte)[] data; ///
 	///
-	this(ushort addr, const(ubyte)[] data) @safe pure {
-		this.address = addr;
+	this(ushort address, const(ubyte)[] data) @safe pure {
+		this.address = address;
 		this.data = data;
-		assert(data.length <= ushort.max);
+		assert(data.length <= ushort.max + 1, format!"%s exceeds maximum size of 65536!"(data.length));
 		this.size = cast(ushort)data.length;
 	}
 }
 
 ///
-const(Pack)[] parsePacks(const(ubyte)[] input) {
+const(Pack)[] parsePacks(const(ubyte)[] input) @safe pure {
 	const(Pack)[] result;
 	size_t offset = 0;
 	while (offset < input.length) {
 		Pack pack;
-		auto size = (cast(ushort[])(input[offset .. offset + 2]))[0];
+		auto size = (cast(const(ushort)[])(input[offset .. offset + 2]))[0];
 		if ((size == 0) || (size == 0xFFFF)) {
 			break;
 		}
-		auto spcOffset = (cast(ushort[])(input[offset + 2 .. offset + 4]))[0];
+		auto spcOffset = (cast(const(ushort)[])(input[offset + 2 .. offset + 4]))[0];
 		pack.size = size;
 		pack.address = spcOffset;
 		pack.data = input[offset + 4 .. offset + size + 4];

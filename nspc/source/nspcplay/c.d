@@ -32,26 +32,6 @@ size_t nspcplayFillBuffer(scope NSPCPlayer* player, short[2]* buffer, size_t buf
 }
 
 ///
-int nspcplayLoadSequencePack(scope Song* song, const ubyte* data, size_t dataLength) {
-	try {
-		song.loadSequencePack(data[0 .. dataLength]);
-	} catch (Exception e) {
-		lastError = e.msg.toStringz;
-		return 1;
-	}
-	return 0;
-}
-///
-int nspcplayLoadInstrumentPack(scope Song* song, scope ubyte* buffer, scope const ubyte* data, size_t dataLength) {
-	try {
-		song.loadInstrumentPack(buffer[0 .. 65536], data[0 .. dataLength]);
-	} catch (Exception e) {
-		lastError = e.msg.toStringz;
-		return 1;
-	}
-	return 0;
-}
-///
 int nspcplayInitializeInstruments(scope Song* song, const scope ubyte* buffer, ushort instrumentBase, ushort sampleBase) {
 	try {
 		song.initializeInstruments(buffer[0 .. 65536], instrumentBase, sampleBase);

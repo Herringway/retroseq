@@ -121,12 +121,16 @@ alias LittleEndian(T) = EndianType!(T, true);
 alias BigEndian(T) = EndianType!(T, false);
 
 ///
-struct RelativePointer(Element, Offset, size_t Base) {
+struct RelativePointer(Element, Offset, size_t Base, Offset limit = Offset.max) {
 	align(1):
 	Offset offset; ///
 	///
 	bool isValid() const @safe pure {
-		return offset >= Base;
+		return (offset >= Base) && (offset < limit);
+	}
+	///
+	bool isValid(const(ubyte)[] base) const @safe pure {
+		return isValid() && ((offset - Base) < base.length);
 	}
 	///
 	const(Element)[] toAbsoluteArray(const(ubyte)[] base) const {

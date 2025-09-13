@@ -3,7 +3,7 @@ module nspcplay.spc;
 
 import nspcplay.common : ReleaseTable, Variant, VolumeTable;
 import nspcplay.nspc1;
-import nspcplay.song : releaseTables, Song, volumeTables;
+import nspcplay.song : Pack, releaseTables, Song, volumeTables;
 import nspcplay.tags : TagPair;
 
 import std.algorithm;
@@ -72,7 +72,8 @@ Song loadSPCFile(scope const ubyte[] file) @safe {
 	infof("Detected samples: %04X", header.sampleBase);
 	infof("Detected song: %04X", header.songBase);
 	infof("Detected release table: %s, volume table: %s", header.releaseTable, header.volumeTable);
-	song.loadNSPC(spc[]);
+	song.loadPacks([Pack(address: 0, data: spc[0 .. 65536])]);
+	song.loadNSPC();
 	return song;
 }
 ///

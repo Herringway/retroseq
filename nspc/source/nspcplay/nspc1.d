@@ -35,9 +35,10 @@ struct NSPCFileHeader {
 
 Song loadNSPC1File(const(ubyte)[] data, ushort[] phrases = []) @safe {
 	Song song;
-	ubyte[65536] buffer;
 	auto header = read!NSPCFileHeader(data);
-	const remaining = loadAllSubpacks(buffer[], data[NSPCFileHeader.sizeof .. $]);
+	Pack[] packs;
+	const remaining = readAllSubpacks(packs, data[NSPCFileHeader.sizeof .. $]);
+	song.loadPacks(packs);
 	if (header.firCoefficientTableCount == 0) {
 		song.firCoefficients = defaultFIRCoefficients;
 	} else {
@@ -48,7 +49,7 @@ Song loadNSPC1File(const(ubyte)[] data, ushort[] phrases = []) @safe {
 	foreach (tagPair; song.tags) {
 		handleSpecialTag(song, tagPair);
 	}
-	song.loadNSPC(buffer[]);
+	song.loadNSPC(phrases);
 	return song;
 }
 

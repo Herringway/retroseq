@@ -5,7 +5,7 @@ import retroseq.utility;
 
 import m4a.m4a;
 
-alias RelativePointer(Element, Offset) = retroseq.utility.RelativePointer!(Element, Offset, 0x8000000);
+alias RelativePointer(Element, Offset) = retroseq.utility.RelativePointer!(Element, Offset, 0x8000000, 0xA000000);
 
 enum C_V = 0x40; /// center value for PAN, BEND, and TUNE
 

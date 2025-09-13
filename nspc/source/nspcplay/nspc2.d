@@ -73,12 +73,9 @@ Song[] loadNSPC2File(const(ubyte)[] data, ushort[] phrases = []) @safe {
 	foreach (subSongID, subSong; subSongs) {
 		debug(nspclogging) tracef("Loading subsong %s", subSongID);
 		Song song;
-		ubyte[65536] buffer;
 		const songPackList = packLists[subSong.packList].getData(data[packListDataStart .. $]);
 		foreach (pack; songPackList) {
-			const packData = packs[pack].getData(data[packDataStart .. $]);
-			debug(nspclogging) tracef("Loading subpack %X", pack);
-			loadPack(buffer[], packData);
+			song.loadPacks(readPacks(packs[pack].getData(data[packDataStart .. $])));
 		}
 		song.songBase = subSong.songBase;
 		song.instrumentBase = subSong.instrumentBase;
@@ -96,7 +93,7 @@ Song[] loadNSPC2File(const(ubyte)[] data, ushort[] phrases = []) @safe {
 			handleSpecialTag(song, tagPair);
 			song.tags ~= tagPair;
 		}
-		song.loadNSPC(buffer[]);
+		song.loadNSPC(phrases);
 		songs ~= song;
 	}
 	return songs;
