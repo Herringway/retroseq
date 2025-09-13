@@ -72,16 +72,18 @@ Sample decodeSample(scope const ubyte[] buffer, ushort start, ushort loop) @safe
 	return sample;
 }
 ///
-@safe pure unittest {
+version(LittleEndian) @safe pure unittest {
 	with(decodeSample(cast(immutable(ubyte)[])import("wilhelm.brr"), 0, 0)) {
 		assert(start == 0);
 		assert(data.length == 12032);
-		assert(data == cast(immutable(short)[])import("wilhelm.pcms16"));
+		immutable ubyte[] sourceData = import("wilhelm.pcms16");
+		assert(data == cast(immutable(short)[])sourceData);
 	}
 	with(decodeSample(cast(immutable(ubyte)[])import("distortguitar.brr"), 0, 0x2E2)) {
 		assert(start == 0);
 		assert(loopLength == 6960);
-		assert(data == cast(immutable(short)[])import("distortguitar.pcms16"));
+		immutable ubyte[] sourceData = import("distortguitar.pcms16");
+		assert(data == cast(immutable(short)[])sourceData);
 	}
 }
 
