@@ -1,5 +1,5 @@
 ///
-module pxtone.error;
+module retroseq.pxtone.error;
 // '16/12/16 pxtnError.
 
 ///

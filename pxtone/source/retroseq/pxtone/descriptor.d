@@ -1,12 +1,12 @@
 ///
-module pxtone.descriptor;
+module retroseq.pxtone.descriptor;
 // '11/08/12 pxFile.h
 // '16/01/22 pxFile.h
 // '16/04/27 pxtnFile. (int)
 // '16/09/09 pxtnDescriptor.
 
-import pxtone.error;
-import pxtone.pxtn;
+import retroseq.pxtone.error;
+import retroseq.pxtone.pxtn;
 
 import std.exception;
 import std.stdio;

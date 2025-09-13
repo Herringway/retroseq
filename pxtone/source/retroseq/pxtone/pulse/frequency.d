@@ -1,5 +1,5 @@
 ///
-module pxtone.pulse.frequency;
+module retroseq.pxtone.pulse.frequency;
 
 private enum octaveNum = 16; /// octave num.
 private enum keyPerOctave = 12; /// key per octave

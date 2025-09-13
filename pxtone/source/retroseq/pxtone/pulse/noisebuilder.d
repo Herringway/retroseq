@@ -1,15 +1,15 @@
 ///
-module pxtone.pulse.noisebuilder;
+module retroseq.pxtone.pulse.noisebuilder;
 
 import std.algorithm.comparison;
 
-import pxtone.pxtn;
+import retroseq.pxtone.pxtn;
 
-import pxtone.error;
-import pxtone.pulse.frequency;
-import pxtone.pulse.oscillator;
-import pxtone.pulse.pcm;
-import pxtone.pulse.noise;
+import retroseq.pxtone.error;
+import retroseq.pxtone.pulse.frequency;
+import retroseq.pxtone.pulse.oscillator;
+import retroseq.pxtone.pulse.pcm;
+import retroseq.pxtone.pulse.noise;
 
 private enum basicSampleRate = 44100.0; ///
 private enum basicFrequency = 100.0; /// 100 Hz

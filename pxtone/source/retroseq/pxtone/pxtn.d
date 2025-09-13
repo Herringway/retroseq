@@ -1,5 +1,5 @@
 ///
-module pxtone.pxtn;
+module retroseq.pxtone.pxtn;
 
 // '16/04/28 pxtn.h
 // '16/12/03 pxtnRESULT.

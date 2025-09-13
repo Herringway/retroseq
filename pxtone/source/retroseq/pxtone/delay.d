@@ -1,11 +1,11 @@
 ///
-module pxtone.delay;
+module retroseq.pxtone.delay;
 
-import pxtone.pxtn;
+import retroseq.pxtone.pxtn;
 
-import pxtone.descriptor;
-import pxtone.error;
-import pxtone.max;
+import retroseq.pxtone.descriptor;
+import retroseq.pxtone.error;
+import retroseq.pxtone.max;
 
 ///
 enum DelayUnit {

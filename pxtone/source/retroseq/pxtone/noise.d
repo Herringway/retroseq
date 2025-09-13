@@ -1,14 +1,14 @@
 ///
-module pxtone.noise;
+module retroseq.pxtone.noise;
 
 // '12/03/29
 
-import pxtone.descriptor;
+import retroseq.pxtone.descriptor;
 
-import pxtone.pulse.noisebuilder;
-import pxtone.pulse.noise;
-import pxtone.pulse.pcm;
-import pxtone.error;
+import retroseq.pxtone.pulse.noisebuilder;
+import retroseq.pxtone.pulse.noise;
+import retroseq.pxtone.pulse.pcm;
+import retroseq.pxtone.error;
 
 ///
 struct PxtoneNoise {

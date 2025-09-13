@@ -1,21 +1,21 @@
 ///
-module pxtone.woice;
+module retroseq.pxtone.woice;
 // '12/03/03 pxtnWoice.
 
 import std.array;
 import std.exception;
 
-import pxtone.descriptor;
-import pxtone.error;
-import pxtone.evelist;
-import pxtone.pulse.noise;
-import pxtone.pulse.noisebuilder;
-import pxtone.pulse.oggv;
-import pxtone.pulse.oscillator;
-import pxtone.pulse.pcm;
-import pxtone.pxtn;
-import pxtone.util;
-import pxtone.woiceptv;
+import retroseq.pxtone.descriptor;
+import retroseq.pxtone.error;
+import retroseq.pxtone.evelist;
+import retroseq.pxtone.pulse.noise;
+import retroseq.pxtone.pulse.noisebuilder;
+import retroseq.pxtone.pulse.oggv;
+import retroseq.pxtone.pulse.oscillator;
+import retroseq.pxtone.pulse.pcm;
+import retroseq.pxtone.pxtn;
+import retroseq.pxtone.util;
+import retroseq.pxtone.woiceptv;
 
 enum pxtnMaxTuneWoiceName = 16; /// fixture.
 

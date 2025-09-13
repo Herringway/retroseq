@@ -1,14 +1,14 @@
 ///
-module pxtone.unit;
+module retroseq.pxtone.unit;
 // '12/03/03
 
-import pxtone.pxtn;
+import retroseq.pxtone.pxtn;
 
-import pxtone.descriptor;
-import pxtone.error;
-import pxtone.evelist;
-import pxtone.max;
-import pxtone.woice;
+import retroseq.pxtone.descriptor;
+import retroseq.pxtone.error;
+import retroseq.pxtone.evelist;
+import retroseq.pxtone.max;
+import retroseq.pxtone.woice;
 
 import std.exception;
 

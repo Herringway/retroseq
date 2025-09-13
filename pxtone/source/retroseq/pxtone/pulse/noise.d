@@ -1,15 +1,15 @@
 ///
-module pxtone.pulse.noise;
+module retroseq.pxtone.pulse.noise;
 
 import std.array;
 import std.exception;
 
-import pxtone.descriptor;
-import pxtone.error;
-import pxtone.pulse.frequency;
-import pxtone.pulse.oscillator;
-import pxtone.pulse.pcm;
-import pxtone.pxtn;
+import retroseq.pxtone.descriptor;
+import retroseq.pxtone.error;
+import retroseq.pxtone.pulse.frequency;
+import retroseq.pxtone.pulse.oscillator;
+import retroseq.pxtone.pulse.pcm;
+import retroseq.pxtone.pxtn;
 
 ///
 enum PxWaveType {

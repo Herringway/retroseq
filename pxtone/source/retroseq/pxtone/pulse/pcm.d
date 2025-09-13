@@ -1,11 +1,11 @@
 ///
-module pxtone.pulse.pcm;
+module retroseq.pxtone.pulse.pcm;
 
 import std.exception;
 
-import pxtone.descriptor;
-import pxtone.error;
-import pxtone.pxtn;
+import retroseq.pxtone.descriptor;
+import retroseq.pxtone.error;
+import retroseq.pxtone.pxtn;
 
 ///
 private struct WAVEFORMATCHUNK {

@@ -1,22 +1,22 @@
 ///
-module pxtone.service;
+module retroseq.pxtone.service;
 
-import pxtone.pxtn;
+import retroseq.pxtone.pxtn;
 
-import pxtone.descriptor;
-import pxtone.pulse.noisebuilder;
+import retroseq.pxtone.descriptor;
+import retroseq.pxtone.pulse.noisebuilder;
 
-import pxtone.error;
-import pxtone.max;
-import pxtone.text;
-import pxtone.delay;
-import pxtone.overdrive;
-import pxtone.master;
-import pxtone.woice;
-import pxtone.song;
-import pxtone.pulse.frequency;
-import pxtone.unit;
-import pxtone.evelist;
+import retroseq.pxtone.error;
+import retroseq.pxtone.max;
+import retroseq.pxtone.text;
+import retroseq.pxtone.delay;
+import retroseq.pxtone.overdrive;
+import retroseq.pxtone.master;
+import retroseq.pxtone.woice;
+import retroseq.pxtone.song;
+import retroseq.pxtone.pulse.frequency;
+import retroseq.pxtone.unit;
+import retroseq.pxtone.evelist;
 
 import std.algorithm.comparison;
 import std.exception;

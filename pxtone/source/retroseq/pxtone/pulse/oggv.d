@@ -1,14 +1,14 @@
 ///
-module pxtone.pulse.oggv;
+module retroseq.pxtone.pulse.oggv;
 
 version (WithOggVorbis):
 import core.stdc.config;
 import derelict.vorbis.codec;
 import derelict.vorbis.file;
 
-import pxtone.descriptor;
-import pxtone.error;
-import pxtone.pulse.pcm;
+import retroseq.pxtone.descriptor;
+import retroseq.pxtone.error;
+import retroseq.pxtone.pulse.pcm;
 
 import std.exception;
 import std.stdio;

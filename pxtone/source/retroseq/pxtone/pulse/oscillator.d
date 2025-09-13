@@ -1,7 +1,7 @@
 ///
-module pxtone.pulse.oscillator;
+module retroseq.pxtone.pulse.oscillator;
 
-import pxtone.pxtn;
+import retroseq.pxtone.pxtn;
 
 import std.math;
 

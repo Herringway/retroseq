@@ -1,14 +1,14 @@
 ///
-module pxtone.woiceptv;
+module retroseq.pxtone.woiceptv;
 // '12/03/03
 
 import std.exception;
 
-import pxtone.descriptor;
-import pxtone.error;
-import pxtone.pulse.noise;
-import pxtone.pxtn;
-import pxtone.woice;
+import retroseq.pxtone.descriptor;
+import retroseq.pxtone.error;
+import retroseq.pxtone.pulse.noise;
+import retroseq.pxtone.pxtn;
+import retroseq.pxtone.woice;
 
 immutable int expectedVersion = 20060111; /// support no-envelope
 

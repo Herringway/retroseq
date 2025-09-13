@@ -1,10 +1,10 @@
 ///
-module pxtone.text;
+module retroseq.pxtone.text;
 // '12/03/03
 
 import std.exception;
 
-import pxtone.descriptor;
+import retroseq.pxtone.descriptor;
 
 ///
 struct PxtnText {

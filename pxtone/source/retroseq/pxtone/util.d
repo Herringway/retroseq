@@ -1,5 +1,5 @@
 ///
-module pxtone.util;
+module retroseq.pxtone.util;
 
 package:
 ///

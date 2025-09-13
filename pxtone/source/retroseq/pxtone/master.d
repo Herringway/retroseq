@@ -1,14 +1,14 @@
 ///
-module pxtone.master;
+module retroseq.pxtone.master;
 // '12/03/03
 
 import std.exception;
 
-import pxtone.descriptor;
-import pxtone.error;
-import pxtone.evelist;
-import pxtone.pxtn;
-import pxtone.util;
+import retroseq.pxtone.descriptor;
+import retroseq.pxtone.error;
+import retroseq.pxtone.evelist;
+import retroseq.pxtone.pxtn;
+import retroseq.pxtone.util;
 
 /////////////////////////////////
 // file io

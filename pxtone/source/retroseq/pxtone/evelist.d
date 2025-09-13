@@ -1,11 +1,11 @@
 ///
-module pxtone.evelist;
+module retroseq.pxtone.evelist;
 
 import std.exception;
 
-import pxtone.descriptor;
-import pxtone.error;
-import pxtone.util;
+import retroseq.pxtone.descriptor;
+import retroseq.pxtone.error;
+import retroseq.pxtone.util;
 
 ///////////////////////
 // global

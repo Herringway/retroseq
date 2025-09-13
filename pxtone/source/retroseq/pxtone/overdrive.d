@@ -1,12 +1,12 @@
 ///
-module pxtone.overdrive;
+module retroseq.pxtone.overdrive;
 // '12/03/03
 
 import std.exception;
 
-import pxtone.pxtn;
-import pxtone.error;
-import pxtone.descriptor;
+import retroseq.pxtone.pxtn;
+import retroseq.pxtone.error;
+import retroseq.pxtone.descriptor;
 
 private enum tuneOverdriveCutMax = 99.9f; ///
 private enum tuneOverdriveCutMin = 50.0f; ///

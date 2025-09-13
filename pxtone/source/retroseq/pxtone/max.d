@@ -1,5 +1,5 @@
 ///
-module pxtone.max;
+module retroseq.pxtone.max;
 // '12/03/05
 
 enum pxtnMaxChannel = 2; ///
