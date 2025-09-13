@@ -97,8 +97,6 @@ struct M4APlayer {
 		soundInfo.cgbCalcFreqFunc = &cgbCalcFreqFunc;
 		soundInfo.maxScanlines = MAX_LINES;
 
-		//CpuFill32(0, cgbChans, SoundChannel.sizeof * 4);
-
 		soundInfo.cgbChans[0].type = 1;
 		soundInfo.cgbChans[0].panMask = 0x11;
 		soundInfo.cgbChans[1].type = 2;
