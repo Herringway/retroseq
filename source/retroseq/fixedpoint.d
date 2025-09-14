@@ -7,7 +7,12 @@ union FixedPoint2(size_t size, size_t scaling) {
 	import std.meta : AliasSeq;
 	import std.traits : isFloatingPoint, isIntegral, Unsigned;
 	private alias Integrals = AliasSeq!(byte, short, int, long);
-	private alias UnderlyingType = Integrals[cast(size_t)log2(size / 8.0)];
+	static if (size == scaling) {
+		// fraction part only, so strip the sign bit
+		private alias UnderlyingType = Unsigned!(Integrals[cast(size_t)log2(size / 8.0)]);
+	} else {
+		private alias UnderlyingType = Integrals[cast(size_t)log2(size / 8.0)];
+	}
 	private enum scaleMultiplier = ulong(1) << scaling;
 	private alias supportedOps = AliasSeq!("+", "-", "/", "*", "%", "^^");
 	private UnderlyingType value; ///
@@ -107,6 +112,7 @@ union FixedPoint2(size_t size, size_t scaling) {
 	alias FP64 = FixedPoint2!(64, 32);
 	alias FP32 = FixedPoint2!(32, 16);
 	alias FP16 = FixedPoint2!(16, 8);
+	alias FP016 = FixedPoint2!(16, 16);
 	FP32 sample = 2.0;
 	assert(sample.value == 0x00020000);
 
@@ -158,4 +164,8 @@ union FixedPoint2(size_t size, size_t scaling) {
 	assert(cast(byte)sample == -32);
 	assert(cast(short)sample == -32);
 	assert(cast(long)sample == -32);
+
+	FP016 fractOnly = 0.5;
+	assert(fractOnly * 0.25 == 0.125);
+	assert(fractOnly * 4 == 0); // overflow
 }
