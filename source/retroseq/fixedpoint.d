@@ -6,6 +6,7 @@ union FixedPoint2(size_t size, size_t scaling) {
 	import std.math : log2;
 	import std.meta : AliasSeq;
 	import std.traits : isFloatingPoint, isIntegral, Unsigned;
+	static assert((size > 0) && (size <= ulong.sizeof * 8), "Invalid fixed point size - must be in range (0, 64]");
 	private alias Integrals = AliasSeq!(byte, short, int, long);
 	static if (size == scaling) {
 		// fraction part only, so strip the sign bit
