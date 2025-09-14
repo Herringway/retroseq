@@ -1,6 +1,7 @@
 ///
 module retroseq.nspc.samples;
 
+import retroseq.interpolation;
 import retroseq.nspc.common;
 import retroseq.nspc.interpolationtables;
 import std.bitmanip;
@@ -228,8 +229,8 @@ short gaussianInterpolation(short[4] latest, ubyte index) nothrow @safe pure {
 
 ///
 short cubicInterpolation(short[4] latest, ubyte index) nothrow @safe pure {
-	const(short)[] fwd = cubic[index .. index + 258];
-	const(short)[] rev = cubic[256 - index  .. 514 - index]; // mirror left half
+	const(short)[] fwd = cubicTable[index .. index + 258];
+	const(short)[] rev = cubicTable[256 - index  .. 514 - index]; // mirror left half
 
 	int result;
 	result = (fwd[0] * latest[0]);
@@ -251,7 +252,7 @@ short cubicInterpolation(short[4] latest, ubyte index) nothrow @safe pure {
 
 ///
 short sincInterpolation(short[8] latest, ushort index) nothrow @safe pure {
-	const(short)[] selection = sinc[index .. index + 8];
+	const(short)[] selection = sincTable[index .. index + 8];
 
 	int result;
 	result = selection[0] * latest[0];
