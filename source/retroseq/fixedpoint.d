@@ -10,9 +10,9 @@ union FixedPoint2(size_t size, size_t scaling) {
 	private alias Integrals = AliasSeq!(byte, short, int, long);
 	static if (size == scaling) {
 		// fraction part only, so strip the sign bit
-		private alias UnderlyingType = Unsigned!(Integrals[cast(size_t)log2(size / 8.0)]);
+		private alias UnderlyingType = Unsigned!(Integrals[cast(size_t)log2((size + 7.0) / 8.0)]);
 	} else {
-		private alias UnderlyingType = Integrals[cast(size_t)log2(size / 8.0)];
+		private alias UnderlyingType = Integrals[cast(size_t)log2((size + 7.0) / 8.0)];
 	}
 	private enum scaleMultiplier = ulong(1) << scaling;
 	private alias supportedOps = AliasSeq!("+", "-", "/", "*", "%", "^^");
@@ -50,6 +50,10 @@ union FixedPoint2(size_t size, size_t scaling) {
 			result.value = cast(UnderlyingType)mixin("((this.value / scaleMultiplier)", op, "value) * scaleMultiplier");
 		} else {
 			result.value = cast(UnderlyingType)mixin("this.value", op, "value");
+		}
+		// we can't rely on our storage doing the truncating for us if it's larger than the specified size, so do it explicitly
+		static if (!size.among(8, 16, 32, 64)) {
+			result.value &= scaleMultiplier - 1;
 		}
 		return result;
 	}
@@ -114,6 +118,7 @@ union FixedPoint2(size_t size, size_t scaling) {
 	alias FP32 = FixedPoint2!(32, 16);
 	alias FP16 = FixedPoint2!(16, 8);
 	alias FP016 = FixedPoint2!(16, 16);
+	alias FP012 = FixedPoint2!(12, 12);
 	FP32 sample = 2.0;
 	assert(sample.value == 0x00020000);
 
@@ -169,4 +174,8 @@ union FixedPoint2(size_t size, size_t scaling) {
 	FP016 fractOnly = 0.5;
 	assert(fractOnly * 0.25 == 0.125);
 	assert(fractOnly * 4 == 0); // overflow
+
+	FP012 fractOnly12 = 0.5;
+	assert(fractOnly12 * 0.25 == 0.125);
+	assert(fractOnly12 * 4.0 == 0); // overflow
 }
