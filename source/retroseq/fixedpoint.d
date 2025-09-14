@@ -44,22 +44,33 @@ union FixedPoint2(size_t size, size_t scaling) {
 		return newValue;
 	}
 	///
-	FixedPoint2 opBinary(string op, T)(T value) const if (op.among(supportedOps) && (isFloatingPoint!T || isIntegral!T)) {
+	FixedPoint2 opBinary(string op, T)(T value) const if (op.among(supportedOps)) => performOperation!op(this, value);
+	///
+	FixedPoint2 opBinaryRight(string op, T)(T value) const if (op.among(supportedOps)) => performOperation!op(value, this);
+	private static FixedPoint2 performOperation(string op, L, R)(L lhs, R rhs) @safe pure {
+		auto value(T)(T val, bool withMultiplier) {
+			static if (isFloatingPoint!T || isIntegral!T) {
+				if (withMultiplier) {
+					return val * scaleMultiplier;
+				} else {
+					return val;
+				}
+			} else {
+				return val.value;
+			}
+		}
 		FixedPoint2 result;
-		static if ((op == "+") || (op == "-") || (op == "%") || (op == "^^")) {
-			result.value = cast(UnderlyingType)mixin("((this.value / scaleMultiplier)", op, "value) * scaleMultiplier");
+		static if (op == "^^") { // this can overflow with integers extremely easily, so handle it specially
+			result.value = cast(UnderlyingType)mixin("((cast(double)lhs)", op, "(cast(double)rhs)) * scaleMultiplier");
 		} else {
-			result.value = cast(UnderlyingType)mixin("this.value", op, "value");
+			enum withMultiplier = (op == "+") || (op == "-") || (op == "%");
+			result.value = cast(UnderlyingType)mixin("value(lhs, withMultiplier)", op, "value(rhs, withMultiplier)");
 		}
 		// we can't rely on our storage doing the truncating for us if it's larger than the specified size, so do it explicitly
 		static if (!size.among(8, 16, 32, 64)) {
 			result.value &= scaleMultiplier - 1;
 		}
 		return result;
-	}
-	///
-	FixedPoint2 opBinaryRight(string op, T)(T value) const if (op.among(supportedOps) && (isFloatingPoint!T || isIntegral!T)) {
-		return opBinary!(op)(value);
 	}
 	///
 	FixedPoint2 opBinary(string op, size_t otherSize, size_t otherScaling)(FixedPoint2!(otherSize, otherScaling) value) const if (op.among(supportedOps)) {
@@ -128,13 +139,16 @@ union FixedPoint2(size_t size, size_t scaling) {
 	assert(cast(double)(FP32(2.0) ^^ 3) == 8.0);
 	assert(cast(double)(FP32(2.0) + 3) == 5.0);
 	assert(cast(double)(FP32(2.0) - 3) == -1.0);
+	assert(cast(double)(3 - FP32(2.0)) == 1.0);
 
 	assert((cast(double)(FP32(2.0) / 3.0)).isClose(2.0 / 3.0, 1e-3, 1e-9));
 	assert(cast(double)(FP32(2.0) * 3.0) == 6.0);
 	assert(cast(double)(FP32(2.0) % 3.0) == 2.0);
 	assert(cast(double)(FP32(2.0) ^^ 3.0) == 8.0);
+	assert(cast(double)(FP32(4.0) ^^ 0.5) == 2.0);
 	assert(cast(double)(FP32(2.0) + 3.0) == 5.0);
 	assert(cast(double)(FP32(2.0) - 3.0) == -1.0);
+	assert(cast(double)(3.0 - FP32(2.0)) == 1.0);
 
 	assert((cast(double)(FP32(2.0) / FP32(3.0))).isClose(2.0 / 3.0, 1e-3, 1e-9));
 	assert(cast(double)(FP32(2.0) * FP32(3.0)) == 6.0);
@@ -177,5 +191,6 @@ union FixedPoint2(size_t size, size_t scaling) {
 
 	FP012 fractOnly12 = 0.5;
 	assert(fractOnly12 * 0.25 == 0.125);
+	assert(1.0 - fractOnly12 == 0.5);
 	assert(fractOnly12 * 4.0 == 0); // overflow
 }
