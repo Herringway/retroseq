@@ -103,7 +103,7 @@ union FixedPoint2(size_t size, size_t scaling) {
 	///
 	void toString(S)(ref S sink) const {
 		import std.format : formattedWrite;
-		sink.formattedWrite!"%s"(this.asDouble);
+		sink.formattedWrite!"%s"(cast(double)this);
 	}
 }
 
