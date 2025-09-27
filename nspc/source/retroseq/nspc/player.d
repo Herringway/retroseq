@@ -41,7 +41,6 @@ private struct SongState {
 	ubyte[8] firCoefficients; ///
 	short[8] firLeft; ///
 	short[8] firRight; ///
-	bool enchantedReadahead = true; /// this is a bug that existed in the prototype, and optionally by addmusick
 	//amk state
 	bool amkFixSampleLoadTuning; ///
 	bool useAltRTable; ///
@@ -152,6 +151,7 @@ private struct ChannelState {
 	ushort[ubyte] remotes; ///
 	// Pseudo VCMD state
 	Nullable!ubyte releaseOverride; ///
+	Nullable!Parser remoteParser; ///
 	///
 	void setADSRPhase(ADSRPhase phase) @safe pure nothrow {
 		adsrCounter = 0;
@@ -177,6 +177,24 @@ private struct ChannelState {
 				break;
 		}
 	}
+	///
+	this(ushort track, const(Track[ushort])* tracks) nothrow pure @safe {
+		this.enabled = false;
+		this.parser = Parser.initialize(assumeWontThrow((*tracks).get(track, Track.init)), tracks);
+		this.volume.cycles = 0;
+		this.panning.cycles = 0;
+		this.next = 0;
+		this.enabled = true;
+	}
+	void clearTrack() @safe pure nothrow {
+		parser.sequenceData = Track.init;
+	}
+	private ref auto currentParser() inout => remoteParser.isNull ? parser : remoteParser.get();
+	bool empty() const @safe pure nothrow => currentParser.empty;
+	bool done() const @safe pure nothrow => currentParser.done;
+	auto front() const @safe pure nothrow => currentParser.front;
+	void popFront() @safe pure nothrow => currentParser.popFront;
+	auto ref followSubroutines() inout => currentParser.followSubroutines;
 }
 
 ///
@@ -186,24 +204,35 @@ private struct Parser {
 	ushort subroutineStartAddress; /// Starting address of the subroutine
 	ubyte subroutineCount; /// Number of times to repeat the subroutine
 	const(Command)[] loopStart; /// Sequence data at  the start of a loop
+	bool followSubroutines = true; /// Whether or not to follow subroutines when looking for the next note
 	/// Number of times to loop
 	ubyte loopCount = 0xFF; ///
-	///
-	bool empty() const @safe pure nothrow {
-		return sequenceData.data.length == 0;
+	const(Track[ushort])* tracks;
+	bool done;
+	static Parser initialize(Track track, const(Track[ushort])* tracks) @safe pure nothrow {
+		Parser initialized;
+		initialized.subroutineCount = 0;
+		initialized.sequenceData = track;
+		initialized.tracks = tracks;
+		return initialized;
 	}
 	///
-	Command popCommand(const Song song) nothrow @safe pure {
-		bool _;
-		return popCommand(song, _);
+	bool empty() const @safe pure nothrow => sequenceData.data.length == 0;
+	Command front() const @safe pure nothrow => sequenceData.data[0];
+	Command popCommand() nothrow @safe pure {
+		scope(exit) popFront();
+		return front;
 	}
 	///
-	Command popCommand(const Song song, out bool done, bool followSubroutines = true) nothrow @safe pure {
-		const command = sequenceData.data[0];
+	void popFront() nothrow @safe pure {
+		done = false;
+		const command = front;
 		if (command.type == VCMDClass.terminator) {
 			done = subroutineCount == 0;
 			if (!done) {
-				sequenceData = --subroutineCount ? song.tracks[subroutineStartAddress] : subroutineReturnData;
+				sequenceData = --subroutineCount ? (*tracks)[subroutineStartAddress] : subroutineReturnData;
+			} else {
+				sequenceData = Track.init;
 			}
 		} else if ((command.type == VCMDClass.special) && (command.special == VCMD.konamiLoopStart)) {
 			sequenceData.data = sequenceData.data[1 .. $];
@@ -239,11 +268,37 @@ private struct Parser {
 			subroutineReturnData.data = sequenceData.data[1 .. $];
 			subroutineStartAddress = read!ushort(command.parameters);
 			subroutineCount = command.parameters[2];
-			sequenceData = song.tracks[subroutineStartAddress];
+			sequenceData = (*tracks)[subroutineStartAddress];
 		} else {
 			sequenceData.data = sequenceData.data[1 .. $];
 		}
-		return command;
+	}
+}
+
+@safe pure unittest {
+	{
+		Parser parser;
+		assert(parser.empty);
+	}
+	{
+		auto parser = Parser(
+			sequenceData: decompileTrack([0x00], Variant.standard)
+		);
+		assert(parser.front.type == VCMDClass.terminator);
+		parser.popFront();
+		assert(parser.empty);
+	}
+	{
+		auto parser = Parser(
+			sequenceData: decompileTrack([0x80, 0x81, 0x00], Variant.standard)
+		);
+		assert(parser.front.type == VCMDClass.note);
+		parser.popFront();
+		assert(parser.front.type == VCMDClass.note);
+		parser.popFront();
+		assert(parser.front.type == VCMDClass.terminator);
+		parser.popFront();
+		assert(parser.empty);
 	}
 }
 
@@ -730,7 +785,7 @@ struct NSPCPlayer {
 				c.releaseOverride = command.parameters[0];
 				break;
 			case VCMD.deleteTrack:
-				c.parser.sequenceData = Track.init;
+				c.clearTrack();
 				break;
 			case VCMD.konamiE4: // ???
 			case VCMD.konamiE7: // ???
@@ -794,10 +849,10 @@ struct NSPCPlayer {
 		// as a normal note.
 		VCMDClass nextNote;
 		{
-			auto p = c.parser;
-			bool done;
-			while (!done && !p.empty) {
-				const tmpCommand = p.popCommand(currentSong, done, state.enchantedReadahead);
+			auto channelCopy = c;
+			while (!channelCopy.done && !channelCopy.empty) {
+				const tmpCommand = channelCopy.front();
+				channelCopy.popFront();
 				if (tmpCommand.type.among(VCMDClass.note, VCMDClass.tie, VCMDClass.rest, VCMDClass.percussion)) {
 					nextNote = tmpCommand.type;
 					break;
@@ -859,24 +914,14 @@ struct NSPCPlayer {
 				const trackList = currentSong.trackLists[nextPhrase.id];
 				state.channels.length = max(state.channels.length, trackList.length);
 				backupState.channels.length = state.channels.length;
-				foreach (idx, channel; state.channels) {
-					setChannel(idx, assumeWontThrow(currentSong.tracks.get(trackList[idx], Track.init)));
+				foreach (idx, ref channel; state.channels) {
+					channel = ChannelState(trackList[idx], &currentSong.tracks);
 				}
 				break;
 		}
 		if (onPhraseChange !is null) {
 			onPhraseChange(&this);
 		}
-	}
-	///
-	public void setChannel(size_t index, Track commands) nothrow pure @safe {
-		state.channels[index].enabled = false;
-		state.channels[index].parser.sequenceData = commands;
-		state.channels[index].parser.subroutineCount = 0;
-		state.channels[index].volume.cycles = 0;
-		state.channels[index].panning.cycles = 0;
-		state.channels[index].next = 0;
-		state.channels[index].enabled = true;
 	}
 
 	///
@@ -922,36 +967,34 @@ struct NSPCPlayer {
 			}
 		}
 	}
-	bool inRemote = false; ///
 	///
 	private void executeRemote(ubyte event, ref ChannelState channel) nothrow pure @safe {
-		assert(!inRemote);
+		assert(channel.remoteParser.isNull);
 		if (auto seq = event in channel.remotes) {
-			inRemote = true;
-			Parser parser;
-			parser.sequenceData = currentSong.tracks[*seq];
-			parser.subroutineCount = 0;
-			execute(parser, channel);
-			inRemote = false;
+			channel.remoteParser = Parser.initialize(currentSong.tracks[*seq], &currentSong.tracks);
+			execute(channel);
+			channel.remoteParser.nullify();
 		}
 	}
-	/// Executes vcmds until either a terminator or a note is reached
-	private bool execute(ref Parser parser, ref ChannelState channel) nothrow pure @safe {
-		while (!parser.empty) {
-			bool done;
-			const command = parser.popCommand(currentSong, done);
-			if (executeCommand(channel, command, done)) {
-				return done;
+	/**
+	 * Executes vcmds until either a terminator or a note is reached
+	 * Returns: false if no commands left for channel, true otherwise
+	 */
+	private bool execute(ref ChannelState channel) nothrow pure @safe {
+		while (!channel.empty) {
+			const command = channel.currentParser.popCommand();
+			if (executeCommand(channel, command, channel.currentParser.done)) {
+				return channel.currentParser.done;
 			}
 		}
 		return true;
 	}
 	///
-	private bool executeCommand(ref ChannelState channel, const Command command, ref bool done) nothrow pure @safe {
+	private bool executeCommand(ref ChannelState channel, const Command command, ref bool noteFound) nothrow pure @safe {
 		final switch (command.type) {
 			case VCMDClass.terminator:
-				if (done) {
-					done = false;
+				if (noteFound) {
+					noteFound = false;
 					return true;
 				}
 				break;
@@ -967,7 +1010,7 @@ struct NSPCPlayer {
 			case VCMDClass.percussion:
 				channel.next = channel.noteLength - 1;
 				doNote(channel, command);
-				done = true;
+				noteFound = true;
 				return true;
 			case VCMDClass.special:
 				doCommand(channel, command);
@@ -982,24 +1025,26 @@ struct NSPCPlayer {
 	}
 
 	// $07F9 + $0625
-	///
+	/**
+	 * Returns: false if a channel end has been reached, true otherwise
+	 */
 	private bool doCycle() nothrow pure @safe {
 		foreach (ref channel; state.channels) {
 			if (--channel.next >= 0) {
 				doKeySweepVibratoChecks(channel);
 			} else {
-				if (!execute(channel.parser, channel)) {
+				if (!execute(channel)) {
 					return false;
 				}
 			}
 			// $0B84
 			if (channel.note.cycles == 0) {
 				size_t length;
-				if (!channel.parser.empty) {
-					const command = channel.parser.sequenceData.data[0];
+				if (!channel.empty) {
+					const command = channel.front;
 					if (command.special == VCMD.pitchSlideToNote) {
 						doCommand(channel, command);
-						channel.parser.popCommand(currentSong);
+						channel.popFront();
 					}
 				}
 			}
@@ -1009,7 +1054,7 @@ struct NSPCPlayer {
 		state.volume.slide();
 
 		foreach (ref channel; state.channels) {
-			if (channel.parser.sequenceData == Track.init) {
+			if (channel.empty) {
 				continue;
 			}
 
@@ -1053,7 +1098,7 @@ struct NSPCPlayer {
 	///
 	private void doSubCycle() nothrow pure @safe {
 		foreach (ref channel; state.channels) {
-			if (channel.parser.sequenceData == Track.init) {
+			if (channel.empty) {
 				continue;
 			}
 			// $0DD0
@@ -1132,8 +1177,8 @@ struct NSPCPlayer {
 			foreach (idx, channel; state.channels) {
 				// disable any channels that are disabled by default
 				channel.enabled ^= !(currentSong.defaultEnabledChannels() & (1 << idx));
+				channel.followSubroutines = currentSong.defaultEnchantedReadahead;
 			}
-			state.enchantedReadahead = currentSong.defaultEnchantedReadahead;
 		}
 	}
 	///

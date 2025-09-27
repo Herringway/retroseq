@@ -514,21 +514,23 @@ private void decompileSong(scope const(ubyte)[] data, ref Song song) @safe pure 
 		}
 	}
 }
-///
-private Track decompileTrack(immutable(ubyte)[] data, ushort start, ref Song song, ref ubyte tmpPercussionBase, bool recurse) @safe pure {
+Track decompileTrack(immutable(ubyte)[] data, Variant variant) @safe pure {
 	Track track;
-	// Determine the end of the track.
-	const(ubyte)[] trackEnd = data[start .. $];
-	size_t totalLength;
 	while (true) {
 		size_t length;
-		const command = readCommand(song.variant, trackEnd, length);
+		const command = readCommand(variant, data, length);
 		track.data ~= command;
-		trackEnd = trackEnd[length .. $];
-		totalLength += length;
+		data = data[length .. $];
 		if (command.type == VCMDClass.terminator) {
 			break;
 		}
+	}
+	return track;
+}
+///
+private Track decompileTrack(immutable(ubyte)[] data, ushort start, ref Song song, ref ubyte tmpPercussionBase, bool recurse) @safe pure {
+	auto track = decompileTrack(data[start .. $], song.variant);
+	foreach (command; track.data) {
 		if (command.special == VCMD.subRoutine) { //decompile subroutines too
 			enforce!NSPCException(recurse, "Subroutines can't call subroutines!");
 			ushort subPtr = read!ushort(command.parameters);
