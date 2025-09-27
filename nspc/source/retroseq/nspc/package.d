@@ -2,6 +2,7 @@
 module retroseq.nspc;
 
 public import retroseq.nspc.common;
+public import retroseq.nspc.extract;
 public import retroseq.nspc.nspc1;
 public import retroseq.nspc.nspc2;
 public import retroseq.nspc.player;

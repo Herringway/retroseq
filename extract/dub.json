@@ -3,9 +3,7 @@
 	"license": "BSD 3-clause",
 	"name": "extract",
 	"targetType": "executable",
-	"stringImportPaths": ["songinfo"],
 	"dependencies": {
-		"retroseq:nspc": "*",
-		"siryul": "*"
+		"retroseq:nspc": "*"
 	}
 }

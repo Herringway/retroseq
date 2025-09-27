@@ -5,9 +5,10 @@
 	"copyright": "Copyright © 2024, Herringway",
 	"description": "SNES NSPC format",
 	"license": "BSL-1",
-	"stringImportPaths": ["exampledata"],
+	"stringImportPaths": ["exampledata", "songinfo"],
 	"dependencies": {
-		"retroseq": "*"
+		"retroseq": "*",
+		"siryul": "~>0.8"
 	},
 	"name": "nspc"
 }
