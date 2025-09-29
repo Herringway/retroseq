@@ -144,8 +144,8 @@ private struct ChannelState {
 	ushort loopCount; ///
 	ubyte noteDelta; /// TODO: implement this. what unit does this use?
 	ubyte volumeDelta; /// ditto
+	ushort tuning; ///
 	// AMK specific state
-	Nullable!ushort tuningOverride; ///
 	ushort semitoneTune; ///
 	ubyte volumeBoost; ///
 	ushort[ubyte] remotes; ///
@@ -543,10 +543,10 @@ struct NSPCPlayer {
 	///
 	private void setInstrument(ref ChannelState c, size_t instrument) nothrow pure @safe {
 		const idata = currentSong.instruments[instrument];
-		c.instrument = cast(ubyte) instrument;
+		c.instrument = cast(ubyte)instrument;
 		c.sampleID = currentSong.instruments[instrument].sampleID;
 		setADSRGain(c, idata.adsrGain);
-		c.tuningOverride.nullify();
+		c.tuning = idata.tuning;
 	}
 	///
 	private void setADSRGain(ref ChannelState c, const ADSRGain adsrGain) nothrow pure @safe {
@@ -579,7 +579,7 @@ struct NSPCPlayer {
 		freq >>= 6 - octave;
 
 
-		freq *= c.tuningOverride.get(currentSong.instruments[c.instrument].tuning);
+		freq *= c.tuning;
 		freq >>= 8;
 		freq &= 0x3fff;
 
@@ -735,7 +735,7 @@ struct NSPCPlayer {
 			case VCMD.amkSampleLoad:
 				c.sampleID = command.parameters[0];
 				ubyte finetune = state.amkFixSampleLoadTuning ? 0 : cast(ubyte)currentSong.instruments[c.instrument].tuning;
-				c.tuningOverride = (cast(ushort)command.parameters[1] << 8) | finetune;
+				c.tuning = (cast(ushort)command.parameters[1] << 8) | finetune;
 				break;
 			case VCMD.amkF4:
 				if (command.parameters[0] == 3) {
