@@ -29,6 +29,11 @@ union FixedPoint2(size_t size, size_t scaling) {
 			this(value.fraction >> ((size - n) / 2), value.integer);
 		}
 	}
+	static FixedPoint2 fromInteger(UnderlyingType value) @safe pure {
+		FixedPoint2 result;
+		result.value = value;
+		return result;
+	}
 	///
 	T opCast(T)() const @safe pure if(isFloatingPoint!T) {
 		return cast(T)(cast(UnderlyingType)value) / cast(double)scaleMultiplier;
@@ -193,4 +198,6 @@ union FixedPoint2(size_t size, size_t scaling) {
 	assert(fractOnly12 * 0.25 == 0.125);
 	assert(1.0 - fractOnly12 == 0.5);
 	assert(fractOnly12 * 4.0 == 0); // overflow
+
+	assert(cast(double)FP64.fromInteger(0x1_0000_0000) == 1.0);
 }
