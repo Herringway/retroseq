@@ -798,8 +798,6 @@ void m4aSoundMode(SoundMixerState* soundInfo, uint mode) @safe pure {
 	temp = mode & SOUND_MODE_MAXCHN;
 
 	if (temp) {
-		SoundChannel[] chan = soundInfo.chans[];
-
 		// The following line is a fix, not sure how accurate it's supposed to be?
 		soundInfo.numChans = MAX_DIRECTSOUND_CHANNELS;
 		// The following line is the old code
@@ -807,10 +805,8 @@ void m4aSoundMode(SoundMixerState* soundInfo, uint mode) @safe pure {
 
 		temp = MAX_DIRECTSOUND_CHANNELS;
 
-		while (temp != 0) {
-			chan[0].statusFlags = 0;
-			temp--;
-			chan = chan[1 .. $];
+		foreach (i; 0 .. temp) {
+			soundInfo.chans[i].statusFlags = 0;
 		}
 	}
 
