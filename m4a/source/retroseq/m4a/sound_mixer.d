@@ -107,17 +107,16 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 	//   /                 Release (exp) ''--..|\                      |
 	//  /                                        \                     |
 
-	const status = chan.statusFlags;
-	if ((status & 0xC7) == 0) {
+	if (!chan.isActive) {
 		return 0;
 	}
 
 	ubyte env = 0;
 	ushort newEnv;
-	if ((status & 0x80) == 0) {
+	if (!chan.start) {
 		env = chan.envelopeVolume;
 
-		if (status & 4) {
+		if (chan.echoEnabled) {
 			// Note-wise echo
 			--chan.echoVolume;
 			if (chan.echoVolume <= 0) {
@@ -126,7 +125,7 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 			} else {
 				return 1;
 			}
-		} else if (status & 0x40) {
+		} else if (chan.stop) {
 			// Release
 			chan.envelopeVolume = env * chan.release / 256U;
 			ubyte echoVolume = chan.echoVolume;
@@ -136,14 +135,13 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 				chan.statusFlags = 0;
 				return 0;
 			} else {
-				chan.statusFlags |= 4;
+				chan.echoEnabled = true;
 				return 1;
 			}
 		}
 
-		switch (status & 3) {
-		case 2:
-			// Decay
+		final switch (chan.envelopeState) {
+		case EnvelopeState.decay:
 			chan.envelopeVolume = env * chan.decay / 256U;
 
 			ubyte sustain = chan.sustain;
@@ -153,7 +151,7 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 					chan.statusFlags = 0;
 					return 0;
 				} else {
-					chan.statusFlags |= 4;
+					chan.echoEnabled = true;
 					return 1;
 				}
 			} else if (chan.envelopeVolume <= sustain) {
@@ -161,7 +159,7 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 				--chan.statusFlags;
 			}
 			break;
-		case 3:
+		case EnvelopeState.attack:
 		attack:
 			newEnv = env + chan.attack;
 			if (newEnv > 0xFF) {
@@ -171,19 +169,20 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 				chan.envelopeVolume = cast(ubyte)newEnv;
 			}
 			break;
-		case 1: // Sustain
-		default:
+		case EnvelopeState.sustain:
+		case EnvelopeState.release:
 			break;
 		}
 
 		return 1;
-	} else if (status & 0x40) {
+	} else if (chan.stop) {
 		// Init and stop cancel each other out
 		chan.statusFlags = 0;
 		return 0;
 	} else {
 		// Init channel
-		chan.statusFlags = 3;
+		chan.statusFlags = 0;
+		chan.envelopeState = EnvelopeState.attack;
 		chan.currentPointer = wav.sample[chan.count .. $];
 		chan.count = wav.header.size - chan.count;
 		chan.fw = 0;

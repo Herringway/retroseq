@@ -5,6 +5,8 @@ import retroseq.utility;
 
 import retroseq.m4a.m4a;
 
+import std.bitmanip;
+
 alias RelativePointer(Element, Offset) = retroseq.utility.RelativePointer!(Element, Offset, 0x8000000, 0xA000000);
 
 enum C_V = 0x40; /// center value for PAN, BEND, and TUNE
@@ -87,25 +89,33 @@ struct ToneData {
 	}
 }
 
-enum SOUND_CHANNEL_SF_START = 0x80; ///
-enum SOUND_CHANNEL_SF_STOP = 0x40; ///
-enum SOUND_CHANNEL_SF_LOOP = 0x10; ///
-enum SOUND_CHANNEL_SF_IEC = 0x04; ///
-enum SOUND_CHANNEL_SF_ENV = 0x03; ///
-enum SOUND_CHANNEL_SF_ENV_ATTACK = 0x03; ///
-enum SOUND_CHANNEL_SF_ENV_DECAY = 0x02; ///
-enum SOUND_CHANNEL_SF_ENV_SUSTAIN = 0x01; ///
-enum SOUND_CHANNEL_SF_ENV_RELEASE = 0x00; ///
-enum SOUND_CHANNEL_SF_ON = (SOUND_CHANNEL_SF_START | SOUND_CHANNEL_SF_STOP | SOUND_CHANNEL_SF_IEC | SOUND_CHANNEL_SF_ENV); ///
-
 enum CGB_CHANNEL_MO_PIT = 0x02; ///
 enum CGB_CHANNEL_MO_VOL = 0x01; ///
 
 enum CGB_NRx2_ENV_DIR_DEC = 0x00; ///
 enum CGB_NRx2_ENV_DIR_INC = 0x08; ///
 
+enum EnvelopeState {
+	release,
+	sustain,
+	decay,
+	attack,
+}
+
 struct SoundChannel {
-	ubyte statusFlags; ///
+	union {
+		ubyte statusFlags; ///
+		mixin(bitfields!(
+			EnvelopeState, "envelopeState", 2,
+			bool, "echoEnabled", 1,
+			ubyte, "", 1,
+			bool, "loop", 1,
+			ubyte, "", 1,
+			bool, "stop", 1,
+			bool, "start", 1,
+		));
+		bool isActive() const @safe pure => start || stop || echoEnabled || (envelopeState != EnvelopeState.release);
+	}
 	ubyte type; ///
 	ubyte rightVolume; ///
 	ubyte leftVolume; ///

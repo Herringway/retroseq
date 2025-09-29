@@ -487,7 +487,7 @@ struct M4APlayer {
 
 		foreach (idx, ref channel; soundInfo.cgbChans) {
 			int envelopeVolume, sustainGoal;
-			if (!(channel.statusFlags & SOUND_CHANNEL_SF_ON)) {
+			if (!channel.isActive) {
 				continue;
 			}
 
@@ -527,9 +527,10 @@ struct M4APlayer {
 			envelopeStepTimeAndDir = *nrx2ptr;
 
 			/* 2. calculate envelope volume */
-			if (channel.statusFlags & SOUND_CHANNEL_SF_START) {
-				if (!(channel.statusFlags & SOUND_CHANNEL_SF_STOP)) {
-					channel.statusFlags = SOUND_CHANNEL_SF_ENV_ATTACK;
+			if (channel.start) {
+				if (!channel.stop) {
+					channel.statusFlags = 0;
+					channel.envelopeState = EnvelopeState.attack;
 					channel.cgbStatus = CGB_CHANNEL_MO_PIT | CGB_CHANNEL_MO_VOL;
 					CgbModVol(channel);
 					switch (idx + 1) {
@@ -579,7 +580,7 @@ struct M4APlayer {
 				} else {
 					goto oscillator_off;
 				}
-			} else if (channel.statusFlags & SOUND_CHANNEL_SF_IEC) {
+			} else if (channel.echoEnabled) {
 				channel.echoLength--;
 				if (cast(byte)(channel.echoLength & mask) <= 0) {
 				oscillator_off:
@@ -589,8 +590,8 @@ struct M4APlayer {
 				}
 				goto envelope_complete;
 			}
-			else if ((channel.statusFlags & SOUND_CHANNEL_SF_STOP) && (channel.statusFlags & SOUND_CHANNEL_SF_ENV)) {
-				channel.statusFlags &= ~SOUND_CHANNEL_SF_ENV;
+			else if (channel.stop && (channel.envelopeState != EnvelopeState.release)) {
+				channel.envelopeState = EnvelopeState.release;
 				channel.envelopeCounter = channel.release;
 				if (cast(byte)(channel.release & mask)) {
 					channel.cgbStatus |= CGB_CHANNEL_MO_VOL;
@@ -610,13 +611,13 @@ struct M4APlayer {
 					}
 
 					CgbModVol(channel);
-					if ((channel.statusFlags & SOUND_CHANNEL_SF_ENV) == SOUND_CHANNEL_SF_ENV_RELEASE) {
+					if (channel.envelopeState == EnvelopeState.release) {
 						channel.envelopeVolume--;
 						if (cast(byte)(channel.envelopeVolume & mask) <= 0) {
 						envelope_pseudoecho_start:
 							channel.envelopeVolume = ((channel.envelopeGoal * channel.echoVolume) + 0xFF) >> 8;
 							if (channel.envelopeVolume) {
-								channel.statusFlags |= SOUND_CHANNEL_SF_IEC;
+								channel.echoEnabled = true;
 								channel.cgbStatus |= CGB_CHANNEL_MO_VOL;
 								if (idx + 1 != 3) {
 									envelopeStepTimeAndDir = 0 | CGB_NRx2_ENV_DIR_INC;
@@ -628,11 +629,11 @@ struct M4APlayer {
 						} else {
 							channel.envelopeCounter = channel.release;
 						}
-					} else if ((channel.statusFlags & SOUND_CHANNEL_SF_ENV) == SOUND_CHANNEL_SF_ENV_SUSTAIN) {
+					} else if (channel.envelopeState == EnvelopeState.sustain) {
 					envelope_sustain:
 						channel.envelopeVolume = channel.sustainGoal;
 						channel.envelopeCounter = 7;
-					} else if ((channel.statusFlags & SOUND_CHANNEL_SF_ENV) == SOUND_CHANNEL_SF_ENV_DECAY) {
+					} else if (channel.envelopeState == EnvelopeState.decay) {
 
 						channel.envelopeVolume--;
 						envelopeVolume = cast(byte)(channel.envelopeVolume & mask);
@@ -640,7 +641,7 @@ struct M4APlayer {
 						if (envelopeVolume <= sustainGoal) {
 						envelope_sustain_start:
 							if (channel.sustain == 0) {
-								channel.statusFlags &= ~SOUND_CHANNEL_SF_ENV;
+								channel.envelopeState = EnvelopeState.release;
 								goto envelope_pseudoecho_start;
 							} else {
 								channel.statusFlags--;

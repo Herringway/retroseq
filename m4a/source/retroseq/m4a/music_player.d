@@ -202,10 +202,10 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @safe p
 			trackBits |= (1 << idx);
 
 			for (SoundChannel* chan = currentTrack.chan; chan != null; chan = chan.nextChannelPointer) {
-				if ((chan.statusFlags & SOUND_CHANNEL_SF_ON) == 0) {
+				if (!chan.isActive) {
 					player.ClearChain(*chan);
 				} else if (chan.gateTime != 0 && --chan.gateTime == 0) {
-					chan.statusFlags |= SOUND_CHANNEL_SF_STOP;
+					chan.stop = true;
 				}
 			}
 
@@ -417,8 +417,7 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
 		chan = &player.soundInfo.cgbChans[cgbType - 1];
 
 		// If this channel is running and not stopped,
-		if ((chan.statusFlags & SOUND_CHANNEL_SF_ON)
-		&& (chan.statusFlags & SOUND_CHANNEL_SF_STOP) == 0) {
+		if (chan.isActive && !chan.stop) {
 			// then make sure this note is higher priority (or same priority but from a later track).
 			if (chan.priority > priority || (chan.priority == priority && chan.track < &track)) {
 				return;
@@ -432,21 +431,20 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
 
 		for (ubyte i = 0; i < maxChans; i++) {
 			SoundChannel *currChan = &player.soundInfo.chans[i];
-			if ((currChan.statusFlags & SOUND_CHANNEL_SF_ON) == 0) {
+			if (!currChan.isActive) {
 				// Hey, we found a completely inactive channel! Let's use that.
 				chan = currChan;
 				break;
 			}
 
-			if (currChan.statusFlags & SOUND_CHANNEL_SF_STOP && !foundStoppingChannel) {
+			if (currChan.stop && !foundStoppingChannel) {
 				// In the absence of a completely finalized channel, we can take over one that's about to
 				// finalize. That's a tier above any channel that's currently playing a note.
 				foundStoppingChannel = 1;
 				p = currChan.priority;
 				t = currChan.track;
 				chan = currChan;
-			} else if ((currChan.statusFlags & SOUND_CHANNEL_SF_STOP && foundStoppingChannel)
-				 || ((currChan.statusFlags & SOUND_CHANNEL_SF_STOP) == 0 && !foundStoppingChannel)) {
+			} else if ((currChan.stop && foundStoppingChannel) || (!currChan.stop && !foundStoppingChannel)) {
 				// The channel we're checking is on the same tier, so check the priority and track order
 				if (currChan.priority < p) {
 					p = currChan.priority;
@@ -527,7 +525,8 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
 		chan.freq = MidiKeyToFreq(chan.wav, cast(ubyte)transposedKey, track.pitchCalculated);
 	}
 
-	chan.statusFlags = SOUND_CHANNEL_SF_START;
+	chan.statusFlags = 0;
+	chan.start = true;
 	track.flags &= ~0xF;
 }
 
