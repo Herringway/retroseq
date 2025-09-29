@@ -1,9 +1,9 @@
 ///
 module retroseq.nspc.nspc1;
 
+import retroseq.ape;
 import retroseq.nspc.common;
 import retroseq.nspc.song;
-import retroseq.nspc.tags;
 
 ///
 struct NSPCFileHeader {

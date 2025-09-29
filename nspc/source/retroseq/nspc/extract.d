@@ -1,10 +1,10 @@
 ///
 module retroseq.nspc.extract;
 
+import retroseq.ape;
 import retroseq.nspc.nspc2;
 import retroseq.nspc.common;
 import retroseq.nspc.song;
-import retroseq.nspc.tags;
 
 import std.algorithm.comparison;
 import std.algorithm.iteration;

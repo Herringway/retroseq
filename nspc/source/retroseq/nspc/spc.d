@@ -1,10 +1,10 @@
 ///
 module retroseq.nspc.spc;
 
+import retroseq.ape : TagPair;
 import retroseq.nspc.common : ReleaseTable, Variant, VolumeTable;
 import retroseq.nspc.nspc1;
 import retroseq.nspc.song : Pack, releaseTables, Song, volumeTables;
-import retroseq.nspc.tags : TagPair;
 
 import std.algorithm;
 import std.exception;

@@ -10,12 +10,12 @@ import std.experimental.logger;
 import std.format : format;
 import std.range : only;
 
+import retroseq.ape;
 import retroseq.nspc.common;
 import retroseq.nspc.samples;
 import retroseq.nspc.sequence;
 import retroseq.nspc.nspc1;
 import retroseq.nspc.nspc2;
-import retroseq.nspc.tags;
 import retroseq.utility;
 
 private enum maxInstruments = 128; ///

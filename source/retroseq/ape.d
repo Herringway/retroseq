@@ -1,7 +1,5 @@
 ///
-module retroseq.nspc.tags;
-
-import std.experimental.logger;
+module retroseq.ape;
 
 ///
 struct APETagHeaderFooter {
@@ -136,12 +134,10 @@ TagPair[] readTags(const scope ubyte[] data) @safe pure {
 	}
 	const footer = (cast(const(APETagHeaderFooter)[])data[$ - APETagHeaderFooter.sizeof .. $])[0];
 	if ((footer.magic == "APETAGEX") && !footer.globalFlags.header) {
-		debug(nspclogging) tracef("Found APE tag footer");
 		return readTagData(data[$ - footer.tagSize .. $ - APETagHeaderFooter.sizeof]);
 	} else {
 		const header = (cast(const(APETagHeaderFooter)[])data[0 .. APETagHeaderFooter.sizeof])[0];
 		if ((header.magic == "APETAGEX") && header.globalFlags.header) {
-			debug(nspclogging) tracef("Found APE tag header");
 			return readTagData(data[APETagHeaderFooter.sizeof .. APETagHeaderFooter.sizeof + footer.tagSize]);
 		}
 	}

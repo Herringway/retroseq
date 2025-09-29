@@ -1,9 +1,9 @@
 ///
 module retroseq.nspc.nspc2;
 
+import retroseq.ape;
 import retroseq.nspc.common;
 import retroseq.nspc.song;
-import retroseq.nspc.tags;
 import retroseq.utility;
 
 import std.algorithm.searching;

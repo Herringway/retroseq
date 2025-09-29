@@ -10,4 +10,3 @@ public import retroseq.nspc.samples;
 public import retroseq.nspc.sequence;
 public import retroseq.nspc.song;
 public import retroseq.nspc.spc;
-public import retroseq.nspc.tags;
