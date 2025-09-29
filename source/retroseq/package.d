@@ -6,3 +6,4 @@ public import retroseq.fixedpoint;
 public import retroseq.interpolation;
 public import retroseq.mixer;
 public import retroseq.utility;
+public import retroseq.wav;
