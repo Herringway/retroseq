@@ -11,32 +11,21 @@ alias RelativePointer(Element, Offset) = retroseq.utility.RelativePointer!(Eleme
 
 enum C_V = 0x40; /// center value for PAN, BEND, and TUNE
 
-enum SOUND_MODE_REVERB_VAL = 0x0000007F; ///
-enum SOUND_MODE_REVERB_SET = 0x00000080; ///
-enum SOUND_MODE_MAXCHN = 0x00000F00; ///
-enum SOUND_MODE_MAXCHN_SHIFT = 8; ///
-enum SOUND_MODE_MASVOL = 0x0000F000; ///
-enum SOUND_MODE_MASVOL_SHIFT = 12; ///
-enum SOUND_MODE_FREQ_05734 = 0x00010000; ///
-enum SOUND_MODE_FREQ_07884 = 0x00020000; ///
-enum SOUND_MODE_FREQ_10512 = 0x00030000; ///
-enum SOUND_MODE_FREQ_13379 = 0x00040000; ///
-enum SOUND_MODE_FREQ_15768 = 0x00050000; ///
-enum SOUND_MODE_FREQ_18157 = 0x00060000; ///
-enum SOUND_MODE_FREQ_21024 = 0x00070000; ///
-enum SOUND_MODE_FREQ_26758 = 0x00080000; ///
-enum SOUND_MODE_FREQ_31536 = 0x00090000; ///
-enum SOUND_MODE_FREQ_36314 = 0x000A0000; ///
-enum SOUND_MODE_FREQ_40137 = 0x000B0000; ///
-enum SOUND_MODE_FREQ_42048 = 0x000C0000; ///
-enum SOUND_MODE_FREQ = 0x000F0000; ///
-enum SOUND_MODE_FREQ_SHIFT = 16; ///
-enum SOUND_MODE_DA_BIT_9 = 0x00800000; ///
-enum SOUND_MODE_DA_BIT_8 = 0x00900000; ///
-enum SOUND_MODE_DA_BIT_7 = 0x00A00000; ///
-enum SOUND_MODE_DA_BIT_6 = 0x00B00000; ///
-enum SOUND_MODE_DA_BIT = 0x00B00000; ///
-enum SOUND_MODE_DA_BIT_SHIFT = 20; ///
+union SoundMode {
+	uint value; ///
+	mixin(bitfields!(
+		ubyte, "reverbVolume", 7,
+		bool, "reverbEnabled", 1,
+		ubyte, "maxChannels", 4,
+		ubyte, "masterVolume", 4,
+		ubyte, "frequency", 4,
+		ubyte, "bias", 2,
+		ubyte, "", 1,
+		bool, "biasEnable", 1,
+		ubyte, "", 8,
+	));
+}
+
 
 ///
 struct Wave {
@@ -54,18 +43,22 @@ struct WaveData {
 	uint size; /// number of samples
 }
 
-enum TONEDATA_TYPE_CGB = 0x07; ///
-enum TONEDATA_TYPE_FIX = 0x08; ///
-enum TONEDATA_TYPE_SPL = 0x40; /// key split
-enum TONEDATA_TYPE_RHY = 0x80; /// rhythm
-
 enum TONEDATA_P_S_PAN = 0xc0; ///
 enum TONEDATA_P_S_PAM = TONEDATA_P_S_PAN; ///
 
 ///
 struct ToneData {
 	align(1):
-	ubyte type; ///
+	union {
+		ubyte type; ///
+		mixin(bitfields!(
+			ubyte, "cgbType", 3,
+			bool, "fix", 1,
+			ubyte, "", 2,
+			bool, "spl", 1,
+			bool, "rhy", 1,
+		));
+	}
 	union {
 		ubyte key; ///
 		ubyte drumKey; ///
@@ -116,7 +109,16 @@ struct SoundChannel {
 		));
 		bool isActive() const @safe pure => start || stop || echoEnabled || (envelopeState != EnvelopeState.release);
 	}
-	ubyte type; ///
+	union {
+		ubyte type; ///
+		mixin(bitfields!(
+			ubyte, "cgbType", 3,
+			bool, "fix", 1,
+			ubyte, "", 2,
+			bool, "spl", 1,
+			bool, "rhy", 1,
+		));
+	}
 	ubyte rightVolume; ///
 	ubyte leftVolume; ///
 	ubyte attack; ///
@@ -213,7 +215,6 @@ enum SOUND_MASTER_ENABLE = 0x0080; ///
 ///
 struct SoundIO {
 	ubyte NR10; ///
-	ubyte NR10x; ///
 	ubyte NR11; ///
 	ubyte NR12; ///
 	union{
@@ -223,6 +224,7 @@ struct SoundIO {
 			ubyte NR14; ///
 		}
 	}
+	ubyte NR20; /// Unused register
 	ubyte NR21; ///
 	ubyte NR22; ///
 	union{
@@ -232,8 +234,13 @@ struct SoundIO {
 			ubyte NR24; ///
 		}
 	}
-	ubyte NR30; ///
-	ubyte NR30x; ///
+	union {
+		ubyte NR30; ///
+		mixin(bitfields!(
+			ubyte, "", 7,
+			bool, "channel3DACEnable", 1,
+		));
+	}
 	ubyte NR31; ///
 	ubyte NR32; ///
 	union{
@@ -243,14 +250,52 @@ struct SoundIO {
 			ubyte NR34; ///
 		}
 	}
+	ubyte NR40; /// Unused register
 	ubyte NR41; ///
 	ubyte NR42; ///
-	ubyte NR43; ///
+	union {
+		ubyte NR43; ///
+		mixin(bitfields!(
+			ubyte, "clockDivider", 3,
+			bool, "thinnerLFSR", 1,
+			ubyte, "clockShift", 4,
+		));
+	}
 	ubyte NR44; ///
-	ubyte NR50; ///
-	ubyte NR51; ///
+	union {
+		ubyte NR50; ///
+		mixin(bitfields!(
+			ubyte, "rightVolume", 3,
+			bool, "vinRight", 1,
+			ubyte, "leftVolume", 3,
+			bool, "vinLeft", 1,
+		));
+	}
+	union {
+		ubyte NR51; ///
+		mixin(bitfields!(
+			bool, "panCh1Right", 1,
+			bool, "panCh2Right", 1,
+			bool, "panCh3Right", 1,
+			bool, "panCh4Right", 1,
+			bool, "panCh1Left", 1,
+			bool, "panCh2Left", 1,
+			bool, "panCh3Left", 1,
+			bool, "panCh4Left", 1,
+		));
+	}
 	ushort SOUNDCNT_H; ///
-	ubyte NR52; ///
+	union {
+		ubyte NR52; ///
+		mixin(bitfields!(
+			bool, "enableCh1", 1,
+			bool, "enableCh2", 1,
+			bool, "enableCh3", 1,
+			bool, "enableCh4", 1,
+			ubyte, "", 3,
+			bool, "enableAPU", 1,
+		));
+	}
 	ushort SOUNDBIAS_H; ///
 }
 

@@ -299,7 +299,7 @@ void MP2KPlayerMain(ref M4APlayer player, ref MusicPlayerInfo subPlayer) @safe p
 				player.ClearChain(*chan);
 				continue;
 			}
-			ubyte cgbType = chan.type & 0x7;
+			ubyte cgbType = chan.cgbType;
 			if (track.flags & MPT_FLG_VOLCHG) {
 				ChnVolSetAsm(*chan, *track);
 				if (cgbType != 0) {
@@ -329,7 +329,7 @@ void TrackStop(ref M4APlayer player, ref MusicPlayerInfo subPlayer, ref MusicPla
 	if (track.flags & MPT_FLG_EXIST) {
 		for (SoundChannel *chan = track.chan; chan != null; chan = chan.nextChannelPointer) {
 			if (chan.statusFlags != 0) {
-				ubyte cgbType = chan.type & 0x7;
+				ubyte cgbType = chan.cgbType;
 				if (cgbType != 0) {
 					player.soundInfo.cgbNoteOffFunc(player, cgbType);
 				}
@@ -380,11 +380,11 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
 	const(ToneData)* instrument = &track.instrument;
 	// sp8
 	ubyte key = track.key;
-	ubyte type = instrument.type;
+	const oldRhy = instrument.rhy;
 
-	if (type & (TONEDATA_TYPE_RHY | TONEDATA_TYPE_SPL)) {
+	if (instrument.rhy || instrument.spl) {
 		ubyte instrumentIndex;
-		if (instrument.type & TONEDATA_TYPE_SPL) {
+		if (instrument.spl) {
 			const keySplitTableOffset = instrument.keySplitTable.toAbsoluteArray(player.musicData);
 			instrumentIndex = keySplitTableOffset[track.key];
 		} else {
@@ -392,10 +392,10 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
 		}
 
 		instrument = &instrument.group.toAbsoluteArray(player.musicData)[instrumentIndex];
-		if (instrument.type & (TONEDATA_TYPE_RHY | TONEDATA_TYPE_SPL)) {
+		if (instrument.rhy || instrument.spl) {
 			return;
 		}
-		if (type & TONEDATA_TYPE_RHY) {
+		if (oldRhy) {
 			if (instrument.panSweep & 0x80) {
 				forcedPan = ((byte)(instrument.panSweep & 0x7F) - 0x40) * 2;
 			}
@@ -409,7 +409,7 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerInfo subPla
 		priority = 0xFF;
 	}
 
-	ubyte cgbType = instrument.type & TONEDATA_TYPE_CGB;
+	ubyte cgbType = instrument.cgbType;
 	SoundChannel *chan;
 
 	if (cgbType != 0) {

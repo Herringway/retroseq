@@ -28,9 +28,6 @@ struct M4APlayer {
 	MusicPlayerInfo gMPlayInfo_SE2; ///
 	MusicPlayerInfo gMPlayInfo_SE3; ///
 	MusicPlayerTrack[MAX_MUSICPLAYER_TRACKS] gMPlayTrack_BGM; ///
-	MusicPlayerTrack[3] gMPlayTrack_SE1; ///
-	MusicPlayerTrack[9] gMPlayTrack_SE2; ///
-	MusicPlayerTrack[1] gMPlayTrack_SE3; ///
 	ubyte[0x10] gMPlayMemAccArea; ///
 	private float[2][] frameBuffer;
 	private float[2][] frame;
@@ -74,17 +71,23 @@ struct M4APlayer {
 	}
 	///
 	void MPlayExtender() @safe pure {
-		soundInfo.reg.NR50 = 0; // set master volume to zero
 		soundInfo.reg.NR51 = 0; // set master volume to zero
-		soundInfo.reg.NR52 = SOUND_MASTER_ENABLE | SOUND_4_ON | SOUND_3_ON | SOUND_2_ON | SOUND_1_ON;
+		soundInfo.reg.enableAPU = true;
+		soundInfo.reg.enableCh1 = true;
+		soundInfo.reg.enableCh2 = true;
+		soundInfo.reg.enableCh3 = true;
+		soundInfo.reg.enableCh4 = true;
 		soundInfo.reg.NR12 = 0x8;
 		soundInfo.reg.NR22 = 0x8;
 		soundInfo.reg.NR42 = 0x8;
 		soundInfo.reg.NR14 = 0x80;
 		soundInfo.reg.NR24 = 0x80;
 		soundInfo.reg.NR44 = 0x80;
-		soundInfo.reg.NR30 = 0;
-		soundInfo.reg.NR50 = 0x77;
+		soundInfo.reg.channel3DACEnable = false;
+		soundInfo.reg.vinLeft = 0;
+		soundInfo.reg.leftVolume = 7;
+		soundInfo.reg.vinRight = 0;
+		soundInfo.reg.rightVolume = 7;
 
 
 		for (ubyte i = 0; i < 4; i++) {
@@ -97,21 +100,21 @@ struct M4APlayer {
 		soundInfo.cgbCalcFreqFunc = &cgbCalcFreqFunc;
 		soundInfo.maxScanlines = MAX_LINES;
 
-		soundInfo.cgbChans[0].type = 1;
+		soundInfo.cgbChans[0].cgbType = 1;
 		soundInfo.cgbChans[0].panMask = 0x11;
-		soundInfo.cgbChans[1].type = 2;
+		soundInfo.cgbChans[1].cgbType = 2;
 		soundInfo.cgbChans[1].panMask = 0x22;
-		soundInfo.cgbChans[2].type = 3;
+		soundInfo.cgbChans[2].cgbType = 3;
 		soundInfo.cgbChans[2].panMask = 0x44;
-		soundInfo.cgbChans[3].type = 4;
+		soundInfo.cgbChans[3].cgbType = 4;
 		soundInfo.cgbChans[3].panMask = 0x88;
 	}
 	///
-	const(SongPointer)[] songTable() @safe pure {
+	const(SongPointer)[] songTable() inout @safe pure {
 		return sliceMax!SongPointer(musicData, songTableOffset);
 	}
 	///
-	Song readSong(const SongPointer ptr) @safe pure {
+	Song readSong(const SongPointer ptr) const @safe pure {
 		const trackData = (cast(const(ubyte)[])ptr.header.toAbsoluteArray(musicData))[SongHeader.sizeof .. $].sliceMax!(RelativePointer!(ubyte, uint))(0);
 		return Song(ptr.header.toAbsoluteArray(musicData)[0], trackData);
 	}
@@ -235,7 +238,11 @@ struct M4APlayer {
 
 	///
 	void SoundInit() @safe pure {
-		soundInfo.reg.NR52 = SOUND_MASTER_ENABLE | SOUND_4_ON | SOUND_3_ON | SOUND_2_ON | SOUND_1_ON;
+		soundInfo.reg.enableAPU = true;
+		soundInfo.reg.enableCh1 = true;
+		soundInfo.reg.enableCh2 = true;
+		soundInfo.reg.enableCh3 = true;
+		soundInfo.reg.enableCh4 = true;
 		soundInfo.reg.SOUNDCNT_H = SOUND_B_FIFO_RESET | SOUND_B_TIMER_0 | SOUND_B_LEFT_OUTPUT | SOUND_A_FIFO_RESET | SOUND_A_TIMER_0 | SOUND_A_RIGHT_OUTPUT | SOUND_ALL_MIX_FULL;
 		soundInfo.reg.SOUNDBIAS_H = (soundInfo.reg.SOUNDBIAS_H & 0x3F) | 0x40;
 
@@ -328,7 +335,7 @@ struct M4APlayer {
 				}
 			}
 
-			if (song.header.reverb & SOUND_MODE_REVERB_SET) {
+			if (SoundMode(song.header.reverb).reverbEnabled) {
 				m4aSoundMode(&soundInfo, song.header.reverb);
 			}
 		}
@@ -413,7 +420,7 @@ struct M4APlayer {
 				soundInfo.reg.NR24 = 0x80;
 				break;
 			case 3:
-				soundInfo.reg.NR30 = 0;
+				soundInfo.reg.channel3DACEnable = false;
 				break;
 			default:
 				soundInfo.reg.NR42 = 8;
@@ -501,7 +508,7 @@ struct M4APlayer {
 					nrx4ptr = &soundInfo.reg.NR14;
 					break;
 				case 2:
-					nrx0ptr = &soundInfo.reg.NR10x;
+					nrx0ptr = &soundInfo.reg.NR20;
 					nrx1ptr = &soundInfo.reg.NR21;
 					nrx2ptr = &soundInfo.reg.NR22;
 					nrx3ptr = &soundInfo.reg.NR23;
@@ -515,7 +522,7 @@ struct M4APlayer {
 					nrx4ptr = &soundInfo.reg.NR34;
 					break;
 				default:
-					nrx0ptr = &soundInfo.reg.NR30x;
+					nrx0ptr = &soundInfo.reg.NR40;
 					nrx1ptr = &soundInfo.reg.NR41;
 					nrx2ptr = &soundInfo.reg.NR42;
 					nrx3ptr = &soundInfo.reg.NR43;
@@ -688,7 +695,7 @@ struct M4APlayer {
 		envelope_complete:
 			/* 3. apply pitch to HW registers */
 			if (channel.cgbStatus & CGB_CHANNEL_MO_PIT) {
-				if (idx + 1 < 4 && (channel.type & TONEDATA_TYPE_FIX)) {
+				if (idx + 1 < 4 && channel.fix) {
 					int dac_pwm_rate = soundInfo.reg.SOUNDBIAS_H;
 
 					if (dac_pwm_rate < 0x40) { // if PWM rate = 32768 Hz
@@ -788,46 +795,31 @@ void SampleFreqSet(SoundMixerState *soundInfo, uint freq) @safe pure {
 
 ///
 void m4aSoundMode(SoundMixerState* soundInfo, uint mode) @safe pure {
-	uint temp;
+	const temp = SoundMode(mode);
 
-	temp = mode & (SOUND_MODE_REVERB_SET | SOUND_MODE_REVERB_VAL);
-
-	if (temp) {
-		soundInfo.reverb = temp & SOUND_MODE_REVERB_VAL;
+	if (temp.reverbVolume || temp.reverbEnabled) {
+		soundInfo.reverb = temp.reverbVolume;
 	}
 
-	temp = mode & SOUND_MODE_MAXCHN;
+	if (temp.maxChannels) {
+		soundInfo.numChans = temp.maxChannels;
 
-	if (temp) {
-		// The following line is a fix, not sure how accurate it's supposed to be?
-		soundInfo.numChans = MAX_DIRECTSOUND_CHANNELS;
-		// The following line is the old code
-		//soundInfo.numChans = temp >> SOUND_MODE_MAXCHN_SHIFT;
-
-		temp = MAX_DIRECTSOUND_CHANNELS;
-
-		foreach (i; 0 .. temp) {
+		foreach (i; 0 .. soundInfo.numChans) {
 			soundInfo.chans[i].statusFlags = 0;
 		}
 	}
 
-	temp = mode & SOUND_MODE_MASVOL;
-
-	if (temp) {
-		soundInfo.masterVol = cast(ubyte)(temp >> SOUND_MODE_MASVOL_SHIFT);
+	if (temp.masterVolume) {
+		soundInfo.masterVol = temp.masterVolume;
 	}
 
-	temp = mode & SOUND_MODE_DA_BIT;
-
-	if (temp) {
-		temp = (temp & 0x300000) >> 14;
-		soundInfo.reg.SOUNDBIAS_H = cast(ushort)((soundInfo.reg.SOUNDBIAS_H & 0x3F) | temp);
+	if (temp.biasEnable || temp.bias) {
+		soundInfo.reg.SOUNDBIAS_H = cast(ushort)((soundInfo.reg.SOUNDBIAS_H & 0x3F) | temp.bias);
 	}
 
-	//temp = mode & SOUND_MODE_FREQ;
-
-	//if (temp)
-	//	SampleFreqSet(temp);
+	//if (temp.frequency) {
+	//	SampleFreqSet(temp.frequency);
+	//}
 }
 
 

@@ -231,7 +231,7 @@ private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 	float finePos = chan.fw;
 	float romSamplesPerOutputSample = divFreq;
 
-	if (chan.type == 8) {
+	if (chan.fix) {
 		romSamplesPerOutputSample *= mixer.origFreq;
 	} else {
 		romSamplesPerOutputSample *= chan.freq;

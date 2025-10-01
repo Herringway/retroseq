@@ -194,42 +194,42 @@ struct AudioCGB {
 				}
 			}
 			//Sound generation loop
-			soundChannelPos[0] += freqTable[soundInfo.reg.SOUND1CNT_X & 0x7FF] / (sampleRate / 32);
-			soundChannelPos[1] += freqTable[soundInfo.reg.SOUND2CNT_H & 0x7FF] / (sampleRate / 32);
-			soundChannelPos[2] += freqTable[soundInfo.reg.SOUND3CNT_X & 0x7FF] / (sampleRate / 32);
+			soundChannelPos[0] += freqTable[soundInfo.reg.SOUND1CNT_X & 0x7FF] / (sampleRate / 16);
+			soundChannelPos[1] += freqTable[soundInfo.reg.SOUND2CNT_H & 0x7FF] / (sampleRate / 16);
+			soundChannelPos[2] += freqTable[soundInfo.reg.SOUND3CNT_X & 0x7FF] / (sampleRate / 16);
 			while (soundChannelPos[0] >= 32) soundChannelPos[0] -= 32;
 			while (soundChannelPos[1] >= 32) soundChannelPos[1] -= 32;
 			while (soundChannelPos[2] >= 32) soundChannelPos[2] -= 32;
 			float outputL = 0;
 			float outputR = 0;
-			if (soundInfo.reg.NR52 & 0x80) {
-				if ((DAC[0]) && (soundInfo.reg.NR52 & 0x01)) {
-					if (soundInfo.reg.NR51 & 0x10) {
+			if (soundInfo.reg.enableAPU) {
+				if ((DAC[0]) && soundInfo.reg.enableCh1) {
+					if (soundInfo.reg.panCh1Left) {
 						outputL += Vol[0] * PU1Table[cast(int)(soundChannelPos[0])] / 15.0f;
 					}
-					if (soundInfo.reg.NR51 & 0x01) {
+					if (soundInfo.reg.panCh1Right) {
 						outputR += Vol[0] * PU1Table[cast(int)(soundChannelPos[0])] / 15.0f;
 					}
 				}
-				if ((DAC[1]) && (soundInfo.reg.NR52 & 0x02)) {
-					if(soundInfo.reg.NR51 & 0x20) {
+				if ((DAC[1]) && soundInfo.reg.enableCh2) {
+					if(soundInfo.reg.panCh2Left) {
 						outputL += Vol[1] * PU2Table[cast(int)(soundChannelPos[1])] / 15.0f;
 					}
-					if(soundInfo.reg.NR51 & 0x02) {
+					if(soundInfo.reg.panCh2Right) {
 						outputR += Vol[1] * PU2Table[cast(int)(soundChannelPos[1])] / 15.0f;
 					}
 				}
-				if ((soundInfo.reg.NR30 & 0x80) && (soundInfo.reg.NR52 & 0x04)) {
-					if(soundInfo.reg.NR51 & 0x40) {
+				if (soundInfo.reg.channel3DACEnable && soundInfo.reg.enableCh3) {
+					if(soundInfo.reg.panCh3Left) {
 						outputL += Vol[2] * WAVRAM[cast(int)(soundChannelPos[2])] / 4.0f;
 					}
-					if(soundInfo.reg.NR51 & 0x04) {
+					if(soundInfo.reg.panCh3Right) {
 						outputR += Vol[2] * WAVRAM[cast(int)(soundChannelPos[2])] / 4.0f;
 					}
 				}
-				if ((DAC[3]) && (soundInfo.reg.NR52 & 0x08)) {
-					uint lfsrMode = !!(soundInfo.reg.NR43 & 0x08);
-					ch4Samples += freqTableNSE[soundInfo.reg.NR43] / sampleRate;
+				if ((DAC[3]) && soundInfo.reg.enableCh4) {
+					uint lfsrMode = soundInfo.reg.thinnerLFSR;
+					ch4Samples += freqTableNoise[soundInfo.reg.NR43] / sampleRate;
 					int ch4Out = 0;
 					if (ch4LFSR[lfsrMode] & 1) {
 						ch4Out++;
@@ -261,10 +261,10 @@ struct AudioCGB {
 					if (avgDiv > 1) {
 						sample /= avgDiv;
 					}
-					if (soundInfo.reg.NR51 & 0x80) {
+					if (soundInfo.reg.panCh4Left) {
 						outputL += (Vol[3] * sample) / 15.0f;
 					}
-					if (soundInfo.reg.NR51 & 0x08) {
+					if (soundInfo.reg.panCh4Right) {
 						outputR += (Vol[3] * sample) / 15.0f;
 					}
 				}
