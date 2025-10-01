@@ -38,25 +38,23 @@ struct PxtnPulseFrequency {
 ///
 private double getDivideOctaveRate(int divi) nothrow @safe {
 	double parameter = 1.0;
-	double work;
-	double result;
-	double add;
-	int i, j, k;
 
 	// double is 17keta.
-	for (i = 0; i < 17; i++) {
+	for (int i = 0; i < 17; i++) {
 		// make add.
-		add = 1;
-		for (j = 0; j < i; j++) {
+		double add = 1;
+		for (int j = 0; j < i; j++) {
 			add = add * 0.1;
 		}
 
 		// check 0 .. 9
+		int j;
 		for (j = 0; j < 10; j++) {
-			work = parameter + add * j;
+			double work = parameter + add * j;
 
 			// divide
-			result = 1.0;
+			double result = 1.0;
+			int k;
 			for (k = 0; k < divi; k++) {
 				result *= work;
 				if (result >= 2.0) {
