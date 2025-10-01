@@ -1,6 +1,8 @@
 ///
 module retroseq.pxtone.pulse.frequency;
 
+import std.algorithm.comparison;
+
 private enum octaveNum = 16; /// octave num.
 private enum keyPerOctave = 12; /// key per octave
 private enum frequencyPerKey = 0x10; /// sample per key
@@ -14,34 +16,23 @@ struct PxtnPulseFrequency {
 	static immutable float[] freqTable = genTables();
 
 	///
-	float get(int key) const nothrow @safe {
-		int i;
-
-		i = (key + 0x6000) * frequencyPerKey / 0x100;
-		if (i < 0) {
-			i = 0;
-		} else if (i >= tableSize) {
-			i = tableSize - 1;
-		}
-		return freqTable[i];
+	float get(int key) const nothrow @safe pure {
+		return freqTable[clamp((key + 0x6000) * frequencyPerKey / 0x100, 0, cast(int)($ - 1))];
 	}
 
 	///
-	float get2(int key) nothrow @safe {
-		int i = key >> 4;
-		if (i < 0) {
-			i = 0;
-		} else if (i >= tableSize) {
-			i = tableSize - 1;
-		}
-		return freqTable[i];
+	float get2(int key) nothrow @safe pure {
+		return freqTable[clamp(key >> 4, 0, cast(int)($ - 1))];
 	}
+}
 
-	///
-	const(float)[] getDirect(int* pSize) nothrow @safe {
-		*pSize = tableSize;
-		return freqTable;
-	}
+@safe pure unittest {
+	import std.math : isClose;
+	PxtnPulseFrequency p;
+	assert(p.get(0) == 1.0);
+	assert(p.get(-0x6000).isClose(0.00390625));
+	assert(p.get(int.min / 1024).isClose(0.00390625));
+	assert(p.get(int.max / 1024).isClose(255.077));
 }
 
 ///
