@@ -235,7 +235,7 @@ void MP2KPlayerMain(ref M4APlayer player) @safe pure {
 				}
 
 				if (event >= 0xCF) {
-					player.soundInfo.mp2kEventNxxFunc(player, event - 0xCF, currentTrack);
+					MP2K_event_nxx(player, event - 0xCF, currentTrack);
 				} else if (event >= 0xB1) {
 					MPlayFunc eventFunc;
 					player.cmd = cast(ubyte)(event - 0xB1);
@@ -319,7 +319,7 @@ void MP2KPlayerMain(ref M4APlayer player) @safe pure {
 					key = 0;
 				}
 				if (cgbType != 0) {
-					chan.freq = player.soundInfo.cgbCalcFreqFunc(cgbType, cast(ubyte)key, track.pitchCalculated);
+					chan.freq = cgbCalcFreqFunc(cgbType, cast(ubyte)key, track.pitchCalculated);
 					chan.cgbPitchChange = true;
 				} else {
 					chan.freq = MidiKeyToFreq(chan.wav, cast(ubyte)key, track.pitchCalculated);
@@ -338,7 +338,7 @@ void TrackStop(ref M4APlayer player, ref MusicPlayerTrack track) @safe pure {
 			if (chan.statusFlags != 0) {
 				ubyte cgbType = chan.cgbType;
 				if (cgbType != 0) {
-					player.soundInfo.cgbNoteOffFunc(player, cgbType);
+					player.cgbNoteOffFunc(cgbType);
 				}
 				chan.statusFlags = 0;
 			}
@@ -526,7 +526,7 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerTrack track
 			chan.sweep = instrument.panSweep;
 		}
 
-		chan.freq = player.soundInfo.cgbCalcFreqFunc(cgbType, cast(ubyte)transposedKey, track.pitchCalculated);
+		chan.freq = cgbCalcFreqFunc(cgbType, cast(ubyte)transposedKey, track.pitchCalculated);
 	} else {
 		chan.count = track.count;
 		chan.freq = MidiKeyToFreq(chan.wav, cast(ubyte)transposedKey, track.pitchCalculated);

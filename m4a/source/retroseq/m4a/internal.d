@@ -176,10 +176,6 @@ struct SoundChannel {
 
 alias MPlayFunc = void function(ref M4APlayer, ref MusicPlayerTrack) @safe pure; ///
 alias PlyNoteFunc = void function(ref M4APlayer, uint, ref MusicPlayerTrack) @safe pure; ///
-alias CgbSoundFunc = void function(ref M4APlayer) @safe pure; ///
-alias CgbOscOffFunc = void function(ref M4APlayer, ubyte) @safe pure; ///
-alias MidiKeyToCgbFreqFunc = uint function(ubyte, ubyte, ubyte) @safe pure; ///
-alias ExtVolPitFunc = void function() @safe pure; ///
 alias MPlayMainFunc = void function(ref M4APlayer) @safe pure; ///
 
 ///
@@ -270,8 +266,8 @@ struct SoundMixerState {
 
 	// Direct Sound
 	ubyte reverb; ///
-	ubyte numChans; ///
-	ubyte masterVol; ///
+	ubyte numChans = 8; ///
+	ubyte masterVol = 15; ///
 	ubyte freq; ///
 
 	ubyte mode; ///
@@ -284,11 +280,6 @@ struct SoundMixerState {
 	float origFreq = 0; /// for adjusting original freq to the new sample rate
 	float divFreq = 0; ///
 	SoundChannel[4] cgbChans; ///
-	CgbSoundFunc cgbMixerFunc; ///
-	CgbOscOffFunc cgbNoteOffFunc; ///
-	MidiKeyToCgbFreqFunc cgbCalcFreqFunc; ///
-	PlyNoteFunc mp2kEventNxxFunc; ///
-	ExtVolPitFunc ExtVolPit; ///
 	void *reserved2; ///
 	void *reserved3; ///
 	void *reversed4; ///

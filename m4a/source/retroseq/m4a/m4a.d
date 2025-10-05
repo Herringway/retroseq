@@ -28,11 +28,10 @@ struct M4APlayer {
 	bool paused;
 	ubyte priority; ///
 	ubyte cmd; ///
-	ubyte checkSongPriority; ///
 	uint clock; ///
 	ubyte[0x10] memAccArea; ///
 	ushort tempoRawBPM; ///
-	ushort tempoScale; ///
+	ushort tempoScale = 0x100; ///
 	ushort tempoInterval; ///
 	ushort tempoCounter; ///
 	ushort fadeInterval; ///
@@ -61,7 +60,6 @@ struct M4APlayer {
 		m4aSoundMode(&soundInfo, _mode);
 
 		MPlayOpen();
-		checkSongPriority = 0;
 		gb.initialize(freq);
 	}
 
@@ -106,10 +104,6 @@ struct M4APlayer {
 			gb.set_envelope(i, 8);
 			gb.trigger_note(i);
 		}
-
-		soundInfo.cgbMixerFunc = &Funcify!(cgbMixerFunc, M4APlayer);
-		soundInfo.cgbNoteOffFunc = &Funcify!(cgbNoteOffFunc, M4APlayer);
-		soundInfo.cgbCalcFreqFunc = &cgbCalcFreqFunc;
 
 		soundInfo.cgbChans[0].cgbType = 1;
 		soundInfo.cgbChans[0].panMask = 0x11;
@@ -239,14 +233,6 @@ struct M4APlayer {
 		soundInfo.reg.enableCh3 = true;
 		soundInfo.reg.enableCh4 = true;
 		soundInfo.reg.SOUNDBIAS_H = (soundInfo.reg.SOUNDBIAS_H & 0x3F) | 0x40;
-
-		soundInfo.numChans = 8;
-		soundInfo.masterVol = 15;
-		soundInfo.mp2kEventNxxFunc = &MP2K_event_nxx;
-		soundInfo.cgbMixerFunc = &DummyFunc;
-		soundInfo.cgbNoteOffFunc = &DummyFunc2;
-		soundInfo.cgbCalcFreqFunc = &DummyFunc3;
-		soundInfo.ExtVolPit = &DummyFunc4;
 	}
 
 	///
@@ -256,7 +242,7 @@ struct M4APlayer {
 		}
 
 		foreach (idx, ref chan; soundInfo.cgbChans) {
-			soundInfo.cgbNoteOffFunc(this, cast(ubyte)(idx + 1));
+			cgbNoteOffFunc(cast(ubyte)(idx + 1));
 			chan.statusFlags = 0;
 		}
 	}
@@ -281,34 +267,29 @@ struct M4APlayer {
 			return;
 		}
 
-		if (!checkSongPriority
-			|| (((playing == uint.max) || !tracks[0].flags.start) && ((activeTracks == 0) || paused))
-			|| (priority <= song.header.priority)) {
-			activeTracks = 0;
-			paused = false;
-			voicegroup = song.header.instrument.toAbsoluteArray(musicData);
-			priority = song.header.priority;
-			clock = 0;
-			tempoRawBPM = 150;
-			tempoInterval = 150;
-			tempoScale = 0x100;
-			tempoCounter = 0;
-			fadeInterval = 0;
+		activeTracks = 0;
+		paused = false;
+		voicegroup = song.header.instrument.toAbsoluteArray(musicData);
+		priority = song.header.priority;
+		clock = 0;
+		tempoRawBPM = 150;
+		tempoInterval = 150;
+		tempoCounter = 0;
+		fadeInterval = 0;
 
-			foreach (i, ref track; tracks) {
-				TrackStop(this, track);
-				if (i < song.header.trackCount) {
-					track.flags = cast(MusicPlayerTrack.Flags)(MusicPlayerTrack.Flags.exists | MusicPlayerTrack.Flags.start);
-					track.chan = null;
-					track.cmdPtr = song.parts[i].toAbsoluteArray(musicData);
-				} else {
-					track.flags = MusicPlayerTrack.Flags.none;
-				}
+		foreach (i, ref track; tracks) {
+			TrackStop(this, track);
+			if (i < song.header.trackCount) {
+				track.flags = cast(MusicPlayerTrack.Flags)(MusicPlayerTrack.Flags.exists | MusicPlayerTrack.Flags.start);
+				track.chan = null;
+				track.cmdPtr = song.parts[i].toAbsoluteArray(musicData);
+			} else {
+				track.flags = MusicPlayerTrack.Flags.none;
 			}
+		}
 
-			if (SoundMode(song.header.reverb).reverbEnabled) {
-				m4aSoundMode(&soundInfo, song.header.reverb);
-			}
+		if (SoundMode(song.header.reverb).reverbEnabled) {
+			m4aSoundMode(&soundInfo, song.header.reverb);
 		}
 	}
 

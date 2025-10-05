@@ -19,7 +19,7 @@ void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure
 
 		MP2KPlayerMain(player);
 
-		player.soundInfo.cgbMixerFunc(player);
+		player.cgbMixerFunc();
 	}
 	samplesPerFrame = player.soundInfo.samplesPerFrame;
 	float[2][] outBuffer = player.soundInfo.outBuffer;
