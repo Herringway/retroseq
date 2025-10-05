@@ -28,8 +28,8 @@ private enum allocNote = 4096; ///
 
 ///
 private struct NoteList {
-	NoteList *from; /// Previous address
-	NoteList *to; /// Next address
+	NoteList* from; /// Previous address
+	NoteList* to; /// Next address
 
 	int x; /// Position
 	ubyte length; /// Sound length
@@ -45,7 +45,7 @@ private struct TrackData {
 	byte pipi = 0; ///
 
 	NoteList[] notePosition; ///
-	NoteList *noteList; ///
+	NoteList* noteList; ///
 }
 
 /// Unique information held in songs

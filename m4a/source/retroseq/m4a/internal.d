@@ -6,6 +6,7 @@ import retroseq.utility;
 import retroseq.m4a.m4a;
 
 import std.bitmanip;
+import std.typecons;
 
 alias RelativePointer(Element, Offset) = retroseq.utility.RelativePointer!(Element, Offset, 0x8000000, 0xA000000);
 
@@ -43,9 +44,6 @@ struct WaveData {
 	uint size; /// number of samples
 }
 
-enum TONEDATA_P_S_PAN = 0xc0; ///
-enum TONEDATA_P_S_PAM = TONEDATA_P_S_PAN; ///
-
 ///
 struct ToneData {
 	align(1):
@@ -81,9 +79,6 @@ struct ToneData {
 		RelativePointer!(ubyte, uint) keySplitTable; ///
 	}
 }
-
-enum CGB_CHANNEL_MO_PIT = 0x02; ///
-enum CGB_CHANNEL_MO_VOL = 0x01; ///
 
 enum CGB_NRx2_ENV_DIR_DEC = 0x00; ///
 enum CGB_NRx2_ENV_DIR_INC = 0x08; ///
@@ -157,7 +152,11 @@ struct SoundChannel {
 		float fw = 0; ///
 		struct {
 			ubyte panMask; ///
-			ubyte cgbStatus; ///
+			mixin(bitfields!(
+				bool, "cgbVolumeChange", 1,
+				bool, "cgbPitchChange", 1,
+				ubyte, "", 6,
+			));
 			ubyte length; ///
 			ubyte sweep; ///
 		}
@@ -175,65 +174,36 @@ struct SoundChannel {
 	ushort xpc; ///
 }
 
-enum MAX_DIRECTSOUND_CHANNELS = 16; ///
-
-alias MPlayFunc = void function(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) @safe pure; ///
-alias PlyNoteFunc = void function(ref M4APlayer, uint, ref MusicPlayerInfo, ref MusicPlayerTrack) @safe pure; ///
+alias MPlayFunc = void function(ref M4APlayer, ref MusicPlayerTrack) @safe pure; ///
+alias PlyNoteFunc = void function(ref M4APlayer, uint, ref MusicPlayerTrack) @safe pure; ///
 alias CgbSoundFunc = void function(ref M4APlayer) @safe pure; ///
 alias CgbOscOffFunc = void function(ref M4APlayer, ubyte) @safe pure; ///
 alias MidiKeyToCgbFreqFunc = uint function(ubyte, ubyte, ubyte) @safe pure; ///
 alias ExtVolPitFunc = void function() @safe pure; ///
-alias MPlayMainFunc = void function(ref M4APlayer, ref MusicPlayerInfo) @safe pure; ///
-
-// SOUNDCNT_H
-enum SOUND_CGB_MIX_QUARTER = 0x0000; ///
-enum SOUND_CGB_MIX_HALF = 0x0001; ///
-enum SOUND_CGB_MIX_FULL = 0x0002; ///
-enum SOUND_A_MIX_HALF = 0x0000; ///
-enum SOUND_A_MIX_FULL = 0x0004; ///
-enum SOUND_B_MIX_HALF = 0x0000; ///
-enum SOUND_B_MIX_FULL = 0x0008; ///
-enum SOUND_ALL_MIX_FULL = 0x000E; ///
-enum SOUND_A_RIGHT_OUTPUT = 0x0100; ///
-enum SOUND_A_LEFT_OUTPUT = 0x0200; ///
-enum SOUND_A_TIMER_0 = 0x0000; ///
-enum SOUND_A_TIMER_1 = 0x0400; ///
-enum SOUND_A_FIFO_RESET = 0x0800; ///
-enum SOUND_B_RIGHT_OUTPUT = 0x1000; ///
-enum SOUND_B_LEFT_OUTPUT = 0x2000; ///
-enum SOUND_B_TIMER_0 = 0x0000; ///
-enum SOUND_B_TIMER_1 = 0x4000; ///
-enum SOUND_B_FIFO_RESET = 0x8000; ///
-
-// SOUNDCNT_X
-enum SOUND_1_ON = 0x0001; ///
-enum SOUND_2_ON = 0x0002; ///
-enum SOUND_3_ON = 0x0004; ///
-enum SOUND_4_ON = 0x0008; ///
-enum SOUND_MASTER_ENABLE = 0x0080; ///
+alias MPlayMainFunc = void function(ref M4APlayer) @safe pure; ///
 
 ///
 struct SoundIO {
 	ubyte NR10; ///
 	ubyte NR11; ///
 	ubyte NR12; ///
-	union{
-		ushort SOUND1CNT_X; ///
+	static union FreqControl {
+		mixin(bitfields!(
+			ushort, "frequency", 11,
+			ubyte, "", 3,
+			bool, "lengthFlag", 1,
+			bool, "restart", 1,
+		));
 		struct{
-			ubyte NR13; ///
-			ubyte NR14; ///
+			ubyte low; ///
+			ubyte high; ///
 		}
 	}
+	FreqControl sound1CntX;
 	ubyte NR20; /// Unused register
 	ubyte NR21; ///
 	ubyte NR22; ///
-	union{
-		ushort SOUND2CNT_H; ///
-		struct{
-			ubyte NR23; ///
-			ubyte NR24; ///
-		}
-	}
+	FreqControl sound2CntH;
 	union {
 		ubyte NR30; ///
 		mixin(bitfields!(
@@ -243,13 +213,7 @@ struct SoundIO {
 	}
 	ubyte NR31; ///
 	ubyte NR32; ///
-	union{
-		ushort SOUND3CNT_X; ///
-		struct{
-			ubyte NR33; ///
-			ubyte NR34; ///
-		}
-	}
+	FreqControl sound3CntX;
 	ubyte NR40; /// Unused register
 	ubyte NR41; ///
 	ubyte NR42; ///
@@ -284,7 +248,6 @@ struct SoundIO {
 			bool, "panCh4Left", 1,
 		));
 	}
-	ushort SOUNDCNT_H; ///
 	union {
 		ubyte NR52; ///
 		mixin(bitfields!(
@@ -314,7 +277,6 @@ struct SoundMixerState {
 	ubyte mode; ///
 	ubyte cgbCounter15; /// periodically counts from 14 down to 0 (15 states)
 	ubyte pcmDmaPeriod; /// number of V-blanks per PCM DMA
-	ubyte maxScanlines; ///
 	ubyte[3] padding; ///
 	int samplesPerFrame; ///
 	int samplesPerDma; /// samplesPerFrame * pcmDmaPeriod
@@ -322,8 +284,6 @@ struct SoundMixerState {
 	float origFreq = 0; /// for adjusting original freq to the new sample rate
 	float divFreq = 0; ///
 	SoundChannel[4] cgbChans; ///
-	MPlayMainFunc firstPlayerFunc; ///
-	MusicPlayerInfo *firstPlayer; ///
 	CgbSoundFunc cgbMixerFunc; ///
 	CgbOscOffFunc cgbNoteOffFunc; ///
 	MidiKeyToCgbFreqFunc cgbCalcFreqFunc; ///
@@ -334,7 +294,7 @@ struct SoundMixerState {
 	void *reversed4; ///
 	void *reserved5; ///
 	SoundIO reg; ///
-	SoundChannel[MAX_DIRECTSOUND_CHANNELS] chans; ///
+	SoundChannel[16] chans; ///
 	float[2][] outBuffer; ///
 	float[2][] cgbBuffer; ///
 }
@@ -349,16 +309,20 @@ struct SongHeader {
 	RelativePointer!(ToneData, uint) instrument; ///
 }
 
-enum MPT_FLG_VOLSET = 0x01; ///
-enum MPT_FLG_VOLCHG = 0x03; ///
-enum MPT_FLG_PITSET = 0x04; ///
-enum MPT_FLG_PITCHG = 0x0C; ///
-enum MPT_FLG_START = 0x40; ///
-enum MPT_FLG_EXIST = 0x80; ///
-
 ///
 struct MusicPlayerTrack {
-	ubyte flags; ///
+	static enum Flags : ubyte {
+		none = 0,
+		volumeSet = 1 << 0,
+		unknown2 = 1 << 1,
+		pitchSet = 1 << 2,
+		unknown8 = 1 << 3,
+		unknown16 = 1 << 4,
+		unknown32 = 1 << 5,
+		start = 1 << 6,
+		exists = 1 << 7,
+	}
+	BitFlags!Flags flags;
 	ubyte wait; ///
 	ubyte patternLevel; ///
 	ubyte repeatCount; ///
@@ -399,40 +363,7 @@ struct MusicPlayerTrack {
 	const(ubyte)[][3] patternStack; ///
 }
 
-enum MUSICPLAYER_STATUS_TRACK = 0x0000ffff; ///
-enum MUSICPLAYER_STATUS_PAUSE = 0x80000000; ///
-
 enum MAX_MUSICPLAYER_TRACKS = 16; ///
-
-enum TEMPORARY_FADE = 0x0001; ///
-enum FADE_IN = 0x0002; ///
-enum FADE_VOL_MAX = 64; ///
-enum FADE_VOL_SHIFT = 2; ///
-
-///
-struct MusicPlayerInfo {
-	uint playing = uint.max; ///
-	SongHeader songHeader; ///
-	uint status; ///
-	ubyte trackCount; ///
-	ubyte priority; ///
-	ubyte cmd; ///
-	ubyte checkSongPriority; ///
-	uint clock; ///
-	ubyte[8] padding; ///
-	ubyte[] memAccArea; ///
-	ushort tempoRawBPM; ///
-	ushort tempoScale; ///
-	ushort tempoInterval; ///
-	ushort tempoCounter; ///
-	ushort fadeInterval; ///
-	ushort fadeCounter; ///
-	ushort fadeVolume; ///
-	MusicPlayerTrack[] tracks; ///
-	const(ToneData)[] voicegroup; ///
-	MPlayMainFunc nextPlayerFunc; ///
-	MusicPlayerInfo *nextPlayer; ///
-}
 
 ///
 struct SongPointer {
@@ -441,6 +372,6 @@ struct SongPointer {
 	ushort me; ///
 }
 
-alias XcmdFunc = void function(ref M4APlayer, ref MusicPlayerInfo, ref MusicPlayerTrack) @safe pure; ///
+alias XcmdFunc = void function(ref M4APlayer, ref MusicPlayerTrack) @safe pure; ///
 
 enum MAX_LINES = 0; ///

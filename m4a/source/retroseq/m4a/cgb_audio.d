@@ -98,7 +98,7 @@ struct AudioCGB {
 		}
 	}
 	///
-	void audio_generate(SoundMixerState *soundInfo, ushort samplesPerFrame, float[2][] outBuffer) @safe pure {
+	void audio_generate(SoundMixerState *soundInfo, float[2][] outBuffer) @safe pure {
 		switch (soundInfo.reg.NR11 & 0xC0) {
 			case 0x00:
 				PU1Table = PU0;
@@ -131,7 +131,7 @@ struct AudioCGB {
 			default: break;
 		}
 
-		for (ushort i = 0; i < samplesPerFrame; i++, outBuffer = outBuffer[1 .. $]) {
+		foreach (ref samples; outBuffer) {
 			apuFrame += 512;
 			if (apuFrame >= sampleRate) {
 				apuFrame -= sampleRate;
@@ -172,7 +172,7 @@ struct AudioCGB {
 				if ((apuCycle & 3) == 2) {
 					if (ch1SweepCounterI && ch1SweepShift) {
 						if (--ch1SweepCounter == 0) {
-							ch1Freq = soundInfo.reg.SOUND1CNT_X & 0x7FF;
+							ch1Freq = soundInfo.reg.sound1CntX.frequency;
 							if (ch1SweepDir) {
 								ch1Freq -= ch1Freq >> ch1SweepShift;
 								if (ch1Freq & 0xF800) {
@@ -186,17 +186,16 @@ struct AudioCGB {
 									Vol[0] = 0;
 								}
 							}
-							soundInfo.reg.SOUND1CNT_X &= 0xF800;
-							soundInfo.reg.SOUND1CNT_X |= ch1Freq & 0x7FF;
+							soundInfo.reg.sound1CntX.frequency = ch1Freq & 0x7FF;
 							ch1SweepCounter = ch1SweepCounterI;
 						}
 					}
 				}
 			}
 			//Sound generation loop
-			soundChannelPos[0] += freqTable[soundInfo.reg.SOUND1CNT_X & 0x7FF] / (sampleRate / 16);
-			soundChannelPos[1] += freqTable[soundInfo.reg.SOUND2CNT_H & 0x7FF] / (sampleRate / 16);
-			soundChannelPos[2] += freqTable[soundInfo.reg.SOUND3CNT_X & 0x7FF] / (sampleRate / 16);
+			soundChannelPos[0] += freqTable[soundInfo.reg.sound1CntX.frequency] / (sampleRate / 16);
+			soundChannelPos[1] += freqTable[soundInfo.reg.sound2CntH.frequency] / (sampleRate / 16);
+			soundChannelPos[2] += freqTable[soundInfo.reg.sound3CntX.frequency] / (sampleRate / 16);
 			while (soundChannelPos[0] >= 32) soundChannelPos[0] -= 32;
 			while (soundChannelPos[1] >= 32) soundChannelPos[1] -= 32;
 			while (soundChannelPos[2] >= 32) soundChannelPos[2] -= 32;
@@ -269,8 +268,8 @@ struct AudioCGB {
 					}
 				}
 			}
-			outBuffer[0][0] = outputL / 4.0f;
-			outBuffer[0][1] = outputR / 4.0f;
+			samples[0] = outputL / 4.0f;
+			samples[1] = outputR / 4.0f;
 		}
 	}
 }

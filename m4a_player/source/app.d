@@ -131,6 +131,9 @@ int main(string[] args) {
 	if (!initAudio(&sdlSampleFunctionWrapper!sampleFunction, 2, sampleRate, &player)) {
 		return 1;
 	}
+	foreach (track; player.gMPlayInfo_BGM.tracks) {
+		writeln(track.instrument);
+	}
 	info("SDL audio init success");
 
 	writeln("Press enter to exit");

@@ -5,6 +5,7 @@ import retroseq.m4a.mp2k_common;
 import retroseq.m4a.cgb_audio;
 import retroseq.m4a.internal;
 import retroseq.m4a.m4a;
+import retroseq.m4a.music_player;
 
 ///
 void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure
@@ -15,11 +16,8 @@ void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure
 	player.playerCounter += samplesPerFrame;
 	while (player.playerCounter >= player.soundInfo.samplesPerFrame) {
 		player.playerCounter -= player.soundInfo.samplesPerFrame;
-		uint maxScanlines = player.soundInfo.maxScanlines;
 
-		if (player.soundInfo.firstPlayerFunc != null) {
-			player.soundInfo.firstPlayerFunc(player, *player.soundInfo.firstPlayer);
-		}
+		MP2KPlayerMain(player);
 
 		player.soundInfo.cgbMixerFunc(player);
 	}
@@ -35,7 +33,7 @@ void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure
 
 	SampleMixer(player.soundInfo, 0, cast(ushort)samplesPerFrame, outBuffer, cast(ubyte)dmaCounter);
 
-	player.gb.audio_generate(&player.soundInfo, cast(ushort)samplesPerFrame, cgbBuffer);
+	player.gb.audio_generate(&player.soundInfo, cgbBuffer[0 .. samplesPerFrame]);
 
 	samplesPerFrame = player.soundInfo.samplesPerFrame;
 
