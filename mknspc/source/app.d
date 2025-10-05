@@ -1,6 +1,7 @@
 import std;
-import std.experimental.logger;
-import nspcplay;
+import std.logger;
+import retroseq.ape;
+import retroseq.nspc;
 
 enum Mode {
 	undefined,

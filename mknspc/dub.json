@@ -4,6 +4,6 @@
 	"name": "mknspc",
 	"targetType": "executable",
 	"dependencies": {
-		"nspcplay": "*"
+		"retroseq:nspc": "*"
 	}
 }
