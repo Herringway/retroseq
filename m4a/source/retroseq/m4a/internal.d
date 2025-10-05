@@ -280,10 +280,6 @@ struct SoundMixerState {
 	float origFreq = 0; /// for adjusting original freq to the new sample rate
 	float divFreq = 0; ///
 	SoundChannel[4] cgbChans; ///
-	void *reserved2; ///
-	void *reserved3; ///
-	void *reversed4; ///
-	void *reserved5; ///
 	SoundIO reg; ///
 	SoundChannel[16] chans; ///
 	float[2][] outBuffer; ///
