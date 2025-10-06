@@ -98,7 +98,7 @@ struct AudioCGB {
 		}
 	}
 	///
-	void audio_generate(SoundMixerState *soundInfo, float[2][] outBuffer) @safe pure {
+	void audio_generate(ref SoundMixerState soundInfo, float[2][] outBuffer) @safe pure {
 		switch (soundInfo.reg.NR11 & 0xC0) {
 			case 0x00:
 				PU1Table = PU0;

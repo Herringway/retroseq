@@ -272,7 +272,7 @@ struct SoundMixerState {
 
 	ubyte mode; ///
 	ubyte cgbCounter15; /// periodically counts from 14 down to 0 (15 states)
-	ubyte pcmDmaPeriod; /// number of V-blanks per PCM DMA
+	ubyte pcmDmaPeriod = 7; /// number of V-blanks per PCM DMA
 	ubyte[3] padding; ///
 	int samplesPerFrame; ///
 	int samplesPerDma; /// samplesPerFrame * pcmDmaPeriod
@@ -283,7 +283,19 @@ struct SoundMixerState {
 	SoundIO reg; ///
 	SoundChannel[16] chans; ///
 	float[2][] outBuffer; ///
-	float[2][] cgbBuffer; ///
+	void SampleFreqSet(ubyte runningFrequency, uint outputFrequency) @safe pure
+		in(runningFrequency < 15, "Invalid mode!")
+	{
+		this.freq = runningFrequency;
+		samplesPerFrame = cast(uint)((outputFrequency / 60.0f) + 0.5f);
+		samplesPerDma = pcmDmaPeriod * samplesPerFrame;
+		sampleRate = cast(int)(60.0f * samplesPerFrame);
+		divFreq = 1.0f / sampleRate;
+		origFreq = (getOrigSampleRate(this.freq) * 59.727678571);
+
+		outBuffer = new float[2][](samplesPerDma);
+		outBuffer[] = [0, 0];
+	}
 }
 
 ///

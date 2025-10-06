@@ -47,20 +47,18 @@ struct M4APlayer {
 	AudioCGB gb; ///
 	float playerCounter = 0; ///
 	///
-	void initialize(uint freq, const(ubyte)[] _music, uint _songTableAddress, uint _mode) @safe pure {
+	void initialize(uint outputFrequency, const(ubyte)[] _music, uint _songTableAddress, uint _mode) @safe pure {
 		musicData = _music;
 		songTableOffset = _songTableAddress;
 		int i;
 
 		SoundInit();
-		assert(((_mode >> 16) & 0xF) != 0, "Invalid mode!");
-		soundInfo.freq = cast(ubyte)(((_mode >> 16) & 0xF) - 1);
-		SampleFreqSet(&soundInfo, freq);
+		soundInfo.SampleFreqSet(cast(ubyte)(((_mode >> 16) & 0xF) - 1), outputFrequency);
 		MPlayExtender();
 		m4aSoundMode(&soundInfo, _mode);
 
 		MPlayOpen();
-		gb.initialize(freq);
+		gb.initialize(outputFrequency);
 	}
 
 	///
@@ -807,26 +805,6 @@ void MP2K_event_nothing(ref M4APlayer, ref MusicPlayerTrack) @safe pure {
 }
 
 ///
-void SampleFreqSet(SoundMixerState *soundInfo, uint freq) @safe pure {
-	soundInfo.samplesPerFrame = cast(uint)((freq / 60.0f) + 0.5f);
-
-	soundInfo.pcmDmaPeriod = 7;
-
-	soundInfo.samplesPerDma = soundInfo.pcmDmaPeriod * soundInfo.samplesPerFrame;
-
-	soundInfo.sampleRate = cast(int)(60.0f * soundInfo.samplesPerFrame);
-
-	soundInfo.divFreq = 1.0f / soundInfo.sampleRate;
-
-	soundInfo.origFreq = (getOrigSampleRate(soundInfo.freq) * 59.727678571);
-
-	soundInfo.outBuffer = new float[2][](soundInfo.samplesPerDma);
-	soundInfo.outBuffer[] = [0, 0];
-	soundInfo.cgbBuffer = new float[2][](soundInfo.samplesPerDma);
-	soundInfo.cgbBuffer[] = [0,0];
-}
-
-///
 void m4aSoundMode(SoundMixerState* soundInfo, uint mode) @safe pure {
 	const temp = SoundMode(mode);
 
@@ -1201,21 +1179,4 @@ void ply_xcmd_0D(ref M4APlayer, ref MusicPlayerTrack track) @safe pure {
 
 	track.count = unk;
 	track.cmdPtr = track.cmdPtr[4 .. $];
-}
-
-///
-void DummyFunc(ref M4APlayer) @safe pure {
-}
-
-///
-void DummyFunc2(ref M4APlayer, ubyte) @safe pure {
-}
-
-///
-uint DummyFunc3(ubyte, ubyte, ubyte) @safe pure {
-	return 0;
-}
-
-///
-void DummyFunc4() @safe pure {
 }

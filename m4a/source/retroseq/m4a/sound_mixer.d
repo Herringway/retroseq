@@ -11,9 +11,7 @@ import retroseq.m4a.music_player;
 void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure
 	in(audioBuffer.length == player.soundInfo.samplesPerFrame, "Invalid buffer size")
 {
-	int samplesPerFrame = player.soundInfo.samplesPerFrame;
-
-	player.playerCounter += samplesPerFrame;
+	player.playerCounter += player.soundInfo.samplesPerFrame;
 	while (player.playerCounter >= player.soundInfo.samplesPerFrame) {
 		player.playerCounter -= player.soundInfo.samplesPerFrame;
 
@@ -21,25 +19,19 @@ void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure
 
 		player.cgbMixerFunc();
 	}
-	samplesPerFrame = player.soundInfo.samplesPerFrame;
 	float[2][] outBuffer = player.soundInfo.outBuffer;
-	float[2][] cgbBuffer = player.soundInfo.cgbBuffer;
 
-	int dmaCounter = player.soundInfo.dmaCounter;
-
-	if (dmaCounter > 1) {
-		outBuffer = outBuffer[samplesPerFrame * (player.soundInfo.pcmDmaPeriod - (dmaCounter - 1)) .. $];
+	if (player.soundInfo.dmaCounter > 1) {
+		outBuffer = outBuffer[player.soundInfo.samplesPerFrame * (player.soundInfo.pcmDmaPeriod - (player.soundInfo.dmaCounter - 1)) .. $];
 	}
 
-	SampleMixer(player.soundInfo, 0, cast(ushort)samplesPerFrame, outBuffer, cast(ubyte)dmaCounter);
+	SampleMixer(player.soundInfo, 0, cast(ushort)player.soundInfo.samplesPerFrame, outBuffer, cast(ubyte)player.soundInfo.dmaCounter);
 
-	player.gb.audio_generate(&player.soundInfo, cgbBuffer[0 .. samplesPerFrame]);
-
-	samplesPerFrame = player.soundInfo.samplesPerFrame;
+	player.gb.audio_generate(player.soundInfo, audioBuffer[0 .. player.soundInfo.samplesPerFrame]);
 
 	for (uint i = 0; i < audioBuffer.length; i++) {
-		audioBuffer[i][0] = outBuffer[i][0] + cgbBuffer[i][0];
-		audioBuffer[i][1] = outBuffer[i][1] + cgbBuffer[i][1];
+		audioBuffer[i][0] += outBuffer[i][0];
+		audioBuffer[i][1] += outBuffer[i][1];
 	}
 
 	if (cast(byte)(--player.soundInfo.dmaCounter) <= 0) {
@@ -48,7 +40,7 @@ void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure
 }
 
 ///
-void SampleMixer (ref SoundMixerState mixer, uint scanlineLimit, ushort samplesPerFrame, float[2][] outBuffer, ubyte dmaCounter) @system pure {
+void SampleMixer(ref SoundMixerState mixer, uint scanlineLimit, ushort samplesPerFrame, float[2][] outBuffer, ubyte dmaCounter) @system pure {
 	uint reverb = mixer.reverb;
 	if (reverb) {
 		// The vanilla reverb effect outputs a mono sound from four sources:
@@ -71,12 +63,7 @@ void SampleMixer (ref SoundMixerState mixer, uint scanlineLimit, ushort samplesP
 		}
 		while (++i < samplesPerFrame);
 	} else {
-		// memset(outBuffer, 0, samplesPerFrame);
-		// memset(outBuffer + maxBufSize, 0, samplesPerFrame);
-		for (int i = 0; i < samplesPerFrame; i++) {
-			float[2][] dst = outBuffer[i .. i + 1];
-			dst[0][1] = dst[0][0] = 0.0f;
-		}
+		outBuffer[0 .. samplesPerFrame][] = [ 0, 0 ];
 	}
 
 	float divFreq = mixer.divFreq;
