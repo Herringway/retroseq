@@ -177,14 +177,17 @@ private struct ChannelState {
 				break;
 		}
 	}
-	///
-	this(ushort track, const(Track[ushort])* tracks) nothrow pure @safe {
-		this.enabled = false;
+	void setNewTrack(ushort track, const(Track[ushort])* tracks) nothrow pure @safe {
 		this.parser = Parser.initialize(assumeWontThrow((*tracks).get(track, Track.init)), tracks);
 		this.volume.cycles = 0;
 		this.panning.cycles = 0;
 		this.next = 0;
 		this.enabled = true;
+	}
+	///
+	this(ushort track, const(Track[ushort])* tracks) nothrow pure @safe {
+		this.enabled = false;
+		setNewTrack(track, tracks);
 	}
 	void clearTrack() @safe pure nothrow {
 		parser.sequenceData = Track.init;
@@ -915,7 +918,7 @@ struct NSPCPlayer {
 				state.channels.length = max(state.channels.length, trackList.length);
 				backupState.channels.length = state.channels.length;
 				foreach (idx, ref channel; state.channels) {
-					channel = ChannelState(trackList[idx], &currentSong.tracks);
+					channel.setNewTrack(trackList[idx], &currentSong.tracks);
 				}
 				break;
 		}
