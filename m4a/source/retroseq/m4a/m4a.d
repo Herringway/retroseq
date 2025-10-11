@@ -934,133 +934,37 @@ void ClearModM(ref MusicPlayerTrack track) @safe pure {
 
 ///
 void ply_memacc(ref M4APlayer player, ref MusicPlayerTrack track) @safe pure {
-	uint op;
-	ubyte *addr;
-	ubyte data;
+	ubyte op = track.cmdPtr[0];
+	auto addr = &player.memAccArea[track.cmdPtr[1]];
+	ubyte data = track.cmdPtr[2];
+	track.cmdPtr = track.cmdPtr[3 .. $];
 
-	op = track.cmdPtr[0];
-	track.cmdPtr = track.cmdPtr[1 .. $];
-
-	addr = &player.memAccArea[track.cmdPtr[0]];
-	track.cmdPtr = track.cmdPtr[1 .. $];
-
-	data = track.cmdPtr[0];
-	track.cmdPtr = track.cmdPtr[1 .. $];
+	static immutable void function(ref M4APlayer player, ref MusicPlayerTrack track) @safe pure[] gotoConditional = [
+		(player, track) { gMPlayJumpTable[1](player, track); },
+		(player, track) { track.cmdPtr = track.cmdPtr[4 .. $]; },
+	];
 
 	switch (op) {
-		case 0:
-			*addr = data;
-			return;
-		case 1:
-			*addr += data;
-			return;
-		case 2:
-			*addr -= data;
-			return;
-		case 3:
-			*addr = player.memAccArea[data];
-			return;
-		case 4:
-			*addr += player.memAccArea[data];
-			return;
-		case 5:
-			*addr -= player.memAccArea[data];
-			return;
-		case 6:
-			if (*addr == data) {
-				goto cond_true;
-			} else {
-				goto cond_false;
-			}
-			return;
-		case 7:
-			if (*addr != data) {
-				goto cond_true;
-			} else {
-				goto cond_false;
-			}
-			return;
-		case 8:
-			if (*addr > data) {
-				goto cond_true;
-			} else {
-				goto cond_false;
-			}
-			return;
-		case 9:
-			if (*addr >= data) {
-				goto cond_true;
-			} else {
-				goto cond_false;
-			}
-			return;
-		case 10:
-			if (*addr <= data) {
-				goto cond_true;
-			} else {
-				goto cond_false;
-			}
-			return;
-		case 11:
-			if (*addr < data) {
-				goto cond_true;
-			} else {
-				goto cond_false;
-			}
-			return;
-		case 12:
-			if (*addr == player.memAccArea[data]) {
-				goto cond_true;
-			} else {
-				goto cond_false;
-			}
-			return;
-		case 13:
-			if (*addr != player.memAccArea[data]) {
-				goto cond_true;
-			} else {
-				goto cond_false;
-			}
-			return;
-		case 14:
-			if (*addr > player.memAccArea[data]) {
-				goto cond_true;
-			} else {
-				goto cond_false;
-			}
-			return;
-		case 15:
-			if (*addr >= player.memAccArea[data]) {
-				goto cond_true;
-			} else {
-				goto cond_false;
-			}
-			return;
-		case 16:
-			if (*addr <= player.memAccArea[data]) {
-				goto cond_true;
-			} else {
-				goto cond_false;
-			}
-			return;
-		case 17:
-			if (*addr < player.memAccArea[data]) {
-				goto cond_true;
-			} else {
-				goto cond_false;
-			}
-			return;
-		default:
-			return;
+		case 0: *addr = data; break;
+		case 1: *addr += data; break;
+		case 2: *addr -= data; break;
+		case 3: *addr = player.memAccArea[data]; break;
+		case 4: *addr += player.memAccArea[data]; break;
+		case 5: *addr -= player.memAccArea[data]; break;
+		case 6: gotoConditional[*addr == data](player, track); break;
+		case 7: gotoConditional[*addr != data](player, track); break;
+		case 8: gotoConditional[*addr > data](player, track); break;
+		case 9: gotoConditional[*addr >= data](player, track); break;
+		case 10: gotoConditional[*addr <= data](player, track); break;
+		case 11: gotoConditional[*addr < data](player, track); break;
+		case 12: gotoConditional[*addr == player.memAccArea[data]](player, track); break;
+		case 13: gotoConditional[*addr != player.memAccArea[data]](player, track); break;
+		case 14: gotoConditional[*addr > player.memAccArea[data]](player, track); break;
+		case 15: gotoConditional[*addr >= player.memAccArea[data]](player, track); break;
+		case 16: gotoConditional[*addr <= player.memAccArea[data]](player, track); break;
+		case 17: gotoConditional[*addr < player.memAccArea[data]](player, track); break;
+		default: break;
 	}
-
-cond_true: {
-		gMPlayJumpTable[1](player, track);
-		return;
-	}
-
-cond_false:
-	track.cmdPtr = track.cmdPtr[4 .. $];
 }
 
 ///
