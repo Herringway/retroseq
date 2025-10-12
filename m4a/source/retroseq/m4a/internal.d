@@ -157,7 +157,7 @@ struct SoundChannel {
 		}
 	}
 	union {
-		float fw = 0; ///
+		float samplePosition = 0; ///
 		struct {
 			ubyte panMask; ///
 			mixin(bitfields!(

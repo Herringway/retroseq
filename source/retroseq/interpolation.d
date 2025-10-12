@@ -29,7 +29,23 @@ byte interpolate(InterpolationMethod method, scope const byte[] samples, int pos
 
 ///
 byte linearInterpolation(byte[2] samples, int position) @safe pure nothrow @nogc {
-	return cast(byte)((samples[0]* (0x100 - position) + samples[1] * position) >> 8);
+	//return cast(byte)((samples[0]* (0x100 - position) + samples[1] * position) >> 8);
+   import retroseq.fixedpoint;
+   return linearInterpolation(samples[0], samples[1], cast(float)FixedPoint2!(8,8).fromInteger(cast(ubyte)position));
+}
+@safe pure unittest {
+   assert(linearInterpolation([0, 100], 0) == 0);
+   assert(linearInterpolation([0, 100], 255) == 99);
+   assert(linearInterpolation([0, 100], 128) == 50);
+}
+///
+T linearInterpolation(T, X)(T a, T b, X position) @safe pure nothrow @nogc {
+   return cast(T)(a * (1.0 - position) + b * position);
+}
+@safe pure unittest {
+   assert(linearInterpolation(1.0, 0.0, 0.0) == 1.0);
+   assert(linearInterpolation(1.0, 0.0, 1.0) == 0.0);
+   assert(linearInterpolation(1.0, 0.0, 0.5) == 0.5);
 }
 
 ///

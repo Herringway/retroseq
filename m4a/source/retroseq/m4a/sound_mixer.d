@@ -1,14 +1,17 @@
 ///
 module retroseq.m4a.sound_mixer;
 
+import retroseq.interpolation;
 import retroseq.m4a.mp2k_common;
 import retroseq.m4a.cgb_audio;
 import retroseq.m4a.internal;
 import retroseq.m4a.m4a;
 import retroseq.m4a.music_player;
 
+import std.range : chain, cycle;
+
 ///
-void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure
+void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @safe pure
 	in(audioBuffer.length == player.soundInfo.samplesPerFrame, "Invalid buffer size")
 {
 	player.playerCounter += player.soundInfo.samplesPerFrame;
@@ -40,7 +43,7 @@ void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @system pure
 }
 
 ///
-void SampleMixer(ref SoundMixerState mixer, uint scanlineLimit, ushort samplesPerFrame, float[2][] outBuffer, ubyte dmaCounter) @system pure {
+void SampleMixer(ref SoundMixerState mixer, uint scanlineLimit, ushort samplesPerFrame, float[2][] outBuffer, ubyte dmaCounter) @safe pure {
 	uint reverb = mixer.reverb;
 	if (reverb) {
 		// The vanilla reverb effect outputs a mono sound from four sources:
@@ -60,21 +63,14 @@ void SampleMixer(ref SoundMixerState mixer, uint scanlineLimit, ushort samplesPe
 			tmp1[0][0] = tmp1[0][1] = s;
 			tmp1 = tmp1[1 .. $];
 			tmp2 = tmp2[1 .. $];
-		}
-		while (++i < samplesPerFrame);
+		} while (++i < samplesPerFrame);
 	} else {
 		outBuffer[0 .. samplesPerFrame][] = [ 0, 0 ];
 	}
 
-	float divFreq = mixer.divFreq;
-	byte numChans = mixer.numChans;
-	SoundChannel[] chan = mixer.chans[];
-
-	for (int i = 0; i < numChans; i++, chan = chan[1 .. $]) {
-		const wav = chan[0].wav;
-
-		if (TickEnvelope(chan[0], wav)) {
-			GenerateAudio(mixer, chan[0], wav, outBuffer[0 .. samplesPerFrame], divFreq);
+	foreach (ref chan; mixer.chans) {
+		if (TickEnvelope(chan, chan.wav)) {
+			GenerateAudio(mixer, chan, chan.wav, outBuffer[0 .. samplesPerFrame], mixer.divFreq);
 		}
 	}
 }
@@ -96,8 +92,16 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 		return 0;
 	}
 
+	static void attack(ubyte env, ref SoundChannel chan) {
+		const newEnv = env + chan.attack;
+		if (newEnv > 0xFF) {
+			chan.envelopeVolume = 0xFF;
+			--chan.statusFlags;
+		} else {
+			chan.envelopeVolume = cast(ubyte)newEnv;
+		}
+	}
 	ubyte env = 0;
-	ushort newEnv;
 	if (!chan.start) {
 		env = chan.envelopeVolume;
 
@@ -130,7 +134,7 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 			chan.envelopeVolume = env * chan.decay / 256U;
 
 			ubyte sustain = chan.sustain;
-			if (chan.envelopeVolume <= sustain && sustain == 0) {
+			if ((chan.envelopeVolume <= sustain) && (sustain == 0)) {
 				// Duplicated echo check from Release section above
 				if (chan.echoVolume == 0) {
 					chan.statusFlags = 0;
@@ -145,14 +149,7 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 			}
 			break;
 		case EnvelopeState.attack:
-		attack:
-			newEnv = env + chan.attack;
-			if (newEnv > 0xFF) {
-				chan.envelopeVolume = 0xFF;
-				--chan.statusFlags;
-			} else {
-				chan.envelopeVolume = cast(ubyte)newEnv;
-			}
+			attack(env, chan);
 			break;
 		case EnvelopeState.sustain:
 		case EnvelopeState.release:
@@ -170,78 +167,43 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 		chan.envelopeState = EnvelopeState.attack;
 		chan.currentPointer = wav.sample[chan.count .. $];
 		chan.count = wav.header.size - chan.count;
-		chan.fw = 0;
+		chan.samplePosition = 0;
 		chan.envelopeVolume = 0;
-		if (wav.header.loopFlags & 0xC0) {
-			chan.statusFlags |= 0x10;
-		}
-		goto attack;
+		chan.loop = !!(wav.header.loopFlags & 0xC0);
+		attack(env, chan);
+		return 1;
 	}
 }
 
 ///
-private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, const Wave wav, float[2][] outBuffer, float romSamplesPerOutputSample) @system pure {
-	ubyte v = cast(ubyte)(chan.envelopeVolume * (mixer.masterVol + 1) / 16U);
-	chan.envelopeVolumeRight = chan.rightVolume * v / 256U;
-	chan.envelopeVolumeLeft = chan.leftVolume * v / 256U;
+private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, const Wave wav, float[2][] outBuffer, float romSamplesPerOutputSample) @safe pure {
+	ubyte v = cast(ubyte)(chan.envelopeVolume * (mixer.masterVol + 1) / 16);
+	chan.envelopeVolumeRight = chan.rightVolume * v / 256;
+	chan.envelopeVolumeLeft = chan.leftVolume * v / 256;
 
-	const(byte)[] loopStart;
-	if (chan.statusFlags & 0x10) {
+	// have the sample repeat infinitely, either with 0s if it doesn't loop or the sample starting at its loop point if it does
+	const(byte)[] loopStart = [0];
+	if (chan.loop) {
 		loopStart = wav.sample[wav.header.loopStart .. $];
 	}
-	int samplesLeftInWav = chan.count;
-	const(byte)[] currentPointer = chan.currentPointer;
-	int envR = chan.envelopeVolumeRight;
-	int envL = chan.envelopeVolumeLeft;
-	float finePos = chan.fw;
+	auto samples = chan.currentPointer.chain(loopStart.cycle);
 
 	if (chan.fix) {
 		romSamplesPerOutputSample *= mixer.origFreq;
 	} else {
 		romSamplesPerOutputSample *= chan.freq;
 	}
-	short b = currentPointer[0];
-	short m = cast(short)(currentPointer[1] - b);
-	currentPointer = currentPointer[1 .. $];
 
 	foreach (ref output; outBuffer) {
-		// Use linear interpolation to calculate a value between the currentPointer sample in the wav
-		// and the nextChannelPointer sample. Also cancel out the 9.23 stuff
-		float sample = (finePos * m) + b;
+		// Use linear interpolation to calculate a value between the currentPointer sample in the wav and the nextChannelPointer sample. Also cancel out the 9.23 stuff
+		float sample = linearInterpolation(samples[cast(uint)chan.samplePosition], samples[cast(uint)chan.samplePosition + 1], chan.samplePosition % 1);
 
-		output[1] += (sample * envR) / 32768.0f;
-		output[0] += (sample * envL) / 32768.0f;
+		output[0] += (sample * chan.envelopeVolumeLeft) / 32768.0;
+		output[1] += (sample * chan.envelopeVolumeRight) / 32768.0;
 
-		finePos += romSamplesPerOutputSample;
-		uint newCoarsePos = cast(uint)finePos;
-		if (newCoarsePos != 0) {
-			finePos -= cast(int)finePos;
-			samplesLeftInWav -= newCoarsePos;
-			if (samplesLeftInWav <= 0) {
-				if (loopStart.length != 0) {
-					currentPointer = loopStart;
-					newCoarsePos = -samplesLeftInWav;
-					samplesLeftInWav += loopStart.length;
-					while (samplesLeftInWav <= 0) {
-						newCoarsePos -= loopStart.length;
-						samplesLeftInWav += loopStart.length;
-					}
-					b = currentPointer[newCoarsePos];
-					m = cast(short)(currentPointer[newCoarsePos + 1] - b);
-					currentPointer = currentPointer[newCoarsePos + 1 .. $];
-				} else {
-					chan.statusFlags = 0;
-					return;
-				}
-			} else {
-				b = currentPointer[newCoarsePos - 1];
-				m = cast(short)(currentPointer.ptr[newCoarsePos] - b);
-				currentPointer = currentPointer[newCoarsePos .. $];
-			}
+		chan.samplePosition += romSamplesPerOutputSample;
+		if (!chan.loop && (chan.samplePosition > chan.count)) {
+			chan.statusFlags = 0;
 		}
 	}
-
-	chan.fw = finePos;
-	chan.count = samplesLeftInWav;
-	chan.currentPointer = (currentPointer.ptr - 1)[0 .. size_t.max];
 }

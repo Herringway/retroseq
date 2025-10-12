@@ -62,7 +62,7 @@ struct M4APlayer {
 	}
 
 	///
-	void fillBuffer(float[2][] audioBuffer) @system pure {
+	void fillBuffer(float[2][] audioBuffer) @safe pure {
 		while (audioBuffer.length > 0) {
 			const lastFrameSamplesUsed = min(audioBuffer.length, frame.length);
 			audioBuffer[0 .. lastFrameSamplesUsed] = frame[0 .. lastFrameSamplesUsed];
