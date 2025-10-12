@@ -74,7 +74,7 @@ void SampleMixer(ref SoundMixerState mixer, uint scanlineLimit, ushort samplesPe
 		const wav = chan[0].wav;
 
 		if (TickEnvelope(chan[0], wav)) {
-			GenerateAudio(mixer, chan[0], wav, outBuffer, samplesPerFrame, divFreq);
+			GenerateAudio(mixer, chan[0], wav, outBuffer[0 .. samplesPerFrame], divFreq);
 		}
 	}
 }
@@ -180,7 +180,7 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 }
 
 ///
-private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, const Wave wav, float[2][] outBuffer, ushort samplesPerFrame, float divFreq) @system pure {
+private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, const Wave wav, float[2][] outBuffer, float romSamplesPerOutputSample) @system pure {
 	ubyte v = cast(ubyte)(chan.envelopeVolume * (mixer.masterVol + 1) / 16U);
 	chan.envelopeVolumeRight = chan.rightVolume * v / 256U;
 	chan.envelopeVolumeLeft = chan.leftVolume * v / 256U;
@@ -193,28 +193,7 @@ private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 	const(byte)[] currentPointer = chan.currentPointer;
 	int envR = chan.envelopeVolumeRight;
 	int envL = chan.envelopeVolumeLeft;
-	/*if (chan.type & 8) {
-		for (ushort i = 0; i < samplesPerFrame; i++, outBuffer+=2) {
-			byte c = *(currentPointer++);
-
-			outBuffer[1] += (c * envR) / 32768.0f;
-			outBuffer[0] += (c * envL) / 32768.0f;
-			if (--samplesLeftInWav == 0) {
-				samplesLeftInWav = loopLen;
-				if (loopLen != 0) {
-					currentPointer = loopStart;
-				} else {
-					chan.statusFlags = 0;
-					return;
-				}
-			}
-		}
-
-		chan.count = samplesLeftInWav;
-		chan.currentPointer = currentPointer;
-	} else {*/
 	float finePos = chan.fw;
-	float romSamplesPerOutputSample = divFreq;
 
 	if (chan.fix) {
 		romSamplesPerOutputSample *= mixer.origFreq;
@@ -225,13 +204,13 @@ private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 	short m = cast(short)(currentPointer[1] - b);
 	currentPointer = currentPointer[1 .. $];
 
-	for (ushort i = 0; i < samplesPerFrame; i++, outBuffer = outBuffer[1 .. $]) {
+	foreach (ref output; outBuffer) {
 		// Use linear interpolation to calculate a value between the currentPointer sample in the wav
 		// and the nextChannelPointer sample. Also cancel out the 9.23 stuff
 		float sample = (finePos * m) + b;
 
-		outBuffer[0][1] += (sample * envR) / 32768.0f;
-		outBuffer[0][0] += (sample * envL) / 32768.0f;
+		output[1] += (sample * envR) / 32768.0f;
+		output[0] += (sample * envL) / 32768.0f;
 
 		finePos += romSamplesPerOutputSample;
 		uint newCoarsePos = cast(uint)finePos;
@@ -265,5 +244,4 @@ private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 	chan.fw = finePos;
 	chan.count = samplesLeftInWav;
 	chan.currentPointer = (currentPointer.ptr - 1)[0 .. size_t.max];
-	//}
 }
