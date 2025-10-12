@@ -44,13 +44,21 @@ struct WaveData {
 	uint size; /// number of samples
 }
 
+enum CGBType {
+	directsound,
+	pulse1,
+	pulse2,
+	gbWave,
+	noise,
+}
+
 ///
 struct ToneData {
 	align(1):
 	union {
 		ubyte type; ///
 		mixin(bitfields!(
-			ubyte, "cgbType", 3,
+			CGBType, "cgbType", 3,
 			bool, "fix", 1,
 			ubyte, "", 2,
 			bool, "spl", 1,
@@ -107,7 +115,7 @@ struct SoundChannel {
 	union {
 		ubyte type; ///
 		mixin(bitfields!(
-			ubyte, "cgbType", 3,
+			CGBType, "cgbType", 3,
 			bool, "fix", 1,
 			ubyte, "", 2,
 			bool, "spl", 1,
@@ -255,7 +263,12 @@ struct SoundIO {
 			bool, "enableAPU", 1,
 		));
 	}
-	ushort SOUNDBIAS_H; ///
+	mixin(bitfields!(
+		ubyte, "", 1,
+		ushort, "biasLevel", 9,
+		ubyte, "", 4,
+		ubyte, "resolution", 2,
+	));
 }
 
 ///
@@ -310,18 +323,12 @@ struct SongHeader {
 
 ///
 struct MusicPlayerTrack {
-	static enum Flags : ubyte {
-		none = 0,
-		volumeSet = 1 << 0,
-		unknown2 = 1 << 1,
-		pitchSet = 1 << 2,
-		unknown8 = 1 << 3,
-		unknown16 = 1 << 4,
-		unknown32 = 1 << 5,
-		start = 1 << 6,
-		exists = 1 << 7,
-	}
-	BitFlags!Flags flags;
+	bool volumeSet;
+	bool unknown2;
+	bool pitchSet;
+	bool unknown8;
+	bool start;
+	bool exists;
 	ubyte wait; ///
 	ubyte patternLevel; ///
 	ubyte repeatCount; ///

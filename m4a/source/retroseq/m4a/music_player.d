@@ -51,7 +51,13 @@ void MP2K_event_fine(ref M4APlayer, ref MusicPlayerTrack track) @safe pure {
 		}
 		MP2KClearChain(*chan);
 	}
-	track.flags = MusicPlayerTrack.Flags.none;
+	// TODO: figure out which of these are actually necessary to reset
+	track.volumeSet = false;
+	track.unknown2 = false;
+	track.pitchSet = false;
+	track.unknown8 = false;
+	track.start = false;
+	track.exists = false;
 }
 
 /// Sets the track's cmdPtr to the specified address.
@@ -116,8 +122,8 @@ void MP2K_event_tempo(ref M4APlayer player, ref MusicPlayerTrack track) @safe pu
 ///
 void MP2K_event_keysh(ref M4APlayer, ref MusicPlayerTrack track) @safe pure {
 	track.keyShift = track.cmdPtr.pop!ubyte;
-	track.flags |= MusicPlayerTrack.Flags.pitchSet;
-	track.flags |= MusicPlayerTrack.Flags.unknown8;
+	track.pitchSet = true;
+	track.unknown8 = true;
 }
 
 ///
@@ -130,29 +136,29 @@ void MP2K_event_voice(ref M4APlayer player, ref MusicPlayerTrack track) @safe pu
 ///
 void MP2K_event_vol(ref M4APlayer, ref MusicPlayerTrack track) @safe pure {
 	track.vol = track.cmdPtr.pop!ubyte;
-	track.flags |= MusicPlayerTrack.Flags.volumeSet;
-	track.flags |= MusicPlayerTrack.Flags.unknown2;
+	track.volumeSet = true;
+	track.unknown2 = true;
 }
 
 ///
 void MP2K_event_pan(ref M4APlayer, ref MusicPlayerTrack track) @safe pure {
 	track.pan = cast(byte)(track.cmdPtr.pop!ubyte - 0x40);
-	track.flags |= MusicPlayerTrack.Flags.volumeSet;
-	track.flags |= MusicPlayerTrack.Flags.unknown2;
+	track.volumeSet = true;
+	track.unknown2 = true;
 }
 
 ///
 void MP2K_event_bend(ref M4APlayer, ref MusicPlayerTrack track) @safe pure {
 	track.bend = cast(byte)(track.cmdPtr.pop!ubyte - 0x40);
-	track.flags |= MusicPlayerTrack.Flags.pitchSet;
-	track.flags |= MusicPlayerTrack.Flags.unknown8;
+	track.pitchSet = true;
+	track.unknown8 = true;
 }
 
 ///
 void MP2K_event_bendr(ref M4APlayer, ref MusicPlayerTrack track) @safe pure {
 	track.bendRange = track.cmdPtr.pop!ubyte;
-	track.flags |= MusicPlayerTrack.Flags.pitchSet;
-	track.flags |= MusicPlayerTrack.Flags.unknown8;
+	track.pitchSet = true;
+	track.unknown8 = true;
 }
 
 ///
@@ -165,18 +171,18 @@ void MP2K_event_modt(ref M4APlayer, ref MusicPlayerTrack track) @safe pure {
 	ubyte type = track.cmdPtr.pop!ubyte;
 	if (type != track.modType) {
 		track.modType = type;
-		track.flags |= MusicPlayerTrack.Flags.volumeSet;
-		track.flags |= MusicPlayerTrack.Flags.unknown2;
-		track.flags |= MusicPlayerTrack.Flags.pitchSet;
-		track.flags |= MusicPlayerTrack.Flags.unknown8;
+		track.volumeSet = true;
+		track.unknown2 = true;
+		track.pitchSet = true;
+		track.unknown8 = true;
 	}
 }
 
 ///
 void MP2K_event_tune(ref M4APlayer, ref MusicPlayerTrack track) @safe pure {
 	track.tune = cast(byte)(track.cmdPtr.pop!ubyte - 0x40);
-	track.flags |= MusicPlayerTrack.Flags.pitchSet;
-	track.flags |= MusicPlayerTrack.Flags.unknown8;
+	track.pitchSet = true;
+	track.unknown8 = true;
 }
 
 ///
@@ -201,7 +207,7 @@ void MP2KPlayerMain(ref M4APlayer player) @safe pure {
 		ushort trackBits = 0;
 
 		trackLoop: foreach (idx, ref currentTrack; player.tracks) {
-			if (!currentTrack.flags.exists) {
+			if (!currentTrack.exists) {
 				continue;
 			}
 			trackBits |= (1 << idx);
@@ -214,9 +220,10 @@ void MP2KPlayerMain(ref M4APlayer player) @safe pure {
 				}
 			}
 
-			if (currentTrack.flags.start) {
+			if (currentTrack.start) {
 				//CpuFill32(0, currentTrack, 0x40);
-				currentTrack.flags = MusicPlayerTrack.Flags.exists;
+				currentTrack.start = false;
+				currentTrack.exists = true;
 				currentTrack.bendRange = 2;
 				currentTrack.volPublic = 64;
 				currentTrack.lfoSpeed = 22;
@@ -242,7 +249,7 @@ void MP2KPlayerMain(ref M4APlayer player) @safe pure {
 					eventFunc = gMPlayJumpTable[player.cmd];
 					eventFunc(player, currentTrack);
 
-					if (!currentTrack.flags) {
+					if (!currentTrack.volumeSet && !currentTrack.unknown2 && !currentTrack.pitchSet && !currentTrack.unknown8 && !currentTrack.start && !currentTrack.exists) {
 						continue trackLoop;
 					}
 				} else {
@@ -273,11 +280,11 @@ void MP2KPlayerMain(ref M4APlayer player) @safe pure {
 				if (r != currentTrack.modCalculated) {
 					currentTrack.modCalculated = r;
 					if (currentTrack.modType == 0) {
-						currentTrack.flags |= MusicPlayerTrack.Flags.pitchSet;
-						currentTrack.flags |= MusicPlayerTrack.Flags.unknown8;
+						currentTrack.pitchSet = true;
+						currentTrack.unknown8 = true;
 					} else {
-						currentTrack.flags |= MusicPlayerTrack.Flags.volumeSet;
-						currentTrack.flags |= MusicPlayerTrack.Flags.unknown2;
+						currentTrack.volumeSet = true;
+						currentTrack.unknown2 = true;
 					}
 				}
 			}
@@ -297,7 +304,7 @@ void MP2KPlayerMain(ref M4APlayer player) @safe pure {
 	do {
 		MusicPlayerTrack *track = &player.tracks[i];
 
-		if (!track.flags.exists || (!track.flags.volumeSet && !track.flags.unknown2 && !track.flags.pitchSet && !track.flags.unknown8)) {
+		if (!track.exists || (!track.volumeSet && !track.unknown2 && !track.pitchSet && !track.unknown8)) {
 			continue;
 		}
 		TrkVolPitSet(player, *track);
@@ -306,39 +313,40 @@ void MP2KPlayerMain(ref M4APlayer player) @safe pure {
 				player.ClearChain(*chan);
 				continue;
 			}
-			ubyte cgbType = chan.cgbType;
-			if (track.flags.volumeSet || track.flags.unknown2) {
+			if (track.volumeSet || track.unknown2) {
 				ChnVolSetAsm(*chan, *track);
-				if (cgbType != 0) {
+				if (chan.cgbType != CGBType.directsound) {
 					chan.cgbVolumeChange = true;
 				}
 			}
-			if (track.flags.pitchSet || track.flags.unknown8) {
+			if (track.pitchSet || track.unknown8) {
 				int key = chan.key + track.keyShiftCalculated;
 				if (key < 0) {
 					key = 0;
 				}
-				if (cgbType != 0) {
-					chan.freq = cgbCalcFreqFunc(cgbType, cast(ubyte)key, track.pitchCalculated);
+				if (chan.cgbType != CGBType.directsound) {
+					chan.freq = cgbCalcFreqFunc(chan.cgbType, cast(ubyte)key, track.pitchCalculated);
 					chan.cgbPitchChange = true;
 				} else {
 					chan.freq = MidiKeyToFreq(chan.wav, cast(ubyte)key, track.pitchCalculated);
 				}
 			}
 		}
-		track.flags &= cast(MusicPlayerTrack.Flags)~(MusicPlayerTrack.Flags.pitchSet | MusicPlayerTrack.Flags.unknown8 | MusicPlayerTrack.Flags.volumeSet | MusicPlayerTrack.Flags.unknown2);
+		track.pitchSet = false;
+		track.unknown8 = false;
+		track.volumeSet = false;
+		track.unknown2 = false;
 	}
 	while(++i < player.tracks.length);
 }
 
 ///
 void TrackStop(ref M4APlayer player, ref MusicPlayerTrack track) @safe pure {
-	if (track.flags.exists) {
+	if (track.exists) {
 		for (SoundChannel *chan = track.chan; chan != null; chan = chan.nextChannelPointer) {
 			if (chan.statusFlags != 0) {
-				ubyte cgbType = chan.cgbType;
-				if (cgbType != 0) {
-					player.cgbNoteOffFunc(cgbType);
+				if (chan.cgbType != CGBType.directsound) {
+					player.cgbNoteOffFunc(chan.cgbType);
 				}
 				chan.statusFlags = 0;
 			}
@@ -416,12 +424,11 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerTrack track
 		priority = 0xFF;
 	}
 
-	ubyte cgbType = instrument.cgbType;
 	SoundChannel *chan;
 
-	if (cgbType != 0) {
+	if (instrument.cgbType != CGBType.directsound) {
 		// There's only one CgbChannel of a given type, so we don't need to loop to find it.
-		chan = &player.soundInfo.cgbChans[cgbType - 1];
+		chan = &player.soundInfo.cgbChans[instrument.cgbType - 1];
 
 		// If this channel is running and not stopped,
 		if (chan.isActive && !chan.stop) {
@@ -494,11 +501,11 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerTrack track
 	chan.key = key;
 	chan.rhythmPan = forcedPan;
 	chan.type = instrument.type;
-	if (cgbType == 0) {
+	if (instrument.cgbType == CGBType.directsound) {
 		const header = instrument.wav.toAbsoluteArray(player.musicData);
 		const waveData = (cast(const(byte)[])header)[WaveData.sizeof .. WaveData.sizeof + header[0].size];
 		chan.wav = Wave(header[0], waveData);
-	} else if (cgbType == 3) {
+	} else if (instrument.cgbType == CGBType.gbWave) {
 		chan.gbWav = instrument.cgbSample.toAbsoluteArray(player.musicData)[0];
 	} else {
 		chan.squareNoiseConfig = instrument.squareNoiseConfig;
@@ -518,7 +525,7 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerTrack track
 		transposedKey = 0;
 	}
 
-	if (cgbType != 0) {
+	if (instrument.cgbType != CGBType.directsound) {
 		chan.length = instrument.length;
 		if (instrument.panSweep & 0x80 || (instrument.panSweep & 0x70) == 0) {
 			chan.sweep = 8;
@@ -526,7 +533,7 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerTrack track
 			chan.sweep = instrument.panSweep;
 		}
 
-		chan.freq = cgbCalcFreqFunc(cgbType, cast(ubyte)transposedKey, track.pitchCalculated);
+		chan.freq = cgbCalcFreqFunc(instrument.cgbType, cast(ubyte)transposedKey, track.pitchCalculated);
 	} else {
 		chan.count = track.count;
 		chan.freq = MidiKeyToFreq(chan.wav, cast(ubyte)transposedKey, track.pitchCalculated);
@@ -534,7 +541,10 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerTrack track
 
 	chan.statusFlags = 0;
 	chan.start = true;
-	track.flags &= cast(MusicPlayerTrack.Flags)~(MusicPlayerTrack.Flags.pitchSet | MusicPlayerTrack.Flags.unknown8 | MusicPlayerTrack.Flags.volumeSet | MusicPlayerTrack.Flags.unknown2);
+	track.pitchSet = false;
+	track.unknown8 = false;
+	track.volumeSet = false;
+	track.unknown2 = false;
 }
 
 ///
