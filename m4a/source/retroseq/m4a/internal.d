@@ -291,9 +291,10 @@ struct SoundMixerState {
 	int sampleRate; ///
 	float origFreq = 0; /// for adjusting original freq to the new sample rate
 	float divFreq = 0; ///
-	SoundChannel[4] cgbChans; ///
+	SoundChannel[20] allChannels;
+	auto cgbChans() inout => allChannels[0 .. 4]; ///
 	SoundIO reg; ///
-	SoundChannel[16] chans; ///
+	auto chans() inout => allChannels[4 .. $]; ///
 	float[2][] outBuffer; ///
 	void SampleFreqSet(ubyte runningFrequency, uint outputFrequency) @safe pure
 		in(runningFrequency < 15, "Invalid mode!")
