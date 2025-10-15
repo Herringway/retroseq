@@ -83,6 +83,8 @@ enum SeekStyle {
 ///
 private struct ChannelState {
 	bool enabled = true; ///
+	bool forceDisabled = false; ///
+	bool isEnabled() const pure @safe nothrow => enabled && !forceDisabled;
 	int next; /// time left in note
 
 	Slider note; ///
@@ -453,7 +455,7 @@ struct NSPCPlayer {
 					continue; //NYI
 				}
 				const loadedSample = currentSong.samples[channel.sampleID];
-				if (!channel.enabled) {
+				if (!channel.isEnabled) {
 					continue;
 				}
 
@@ -1235,7 +1237,7 @@ struct NSPCPlayer {
 	}
 	/// Enable or disable a song channel
 	public void setChannelEnabled(ubyte channel, bool enabled) @safe nothrow pure {
-		state.channels[channel].enabled = enabled;
+		state.channels[channel].forceDisabled = !enabled;
 	}
 	///
 	bool isPlaying() const pure @safe nothrow {
