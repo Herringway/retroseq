@@ -212,7 +212,6 @@ void mixSounds(ref Mixer mixer, scope short[2][] stream) @safe nothrow {
 			volume = 32767;
 			play(true);
 		}
-		import std.stdio; debug writeln(front);
 		assert(front == [256, 256]);
 	}
 }
