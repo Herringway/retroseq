@@ -2,7 +2,6 @@
 module retroseq.m4a.sound_mixer;
 
 import retroseq.interpolation;
-import retroseq.m4a.mp2k_common;
 import retroseq.m4a.cgb_audio;
 import retroseq.m4a.internal;
 import retroseq.m4a.m4a;

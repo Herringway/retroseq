@@ -3,7 +3,6 @@ module retroseq.m4a.music_player;
 
 import retroseq.utility;
 
-import retroseq.m4a.mp2k_common;
 import retroseq.m4a.internal;
 import retroseq.m4a.m4a;
 import retroseq.m4a.m4a_tables;
@@ -275,7 +274,7 @@ void MP2KPlayerMain(ref M4APlayer player) @safe pure {
 				} else {
 					r = currentTrack.lfoSpeedCounter;
 				}
-				r = cast(byte)FLOOR_DIV_POW2(currentTrack.modDepth * r, 64);
+				r = cast(byte)floorDiv(currentTrack.modDepth * r, 64);
 
 				if (r != currentTrack.modCalculated) {
 					currentTrack.modCalculated = r;

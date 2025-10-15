@@ -174,3 +174,6 @@ struct RelativePointer(Element, Offset, size_t Base, Offset limit = Offset.max) 
 	assert(RelativePointer2(0).toAbsoluteArray!ubyte(sample) == [1, 2, 3, 4, 5]);
 	assert(RelativePointer2(1).toAbsoluteArray!ubyte(sample) == [2, 3, 4, 5]);
 }
+
+///
+auto floorDiv(T, U)(T a, U b) =>  (a > 0) ? (a / b) : ((a + 1 - b) / b);
