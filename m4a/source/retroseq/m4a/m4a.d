@@ -256,7 +256,7 @@ struct M4APlayer {
 		paused = true;
 
 		foreach (ref track; tracks) {
-			track.flags = MusicPlayerTrack.Flags.none;
+			track = track.init;
 		}
 	}
 
@@ -278,13 +278,12 @@ struct M4APlayer {
 
 		foreach (i, ref track; tracks) {
 			TrackStop(this, track);
+			track = track.init;
 			if (i < song.header.trackCount) {
 				track.exists = true;
 				track.start = true;
 				track.chan = null;
 				track.cmdPtr = song.parts[i].toAbsoluteArray(musicData);
-			} else {
-				track.flags = MusicPlayerTrack.Flags.none;
 			}
 		}
 
