@@ -43,8 +43,7 @@ void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @safe pure
 
 ///
 void SampleMixer(ref SoundMixerState mixer, uint scanlineLimit, ushort samplesPerFrame, float[2][] outBuffer, ubyte dmaCounter) @safe pure {
-	uint reverb = mixer.reverb;
-	if (reverb) {
+	if (mixer.reverb) {
 		// The vanilla reverb effect outputs a mono sound from four sources:
 		// - L/R channels as they were mixer.pcmDmaPeriod frames ago
 		// - L/R channels as they were (mixer.pcmDmaPeriod - 1) frames ago
@@ -57,9 +56,15 @@ void SampleMixer(ref SoundMixerState mixer, uint scanlineLimit, ushort samplesPe
 		}
 		ushort i = 0;
 		do {
-			float s = tmp1[0][0] + tmp1[0][1] + tmp2[0][0] + tmp2[0][1];
-			s *= (cast(float)reverb / 512.0f);
-			tmp1[0][0] = tmp1[0][1] = s;
+			version(vanillaReverb) {
+				float s = tmp1[0][0] + tmp1[0][1] + tmp2[0][0] + tmp2[0][1];
+				s *= (cast(float)mixer.reverb / 512.0f);
+				tmp1[0][0] = tmp1[0][1] = s;
+			} else {
+				float[2] s = [ tmp1[0][0] + tmp2[0][0], tmp1[0][1]  + tmp2[0][1] ];
+				s[] *= (cast(float)mixer.reverb / 512.0f);
+				tmp1[0] = s;
+			}
 			tmp1 = tmp1[1 .. $];
 			tmp2 = tmp2[1 .. $];
 		} while (++i < samplesPerFrame);
