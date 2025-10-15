@@ -187,7 +187,7 @@ private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 
 	// have the sample repeat infinitely, either with 0s if it doesn't loop or the sample starting at its loop point if it does
 	const(byte)[] loopStart = [0];
-	if (chan.loop) {
+	if (chan.loop && wav.sample.length) {
 		loopStart = wav.sample[wav.header.loopStart .. $];
 	}
 	auto samples = chan.currentPointer.chain(loopStart.cycle);
