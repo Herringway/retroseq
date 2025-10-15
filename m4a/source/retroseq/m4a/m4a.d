@@ -435,11 +435,19 @@ struct M4APlayer {
 		} else {
 			soundInfo.cgbCounter15 = 14;
 		}
+		static void envelopeSustain(ref SoundChannel channel) {
+			channel.envelopeVolume = channel.sustainGoal;
+			channel.envelopeCounter = 7;
+		}
 
 		foreach (idx, ref channel; soundInfo.cgbChans) {
 			int envelopeVolume, sustainGoal;
 			if (!channel.isActive) {
 				continue;
+			}
+			scope(exit) {
+				channel.cgbVolumeChange = false;
+				channel.cgbPitchChange = false;
 			}
 
 			/* 1. determine hardware channel registers */
@@ -538,7 +546,7 @@ struct M4APlayer {
 				oscillator_off:
 					cgbNoteOffFunc(cast(CGBType)(idx + 1));
 					channel.statusFlags = 0;
-					goto channel_complete;
+					continue;
 				}
 				goto envelope_complete;
 			} else if (channel.stop && (channel.envelopeState != EnvelopeState.release)) {
@@ -580,9 +588,7 @@ struct M4APlayer {
 							channel.envelopeCounter = channel.release;
 						}
 					} else if (channel.envelopeState == EnvelopeState.sustain) {
-					envelope_sustain:
-						channel.envelopeVolume = channel.sustainGoal;
-						channel.envelopeCounter = 7;
+						envelopeSustain(channel);
 					} else if (channel.envelopeState == EnvelopeState.decay) {
 
 						channel.envelopeVolume--;
@@ -599,7 +605,7 @@ struct M4APlayer {
 								if (idx + 1 != 3) {
 									envelopeStepTimeAndDir = 0 | CGB_NRx2_ENV_DIR_INC;
 								}
-								goto envelope_sustain;
+								envelopeSustain(channel);
 							}
 						} else {
 							channel.envelopeCounter = channel.decay;
@@ -675,10 +681,6 @@ struct M4APlayer {
 				gb.toggle_length(cast(ubyte)idx, (*nrx4ptr & 0x40));
 				gb.trigger_note(cast(ubyte)idx);
 			}
-
-		channel_complete:
-			channel.cgbVolumeChange = false;
-			channel.cgbPitchChange = false;
 		}
 	}
 	///
