@@ -130,7 +130,7 @@ struct RelativePointer(Element, Offset, size_t Base, Offset limit = Offset.max) 
 	}
 	///
 	bool isValid(const(ubyte)[] base) const @safe pure {
-		return isValid() && ((offset - Base) < base.length);
+		return isValid() && (offset - Base < base.length);
 	}
 	///
 	const(Element)[] toAbsoluteArray(const(ubyte)[] base) const {
@@ -148,7 +148,7 @@ struct RelativePointer(Element, Offset, size_t Base, Offset limit = Offset.max) 
 	///
 	const(T)[] toAbsoluteArray(T)(const(ubyte)[] base, size_t length) const {
 		const realOffset = offset - Base;
-		enforce (realOffset < base.length, format!"Invalid pointer: %X"(offset));
+		enforce (isValid(base), format!"Invalid pointer: %X"(offset));
 		return cast(const(T)[])(base[realOffset .. realOffset + length * T.sizeof]);
 	}
 	///
