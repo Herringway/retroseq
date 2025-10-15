@@ -12,8 +12,7 @@ alias RelativePointer(Element, Offset) = retroseq.utility.RelativePointer!(Eleme
 
 enum C_V = 0x40; /// center value for PAN, BEND, and TUNE
 
-union SoundMode {
-	uint value; ///
+struct SoundMode {
 	mixin(bitfields!(
 		ubyte, "reverbVolume", 7,
 		bool, "reverbEnabled", 1,
