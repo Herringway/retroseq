@@ -78,9 +78,9 @@ struct AudioCGB {
 		}
 	}
 	///
-	void audio_generate(ref SoundMixerState soundInfo, float[2][] outBuffer) @safe pure {
-		const PU1Table = pulseWaveTables[soundInfo.reg.NR11 >> 6];
-		const PU2Table = pulseWaveTables[soundInfo.reg.NR21 >> 6];
+	void audio_generate(ref SoundMixerState mixer, float[2][] outBuffer) @safe pure {
+		const PU1Table = pulseWaveTables[mixer.reg.NR11 >> 6];
+		const PU2Table = pulseWaveTables[mixer.reg.NR21 >> 6];
 		foreach (ref samples; outBuffer) {
 			apuFrame += 512;
 			if (apuFrame >= sampleRate) {
@@ -92,7 +92,7 @@ struct AudioCGB {
 					for (ubyte ch = 0; ch < 4; ch++) {
 						if (Len[ch]) {
 							if (--Len[ch] == 0 && LenOn[ch]) {
-								soundInfo.reg.enabledChannels[ch] = false;
+								mixer.reg.enabledChannels[ch] = false;
 							}
 						}
 					}
@@ -122,7 +122,7 @@ struct AudioCGB {
 				if ((apuCycle & 3) == 2) {
 					if (ch1SweepCounterI && ch1SweepShift) {
 						if (--ch1SweepCounter == 0) {
-							ushort ch1Freq = soundInfo.reg.sound1CntX.frequency;
+							ushort ch1Freq = mixer.reg.sound1CntX.frequency;
 							if (ch1SweepDir) {
 								ch1Freq -= ch1Freq >> ch1SweepShift;
 								if (ch1Freq & 0xF800) {
@@ -136,48 +136,48 @@ struct AudioCGB {
 									Vol[0] = 0;
 								}
 							}
-							soundInfo.reg.sound1CntX.frequency = ch1Freq & 0x7FF;
+							mixer.reg.sound1CntX.frequency = ch1Freq & 0x7FF;
 							ch1SweepCounter = ch1SweepCounterI;
 						}
 					}
 				}
 			}
 			//Sound generation loop
-			soundChannelPos[0] += freqTable[soundInfo.reg.sound1CntX.frequency] / (sampleRate / 16);
-			soundChannelPos[1] += freqTable[soundInfo.reg.sound2CntH.frequency] / (sampleRate / 16);
-			soundChannelPos[2] += freqTable[soundInfo.reg.sound3CntX.frequency] / (sampleRate / 16);
+			soundChannelPos[0] += freqTable[mixer.reg.sound1CntX.frequency] / (sampleRate / 16);
+			soundChannelPos[1] += freqTable[mixer.reg.sound2CntH.frequency] / (sampleRate / 16);
+			soundChannelPos[2] += freqTable[mixer.reg.sound3CntX.frequency] / (sampleRate / 16);
 			soundChannelPos[0] %= 32;
 			soundChannelPos[1] %= 32;
 			soundChannelPos[2] %= 32;
 			samples[] = 0.0;
-			if (soundInfo.reg.enableAPU) {
-				if ((DAC[0]) && soundInfo.reg.enabledChannels[0]) {
-					if (soundInfo.reg.panCh1Left) {
+			if (mixer.reg.enableAPU) {
+				if ((DAC[0]) && mixer.reg.enabledChannels[0]) {
+					if (mixer.reg.panCh1Left) {
 						samples[0] += Vol[0] * PU1Table[cast(int)(soundChannelPos[0])] / 15.0f;
 					}
-					if (soundInfo.reg.panCh1Right) {
+					if (mixer.reg.panCh1Right) {
 						samples[1] += Vol[0] * PU1Table[cast(int)(soundChannelPos[0])] / 15.0f;
 					}
 				}
-				if ((DAC[1]) && soundInfo.reg.enabledChannels[1]) {
-					if(soundInfo.reg.panCh2Left) {
+				if ((DAC[1]) && mixer.reg.enabledChannels[1]) {
+					if(mixer.reg.panCh2Left) {
 						samples[0] += Vol[1] * PU2Table[cast(int)(soundChannelPos[1])] / 15.0f;
 					}
-					if(soundInfo.reg.panCh2Right) {
+					if(mixer.reg.panCh2Right) {
 						samples[1] += Vol[1] * PU2Table[cast(int)(soundChannelPos[1])] / 15.0f;
 					}
 				}
-				if (soundInfo.reg.channel3DACEnable && soundInfo.reg.enabledChannels[2]) {
-					if(soundInfo.reg.panCh3Left) {
+				if (mixer.reg.channel3DACEnable && mixer.reg.enabledChannels[2]) {
+					if(mixer.reg.panCh3Left) {
 						samples[0] += Vol[2] * WAVRAM[cast(int)(soundChannelPos[2])] / 4.0f;
 					}
-					if(soundInfo.reg.panCh3Right) {
+					if(mixer.reg.panCh3Right) {
 						samples[1] += Vol[2] * WAVRAM[cast(int)(soundChannelPos[2])] / 4.0f;
 					}
 				}
-				if (DAC[3] && soundInfo.reg.enabledChannels[3]) {
-					uint lfsrMode = soundInfo.reg.thinnerLFSR;
-					ch4Samples += freqTableNoise[soundInfo.reg.NR43] / sampleRate;
+				if (DAC[3] && mixer.reg.enabledChannels[3]) {
+					uint lfsrMode = mixer.reg.thinnerLFSR;
+					ch4Samples += freqTableNoise[mixer.reg.NR43] / sampleRate;
 					int ch4Out = [-1, 1][ch4LFSR[lfsrMode] & 1];
 					float avgDiv = 1.0f;
 					while (ch4Samples >= 1) {
@@ -196,10 +196,10 @@ struct AudioCGB {
 					if (avgDiv > 1) {
 						sample /= avgDiv;
 					}
-					if (soundInfo.reg.panCh4Left) {
+					if (mixer.reg.panCh4Left) {
 						samples[0] += (Vol[3] * sample) / 15.0f;
 					}
-					if (soundInfo.reg.panCh4Right) {
+					if (mixer.reg.panCh4Right) {
 						samples[1] += (Vol[3] * sample) / 15.0f;
 					}
 				}
