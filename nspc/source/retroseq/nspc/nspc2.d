@@ -56,7 +56,7 @@ struct NSPC2FileHeader {
 		return magic == this.init.magic;
 	}
 }
-Song[] loadNSPC2File(const(ubyte)[] data, ushort[] phrases = []) @safe {
+Song[] loadNSPC2File(const(ubyte)[] data, ushort[] phrases = []) @safe pure {
 	Song[] songs;
 	enforce(data.length > NSPC2FileHeader.sizeof, "File too small");
 	const header = read!NSPC2FileHeader(data);
@@ -132,9 +132,9 @@ struct NSPC2Writer {
 		foreach (pack; packs) {
 			header.tagStart += pack.data.length + ushort.sizeof * 2;
 		}
-		put(writer, cast(ubyte[])cast(NSPC2FileHeader[1])header);
-		put(writer, cast(ubyte[])subSongs);
-		put(writer, cast(ubyte[])packListHeaders);
+		put(writer, cast(const(ubyte)[])cast(NSPC2FileHeader[1])header);
+		put(writer, cast(const(ubyte)[])subSongs);
+		put(writer, cast(const(ubyte)[])packListHeaders);
 		foreach (packList; packLists) {
 			put(writer, cast(const(ubyte)[])packList);
 		}

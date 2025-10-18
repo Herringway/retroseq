@@ -17,7 +17,7 @@ import siryul;
 struct SongMetadata {
 	string album;
 	TrackMetadata[] tracks;
-	TagPair[] tags(size_t songID) const {
+	TagPair[] tags(size_t songID) const @safe pure {
 		with (songID < tracks.length ? tracks[songID] : TrackMetadata.init) {
 			return [
 				TagPair("album", album),
@@ -37,7 +37,7 @@ align(1) struct PackPointer {
 	align(1):
 	ubyte bank;
 	ushort addr;
-	uint full() const {
+	uint full() const @safe pure {
 		return addr + ((cast(uint)bank) << 16);
 	}
 }
@@ -55,15 +55,15 @@ struct ROMFile {
 	const ubyte[] data;
 }
 
-void extractEarthbound(ref NSPC2Writer writer,const scope ubyte[] data, bool m2packPointers, size_t packPointerTable, size_t packTableOffset) {
+void extractEarthbound(ref NSPC2Writer writer,const scope ubyte[] data, bool m2packPointers, size_t packPointerTable, size_t packTableOffset) @safe pure {
 	static immutable metadata = import("eb.json").fromString!(SongMetadata, JSON, DeSiryulize.optionalByDefault);
 	enum NUM_SONGS = 0xBF;
 	enum NUM_PACKS = 0xA9;
-	auto packs = (cast(PackPointer[])(data[packPointerTable .. packPointerTable + NUM_PACKS * PackPointer.sizeof]))
+	auto packs = (cast(const(PackPointer)[])(data[packPointerTable .. packPointerTable + NUM_PACKS * PackPointer.sizeof]))
 		.map!(x => parsePacks(data[x.full + (m2packPointers ? 0x220000 : -0xC00000) .. $]));
 	enum SONG_POINTER_TABLE = 0x294A;
-	auto bgmPacks = cast(ubyte[3][])data[packTableOffset .. packTableOffset + (ubyte[3]).sizeof * NUM_SONGS];
-	auto songPointers = cast(ushort[])packs[1][2].data[SONG_POINTER_TABLE .. SONG_POINTER_TABLE + ushort.sizeof * NUM_SONGS];
+	auto bgmPacks = cast(const(ubyte[3])[])data[packTableOffset .. packTableOffset + (ubyte[3]).sizeof * NUM_SONGS];
+	auto songPointers = cast(const(ushort)[])packs[1][2].data[SONG_POINTER_TABLE .. SONG_POINTER_TABLE + ushort.sizeof * NUM_SONGS];
 	uint[][ulong] packMap;
 	uint packIDBase;
 	foreach (idx, packSet; packs.enumerate) {
@@ -98,21 +98,21 @@ void extractEarthbound(ref NSPC2Writer writer,const scope ubyte[] data, bool m2p
 	}
 }
 
-void extractKDC(ref NSPC2Writer writer, const scope ubyte[] data) {
+void extractKDC(ref NSPC2Writer writer, const scope ubyte[] data) @safe pure {
 	static immutable metadata = import("kdc.json").fromString!(SongMetadata, JSON, DeSiryulize.optionalByDefault);
-	const sequencePackPointerTable = cast(uint[])data[0x3745 .. 0x3745 + 33 * uint.sizeof];
-	const samplePackPointerTable = cast(uint[])data[0x372D .. 0x372D + 3 * uint.sizeof];
-	const instrumentPackPointerTable = cast(uint[])data[0x373B .. 0x373B + 2 * uint.sizeof];
+	const sequencePackPointerTable = cast(const(uint)[])data[0x3745 .. 0x3745 + 33 * uint.sizeof];
+	const samplePackPointerTable = cast(const(uint)[])data[0x372D .. 0x372D + 3 * uint.sizeof];
+	const instrumentPackPointerTable = cast(const(uint)[])data[0x373B .. 0x373B + 2 * uint.sizeof];
 	foreach (pack; samplePackPointerTable) {
-		writer.packs ~= parsePacks(data[loromToPC(pack) .. $]);
+		writer.packs ~= parsePacks(data[lorom80ToPC(pack) .. $]);
 	}
 	foreach (pack; instrumentPackPointerTable) {
-		writer.packs ~= parsePacks(data[loromToPC(pack) .. $]);
+		writer.packs ~= parsePacks(data[lorom80ToPC(pack) .. $]);
 	}
 	uint packCount = cast(uint)writer.packs.length;
 	auto basePacks = iota(0, packCount).array;
 	foreach (idx, sequencePackPointer; sequencePackPointerTable) {
-		const seqPack = parsePacks(data[loromToPC(sequencePackPointer) .. $]);
+		const seqPack = parsePacks(data[lorom80ToPC(sequencePackPointer) .. $]);
 		auto packs = basePacks ~ iota(packCount, packCount + cast(uint)seqPack.length).array;
 		packCount += seqPack.length;
 		NSPC2SubSong subSong;
@@ -139,17 +139,20 @@ uint loromToPC(uint addr) @safe pure {
 		return addr - 0x400000;
 	}
 }
+uint lorom80ToPC(uint addr) @safe pure {
+	return (((addr & 0x7FFFFF) >> 1) & 0xFF8000) + (addr & 0x7FFF);
+}
 
 @safe unittest {
 	assert(loromToPC(0x97EDA8) == 0x57EDA8);
 }
 
-void extractKSS(ref NSPC2Writer writer, const scope ubyte[] data) {
+void extractKSS(ref NSPC2Writer writer, const scope ubyte[] data) @safe pure {
 	static immutable metadata = import("kss.json").fromString!(SongMetadata, JSON, DeSiryulize.optionalByDefault);
 	enum PACK_POINTER_TABLE = 0x5703;
 	enum InstrumentPackTable = 0x57E7;
 	enum numSongs = 65;
-	auto packTable = cast(PackPointerLH[])(data[PACK_POINTER_TABLE .. PACK_POINTER_TABLE + (numSongs + 10) * PackPointerLH.sizeof]);
+	auto packTable = cast(const(PackPointerLH)[])(data[PACK_POINTER_TABLE .. PACK_POINTER_TABLE + (numSongs + 10) * PackPointerLH.sizeof]);
 	auto sfxPacks = data[InstrumentPackTable .. InstrumentPackTable + numSongs];
 	const progOffset = packTable[0].full - 0xC00000;
 	const progPack = parsePacks(data[progOffset .. $]);
@@ -180,7 +183,7 @@ void extractKSS(ref NSPC2Writer writer, const scope ubyte[] data) {
 	}
 }
 
-void extractSMW(ref NSPC2Writer writer, const scope ubyte[] data) {
+void extractSMW(ref NSPC2Writer writer, const scope ubyte[] data) @safe pure {
 	static immutable metadata = import("smw.json").fromString!(SongMetadata, JSON, DeSiryulize.optionalByDefault);
 	enum firCoefficientsTable = 0x70DB1;
 	const progOffset = 0x70000;
@@ -239,7 +242,7 @@ void extractSMW(ref NSPC2Writer writer, const scope ubyte[] data) {
 		}
 	}
 }
-void extractPilotWings(ref NSPC2Writer writer, const scope ubyte[] data) {
+void extractPilotWings(ref NSPC2Writer writer, const scope ubyte[] data) @safe pure {
 	static immutable metadata = import("pilotwings.json").fromString!(SongMetadata, JSON, DeSiryulize.optionalByDefault);
 	enum firCoefficientTableOffset = 0x1636;
 	enum songTableOffset = 0x1680;
@@ -270,7 +273,7 @@ void extractPilotWings(ref NSPC2Writer writer, const scope ubyte[] data) {
 	}
 }
 
-void extractZ3(ref NSPC2Writer writer, const scope ubyte[] data) {
+void extractZ3(ref NSPC2Writer writer, const scope ubyte[] data) @safe pure {
 	static immutable metadata = import("z3.json").fromString!(SongMetadata, JSON, DeSiryulize.optionalByDefault);
 	enum progOffset = 0xC8000;
 	enum songOffset2 = 0xD8000;
@@ -310,7 +313,7 @@ void extractZ3(ref NSPC2Writer writer, const scope ubyte[] data) {
 		songID++;
 	}
 }
-void extractSMAS(ref NSPC2Writer writer, const scope ubyte[] data) {
+void extractSMAS(ref NSPC2Writer writer, const scope ubyte[] data) @safe pure {
 	static immutable metadata = import("smas.json").fromString!(SongMetadata, JSON, DeSiryulize.optionalByDefault);
 	enum baseOffset = 0x3FC00;
 	enum smb1SongOffset = 0xF8000;
@@ -331,7 +334,7 @@ void extractSMAS(ref NSPC2Writer writer, const scope ubyte[] data) {
 	enum songCounts = [2, 21, 19, 24];
 	auto packStart = cast(uint)(parsedBase.length + parsedBaseSong.length + parsedSamples.length);
 	foreach (idx, extra; extraSongData) {
-		const songTable = cast(ushort[])(((idx == 0) ? parsedBaseSong[0] : extra[0]).data[0 .. songCounts[idx] * 2]);
+		const songTable = cast(const(ushort)[])(((idx == 0) ? parsedBaseSong[0] : extra[0]).data[0 .. songCounts[idx] * 2]);
 		writer.packLists ~= iota(0, cast(uint)(parsedBase.length + parsedBaseSong.length + parsedSamples.length)).chain(iota(packStart, packStart + cast(uint)extra.length)).array;
 		packStart += extra.length;
 		foreach (song; 0 .. songCounts[idx]) {
@@ -350,13 +353,13 @@ void extractSMAS(ref NSPC2Writer writer, const scope ubyte[] data) {
 		}
 	}
 }
-void extractFZ(ref NSPC2Writer writer, const scope ubyte[] data) {
+void extractFZ(ref NSPC2Writer writer, const scope ubyte[] data) @safe pure {
 	static immutable metadata = import("fzero.json").fromString!(SongMetadata, JSON, DeSiryulize.optionalByDefault);
 	enum baseOffset = 0x8000;
 	enum songTableOffset = 0x1FD8;
 	const parsedBase = parsePacks(data[baseOffset .. $]);
 	enum songCount = 17;
-	const songTable = cast(ushort[])(parsedBase[4].data[songTableOffset - parsedBase[4].address .. songTableOffset - parsedBase[4].address + songCount * 2]);
+	const songTable = cast(const(ushort)[])(parsedBase[4].data[songTableOffset - parsedBase[4].address .. songTableOffset - parsedBase[4].address + songCount * 2]);
 	writer.packs = parsedBase;
 	writer.packLists ~= iota(0, cast(uint)writer.packs.length).array;
 	foreach (song; 0 .. songCount) {
@@ -376,18 +379,18 @@ void extractFZ(ref NSPC2Writer writer, const scope ubyte[] data) {
 	}
 }
 
-void extractSMET(ref NSPC2Writer writer, const scope ubyte[] data) {
+void extractSMET(ref NSPC2Writer writer, const scope ubyte[] data) @safe pure {
 	static immutable metadata = import("smet.json").fromString!(SongMetadata, JSON, DeSiryulize.optionalByDefault);
 	enum songs = 25;
 	enum packTableOffset = 0x7E7E1;
 	const table = cast(const(PackPointerLH)[])(data[packTableOffset .. packTableOffset + songs * PackPointerLH.sizeof]);
-	const first = parsePacks(data[loromToPC(table[0].full) .. $]);
+	const first = parsePacks(data[lorom80ToPC(table[0].full) .. $]);
 	const firCoefficients = cast(const(ubyte[8])[])(first[2].data[0x1E32 - 0x1500 .. 0x1E32 - 0x1500 + 8 * 11]); //there only seem to be 4, but songs are relying on an invalid 11th preset?
 	writer.packs = first;
 	uint[] basePacks = iota(0, cast(uint)writer.packs.length).array;
 	uint songID = 0;
 	foreach (idx, pack; table) {
-		const packs = parsePacks(data[loromToPC(pack.full) .. $]);
+		const packs = parsePacks(data[lorom80ToPC(pack.full) .. $]);
 		auto packList = basePacks ~= iota(cast(uint)writer.packs.length, cast(uint)(writer.packs.length + packs.length)).array;
 		writer.packLists ~= packList;
 		writer.packs ~= packs;
@@ -420,7 +423,7 @@ void extractSMET(ref NSPC2Writer writer, const scope ubyte[] data) {
 	}
 }
 
-void extractYI(ref NSPC2Writer writer, const scope ubyte[] data) {
+void extractYI(ref NSPC2Writer writer, const scope ubyte[] data) @safe pure {
 	static immutable metadata = import("yi.json").fromString!(SongMetadata, JSON, DeSiryulize.optionalByDefault);
 	enum tableBase = 0x4AC;
 	enum packSets = 13;
@@ -486,7 +489,7 @@ void extractYI(ref NSPC2Writer writer, const scope ubyte[] data) {
 	}
 }
 
-void extractKDL3(ref NSPC2Writer writer, const scope ubyte[] data) {
+void extractKDL3(ref NSPC2Writer writer, const scope ubyte[] data) @safe pure {
 	static immutable metadata = import("kdl3.json").fromString!(SongMetadata, JSON, DeSiryulize.optionalByDefault);
 	enum songs = 44;
 	const packs1 = parsePacks(data[0xE0000 .. $]);

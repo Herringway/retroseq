@@ -33,7 +33,7 @@ struct NSPCFileHeader {
 	ubyte firCoefficientTableCount;
 }
 
-Song loadNSPC1File(const(ubyte)[] data, ushort[] phrases = []) @safe {
+Song loadNSPC1File(const(ubyte)[] data, ushort[] phrases = []) @safe pure {
 	Song song;
 	auto header = read!NSPCFileHeader(data);
 	Pack[] packs;
