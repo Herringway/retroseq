@@ -7,6 +7,8 @@ import retroseq.m4a.internal;
 import retroseq.m4a.m4a;
 import retroseq.m4a.m4a_tables;
 
+import std.algorithm;
+
 ///
 uint umul3232H32(uint a, uint b) @safe pure {
 	ulong result = a;
@@ -61,6 +63,22 @@ void MP2K_event_fine(ref M4APlayer, ref MusicPlayerTrack track) @safe pure {
 
 /// Sets the track's cmdPtr to the specified address.
 void MP2K_event_goto(ref M4APlayer player, ref MusicPlayerTrack track) @safe pure {
+	MP2K_event_gotoImpl(player, track, true);
+}
+void MP2K_event_gotoImpl(ref M4APlayer player, ref MusicPlayerTrack track, bool isCommand) @safe pure {
+	if (isCommand) {
+		track.gotoSeen = true;
+		// wait for all active tracks to hit a goto, then decrement loop
+		if (!player.loops.isNull && player.tracks[].filter!(x => x.exists).all!(x => x.gotoSeen)) {
+			if (player.loops.get()-- == 0) {
+				if (player.endFadeSpeed == 0) {
+					player.m4aMPlayStop();
+				} else {
+					player.fadeOut(player.endFadeSpeed);
+				}
+			}
+		}
+	}
 	track.cmdPtr = (cast(const(RelativePointer!(ubyte, uint))[])track.cmdPtr[0 .. 4])[0].toAbsoluteArray(player.musicData);
 }
 
@@ -70,7 +88,7 @@ void MP2K_event_patt(ref M4APlayer player, ref MusicPlayerTrack track) @safe pur
 	if (level < 3) {
 		track.patternStack[level] = track.cmdPtr[4 .. $]; // sizeof(ubyte *);
 		track.patternLevel++;
-		MP2K_event_goto(player, track);
+		MP2K_event_gotoImpl(player, track, false);
 	} else {
 		// Stop playing this track, as an indication to the music programmer that they need to quit
 		// nesting patterns so darn much.
@@ -92,11 +110,11 @@ void MP2K_event_rept(ref M4APlayer player, ref MusicPlayerTrack track) @safe pur
 	if (track.cmdPtr[0] == 0) {
 		// "Repeat 0 times" == loop forever
 		track.cmdPtr = track.cmdPtr[1 .. $];
-		MP2K_event_goto(player, track);
+		MP2K_event_gotoImpl(player, track, false);
 	} else {
 		ubyte repeatCount = ++track.repeatCount;
 		if (repeatCount < track.cmdPtr.pop!ubyte) {
-			MP2K_event_goto(player, track);
+			MP2K_event_gotoImpl(player, track, false);
 		} else {
 			track.repeatCount = 0;
 			track.cmdPtr = track.cmdPtr[ubyte.sizeof + uint.sizeof .. $];

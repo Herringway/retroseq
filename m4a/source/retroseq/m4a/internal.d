@@ -320,6 +320,7 @@ struct MusicPlayerTrack {
 	uint count; ///
 	const(ubyte)[] cmdPtr; ///
 	const(ubyte)[][3] patternStack; ///
+	bool gotoSeen;
 }
 
 enum MAX_MUSICPLAYER_TRACKS = 16; ///

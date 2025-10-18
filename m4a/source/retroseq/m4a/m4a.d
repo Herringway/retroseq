@@ -10,6 +10,7 @@ import retroseq.m4a.music_player;
 import retroseq.m4a.sound_mixer;
 
 import std.algorithm.comparison;
+import std.typecons;
 
 ///
 struct Song {
@@ -46,6 +47,8 @@ struct M4APlayer {
 
 	AudioCGB gb; ///
 	float playerCounter = 0; ///
+	Nullable!uint loops;
+	ushort endFadeSpeed;
 	///
 	void initialize(uint outputFrequency, const(ubyte)[] _music, uint _songTableAddress, uint _mode) @safe pure {
 		const mode = SoundMode(_mode);
