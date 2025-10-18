@@ -29,7 +29,7 @@ void RunMixerFrame(ref M4APlayer player, float[2][] audioBuffer) @safe pure
 
 	SampleMixer(player.soundInfo, 0, cast(ushort)player.soundInfo.samplesPerFrame, outBuffer, cast(ubyte)player.soundInfo.dmaCounter);
 
-	player.gb.audio_generate(player.soundInfo, audioBuffer[0 .. player.soundInfo.samplesPerFrame]);
+	player.gb.generateAudio(player.soundInfo, audioBuffer[0 .. player.soundInfo.samplesPerFrame]);
 
 	for (uint i = 0; i < audioBuffer.length; i++) {
 		audioBuffer[i][0] += outBuffer[i][0];
@@ -74,7 +74,7 @@ void SampleMixer(ref SoundMixerState mixer, uint scanlineLimit, ushort samplesPe
 
 	foreach (ref chan; mixer.chans) {
 		if (TickEnvelope(chan, chan.wav)) {
-			GenerateAudio(mixer, chan, chan.wav, outBuffer[0 .. samplesPerFrame], mixer.divFreq);
+			generateAudio(mixer, chan, chan.wav, outBuffer[0 .. samplesPerFrame], mixer.divFreq);
 		}
 	}
 }
@@ -180,7 +180,7 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 }
 
 ///
-private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, const Wave wav, float[2][] outBuffer, float romSamplesPerOutputSample) @safe pure {
+private void generateAudio(ref SoundMixerState mixer, ref SoundChannel chan, const Wave wav, float[2][] outBuffer, float romSamplesPerOutputSample) @safe pure {
 	ubyte v = cast(ubyte)(chan.envelopeVolume * (mixer.masterVol + 1) / 16);
 	chan.envelopeVolumeRight = chan.rightVolume * v / 256;
 	chan.envelopeVolumeLeft = chan.leftVolume * v / 256;
