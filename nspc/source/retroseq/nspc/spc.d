@@ -67,11 +67,11 @@ Song loadSPCFile(scope const ubyte[] file) @safe {
 	}
 	auto header = detectParameters(spc[], dsp[]).header;
 	loadOldHeader(song, header);
-	infof("Detected variant: %s", header.variant);
-	infof("Detected instruments: %04X", header.instrumentBase);
-	infof("Detected samples: %04X", header.sampleBase);
-	infof("Detected song: %04X", header.songBase);
-	infof("Detected release table: %s, volume table: %s", header.releaseTable, header.volumeTable);
+	tracef("Detected variant: %s", header.variant);
+	tracef("Detected instruments: %04X", header.instrumentBase);
+	tracef("Detected samples: %04X", header.sampleBase);
+	tracef("Detected song: %04X", header.songBase);
+	tracef("Detected release table: %s, volume table: %s", header.releaseTable, header.volumeTable);
 	song.loadPacks([Pack(address: 0, data: spc[0 .. 65536])]);
 	song.loadNSPC();
 	return song;
@@ -243,12 +243,12 @@ DetectionResult detectParameters(scope const(ubyte)[] data, scope const(ubyte)[]
 			}
 			// fir coefficients
 			if ((data[i .. i + 7] == [0x8D, 0x08, 0xCF, 0x5D, 0x8D, 0x0F, 0xF5])) {
-				debug infof("Found FIR coefficients at %04X", (cast(const(ushort)[])(data[i + 7 .. i + 9]))[0]);
+				debug tracef("Found FIR coefficients at %04X", (cast(const(ushort)[])(data[i + 7 .. i + 9]))[0]);
 			}
 			// release table
 			if ((data[i .. i + 6] == [0x2D, 0x9F, 0x28, 0x07, 0xFD, 0xF6])) {
 				const offset = (cast(const(ushort)[])(data[i + 6 .. i + 8]))[0];
-				debug infof("Found release table at %04X", offset);
+				debug tracef("Found release table at %04X", offset);
 				bool found;
 				foreach (idx, table; releaseTables) {
 					if (data[offset .. offset + table.length] == table) {
@@ -258,13 +258,13 @@ DetectionResult detectParameters(scope const(ubyte)[] data, scope const(ubyte)[]
 					}
 				}
 				if (!found) {
-					debug infof("No release table match: [%(0x%02X, %)]", data[offset .. offset + releaseTables[0].length]);
+					debug tracef("No release table match: [%(0x%02X, %)]", data[offset .. offset + releaseTables[0].length]);
 				}
 			}
 			// volume table
 			if ((data[i .. i + 5] == [0xAE, 0x28, 0x0F, 0xFD, 0xF6])) {
 				const offset = (cast(const(ushort)[])(data[i + 5 .. i + 7]))[0];
-				debug infof("Found volume table at %04X", offset);
+				debug tracef("Found volume table at %04X", offset);
 				bool found;
 				foreach (idx, table; volumeTables) {
 					if (data[offset .. offset + table.length] == table) {
@@ -274,7 +274,7 @@ DetectionResult detectParameters(scope const(ubyte)[] data, scope const(ubyte)[]
 					}
 				}
 				if (!found) {
-					debug infof("No volume table match: [%(0x%02X, %)]", data[offset .. offset + volumeTables[0].length]);
+					debug tracef("No volume table match: [%(0x%02X, %)]", data[offset .. offset + volumeTables[0].length]);
 				}
 			}
 		}
@@ -283,7 +283,7 @@ DetectionResult detectParameters(scope const(ubyte)[] data, scope const(ubyte)[]
 		}
 		if (result.songTableAddress != 0) {
 			songTable = (cast(const(ushort)[])data[result.songTableAddress .. min($, result.songTableAddress + 512)]);
-			debug infof("Found song table at %04X", result.songTableAddress);
+			debug tracef("Found song table at %04X", result.songTableAddress);
 			ubyte songID = 0;
 			foreach (songIDCandidate; only(data[0x04], data[0x00], data[0x06], data[0x08], data[0x0D], data[0xF3], data[0xF4])) {
 				if (songIDCandidate == 0) {
@@ -293,10 +293,10 @@ DetectionResult detectParameters(scope const(ubyte)[] data, scope const(ubyte)[]
 				break;
 			}
 			if(songID != 0) {
-				debug infof("Found song id: %s (%04X)", songID, songTable[songID]);
+				debug tracef("Found song id: %s (%04X)", songID, songTable[songID]);
 				result.header.songBase = songTable[songID];
 			} else { // scan the song table for something close to the loaded pointer
-				debug infof("Trying track pointer $%02X", trackPointerAddress);
+				debug tracef("Trying track pointer $%02X", trackPointerAddress);
 				const currentSongPointer = (cast(const(ushort)[])(data[trackPointerAddress .. trackPointerAddress + 2]))[0];
 				ushort closest;
 				foreach (songTableEntry; songTable) {
