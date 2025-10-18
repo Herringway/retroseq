@@ -51,23 +51,22 @@ enum CGBType {
 	noise,
 }
 
+struct ToneType {
+	mixin(bitfields!(
+		CGBType, "cgbType", 3,
+		bool, "fix", 1,
+		ubyte, "", 2,
+		bool, "spl", 1,
+		bool, "rhy", 1,
+	));
+}
+
 ///
 struct ToneData {
 	align(1):
-	union {
-		ubyte type; ///
-		mixin(bitfields!(
-			CGBType, "cgbType", 3,
-			bool, "fix", 1,
-			ubyte, "", 2,
-			bool, "spl", 1,
-			bool, "rhy", 1,
-		));
-	}
-	union {
-		ubyte key; ///
-		ubyte drumKey; ///
-	}
+	ToneType type;
+	ubyte key; ///
+	alias drumKey = key; ///
 	ubyte length; /// sound length (compatible sound)
 	ubyte panSweep; /// pan or sweep (compatible sound ch. 1)
 	union {
@@ -98,29 +97,20 @@ enum EnvelopeState {
 }
 
 struct SoundChannel {
-	union {
-		ubyte statusFlags; ///
-		mixin(bitfields!(
-			EnvelopeState, "envelopeState", 2,
-			bool, "echoEnabled", 1,
-			ubyte, "", 1,
-			bool, "loop", 1,
-			ubyte, "", 1,
-			bool, "stop", 1,
-			bool, "start", 1,
-		));
-		bool isActive() const @safe pure => start || stop || echoEnabled || (envelopeState != EnvelopeState.release);
+	EnvelopeState envelopeState;
+	bool echoEnabled;
+	bool loop;
+	bool stop;
+	bool start;
+	bool isActive() const @safe pure => start || stop || echoEnabled || (envelopeState != EnvelopeState.release);
+	void clearStatusFlags() @safe pure {
+		envelopeState = EnvelopeState.release;
+		echoEnabled = false;
+		loop = false;
+		stop = false;
+		start = false;
 	}
-	union {
-		ubyte type; ///
-		mixin(bitfields!(
-			CGBType, "cgbType", 3,
-			bool, "fix", 1,
-			ubyte, "", 2,
-			bool, "spl", 1,
-			bool, "rhy", 1,
-		));
-	}
+	ToneType type;
 	ubyte rightVolume; ///
 	ubyte leftVolume; ///
 	ubyte attack; ///
@@ -129,54 +119,35 @@ struct SoundChannel {
 	ubyte release; ///
 	ubyte key; /// midi key as it was translated into final pitch
 	ubyte envelopeVolume; ///
-	union {
-		ubyte envelopeVolumeRight; ///
-		ubyte envelopeGoal; ///
-	}
-	union {
-		ubyte envelopeVolumeLeft; ///
-		ubyte envelopeCounter; ///
-	}
+	ubyte envelopeVolumeRight; ///
+	alias envelopeGoal = envelopeVolumeRight; ///
+	ubyte envelopeVolumeLeft; ///
+	alias envelopeCounter = envelopeVolumeLeft; ///
 	ubyte echoVolume; ///
 	ubyte echoLength; ///
-	ubyte[2] padding; ///
 	ubyte gateTime; ///
 	ubyte midiKey; /// midi key as it was used in the track data
 	ubyte velocity; ///
 	ubyte priority; ///
 	ubyte rhythmPan; ///
-	ubyte[3] padding2; ///
-	union {
-		uint count; ///
-		struct {
-			ubyte padding6; ///
-			ubyte sustainGoal; ///
-			ubyte n4; ///
-			ubyte pan; ///
-		}
-	}
-	union {
-		float samplePosition = 0; ///
-		struct {
-			ubyte panMask; ///
-			mixin(bitfields!(
-				bool, "cgbVolumeChange", 1,
-				bool, "cgbPitchChange", 1,
-				ubyte, "", 6,
-			));
-			ubyte length; ///
-			ubyte sweep; ///
-		}
-	}
+	uint count; ///
+	ubyte sustainGoal; ///
+	ubyte n4; ///
+	ubyte pan; ///
+	float samplePosition = 0; ///
+	ubyte panMask; ///
+	bool cgbVolumeChange;
+	bool cgbPitchChange;
+	ubyte length; ///
+	ubyte sweep; ///
 	uint freq; ///
 	Wave wav; ///
 	byte[16] gbWav; ///
 	uint squareNoiseConfig; ///
 	const(byte)[] currentPointer; ///
-	MusicPlayerTrack *track; ///
+	MusicPlayerTrack* track; ///
 	SoundChannel* prevChannelPointer; ///
 	SoundChannel* nextChannelPointer; ///
-	uint padding3; ///
 	ushort xpi; ///
 	ushort xpc; ///
 }
@@ -229,15 +200,10 @@ struct SoundIO {
 		));
 	}
 	ubyte NR44; ///
-	union {
-		ubyte NR50; ///
-		mixin(bitfields!(
-			ubyte, "rightVolume", 3,
-			bool, "vinRight", 1,
-			ubyte, "leftVolume", 3,
-			bool, "vinLeft", 1,
-		));
-	}
+	ubyte rightVolume;
+	bool vinRight;
+	ubyte leftVolume;
+	bool vinLeft;
 	union {
 		ubyte NR51; ///
 		mixin(bitfields!(
@@ -251,23 +217,10 @@ struct SoundIO {
 			bool, "panCh4Left", 1,
 		));
 	}
-	union {
-		ubyte NR52; ///
-		mixin(bitfields!(
-			bool, "enableCh1", 1,
-			bool, "enableCh2", 1,
-			bool, "enableCh3", 1,
-			bool, "enableCh4", 1,
-			ubyte, "", 3,
-			bool, "enableAPU", 1,
-		));
-	}
-	mixin(bitfields!(
-		ubyte, "", 1,
-		ushort, "biasLevel", 9,
-		ubyte, "", 4,
-		ubyte, "resolution", 2,
-	));
+	bool enableAPU;
+	bool[4] enabledChannels;
+	ushort biasLevel;
+	ubyte resolution;
 }
 
 ///

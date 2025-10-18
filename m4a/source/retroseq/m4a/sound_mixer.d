@@ -100,7 +100,7 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 		const newEnv = env + chan.attack;
 		if (newEnv > 0xFF) {
 			chan.envelopeVolume = 0xFF;
-			--chan.statusFlags;
+			chan.envelopeState = cast(EnvelopeState)(chan.envelopeState - 1);
 		} else {
 			chan.envelopeVolume = cast(ubyte)newEnv;
 		}
@@ -113,7 +113,7 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 			// Note-wise echo
 			--chan.echoVolume;
 			if (chan.echoVolume <= 0) {
-				chan.statusFlags = 0;
+				chan.clearStatusFlags();
 				return 0;
 			} else {
 				return 1;
@@ -125,7 +125,7 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 			if (chan.envelopeVolume > echoVolume) {
 				return 1;
 			} else if (echoVolume == 0) {
-				chan.statusFlags = 0;
+				chan.clearStatusFlags();
 				return 0;
 			} else {
 				chan.echoEnabled = true;
@@ -141,7 +141,7 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 			if ((chan.envelopeVolume <= sustain) && (sustain == 0)) {
 				// Duplicated echo check from Release section above
 				if (chan.echoVolume == 0) {
-					chan.statusFlags = 0;
+					chan.clearStatusFlags();
 					return 0;
 				} else {
 					chan.echoEnabled = true;
@@ -149,7 +149,7 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 				}
 			} else if (chan.envelopeVolume <= sustain) {
 				chan.envelopeVolume = sustain;
-				--chan.statusFlags;
+				chan.envelopeState = cast(EnvelopeState)(chan.envelopeState - 1);
 			}
 			break;
 		case EnvelopeState.attack:
@@ -163,11 +163,11 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 		return 1;
 	} else if (chan.stop) {
 		// Init and stop cancel each other out
-		chan.statusFlags = 0;
+		chan.clearStatusFlags();
 		return 0;
 	} else {
 		// Init channel
-		chan.statusFlags = 0;
+		chan.clearStatusFlags();
 		chan.envelopeState = EnvelopeState.attack;
 		chan.currentPointer = wav.sample[chan.count .. $];
 		chan.count = wav.header.size - chan.count;
@@ -192,7 +192,7 @@ private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 	}
 	auto samples = chan.currentPointer.chain(loopStart.cycle);
 
-	if (chan.fix) {
+	if (chan.type.fix) {
 		romSamplesPerOutputSample *= mixer.origFreq;
 	} else {
 		romSamplesPerOutputSample *= chan.freq;
@@ -207,7 +207,7 @@ private void GenerateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 
 		chan.samplePosition += romSamplesPerOutputSample;
 		if (!chan.loop && (chan.samplePosition > chan.count)) {
-			chan.statusFlags = 0;
+			chan.clearStatusFlags();
 		}
 	}
 }

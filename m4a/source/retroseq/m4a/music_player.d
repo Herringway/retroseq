@@ -45,8 +45,8 @@ void MP2KClearChain(ref SoundChannel chan) @safe pure {
 /// Ends the current track. (Fine as in the Italian musical word, not English)
 void MP2K_event_fine(ref M4APlayer, ref MusicPlayerTrack track) @safe pure {
 	for (SoundChannel *chan = track.chan; chan != null; chan = chan.nextChannelPointer) {
-		if (chan.statusFlags & 0xC7) {
-			chan.statusFlags |= 0x40;
+		if (chan.isActive) {
+			chan.stop = true;
 		}
 		MP2KClearChain(*chan);
 	}
@@ -226,7 +226,8 @@ void MP2KPlayerMain(ref M4APlayer player) @safe pure {
 				currentTrack.bendRange = 2;
 				currentTrack.volPublic = 64;
 				currentTrack.lfoSpeed = 22;
-				currentTrack.instrument.type = 1;
+				currentTrack.instrument.type = currentTrack.instrument.type.init;
+				currentTrack.instrument.type.cgbType = CGBType.pulse1;
 			}
 
 			while (currentTrack.wait == 0) {
@@ -308,13 +309,13 @@ void MP2KPlayerMain(ref M4APlayer player) @safe pure {
 		}
 		TrkVolPitSet(player, *track);
 		for (SoundChannel *chan = track.chan; chan != null; chan = chan.nextChannelPointer) {
-			if ((chan.statusFlags & 0xC7) == 0) {
+			if (!chan.isActive) {
 				player.ClearChain(*chan);
 				continue;
 			}
 			if (track.volumeSet || track.unknown2) {
 				ChnVolSetAsm(*chan, *track);
-				if (chan.cgbType != CGBType.directsound) {
+				if (chan.type.cgbType != CGBType.directsound) {
 					chan.cgbVolumeChange = true;
 				}
 			}
@@ -323,8 +324,8 @@ void MP2KPlayerMain(ref M4APlayer player) @safe pure {
 				if (key < 0) {
 					key = 0;
 				}
-				if (chan.cgbType != CGBType.directsound) {
-					chan.freq = cgbCalcFreqFunc(chan.cgbType, cast(ubyte)key, track.pitchCalculated);
+				if (chan.type.cgbType != CGBType.directsound) {
+					chan.freq = cgbCalcFreqFunc(chan.type.cgbType, cast(ubyte)key, track.pitchCalculated);
 					chan.cgbPitchChange = true;
 				} else {
 					chan.freq = MidiKeyToFreq(chan.wav, cast(ubyte)key, track.pitchCalculated);
@@ -343,11 +344,11 @@ void MP2KPlayerMain(ref M4APlayer player) @safe pure {
 void TrackStop(ref M4APlayer player, ref MusicPlayerTrack track) @safe pure {
 	if (track.exists) {
 		for (SoundChannel *chan = track.chan; chan != null; chan = chan.nextChannelPointer) {
-			if (chan.statusFlags != 0) {
-				if (chan.cgbType != CGBType.directsound) {
-					player.cgbNoteOffFunc(chan.cgbType);
+			if (chan.isActive) {
+				if (chan.type.cgbType != CGBType.directsound) {
+					player.cgbNoteOffFunc(chan.type.cgbType);
 				}
-				chan.statusFlags = 0;
+				chan.clearStatusFlags();
 			}
 			chan.track = null;
 		}
@@ -394,11 +395,11 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerTrack track
 	const(ToneData)* instrument = &track.instrument;
 	// sp8
 	ubyte key = track.key;
-	const oldRhy = instrument.rhy;
+	const oldRhy = instrument.type.rhy;
 
-	if (instrument.rhy || instrument.spl) {
+	if (instrument.type.rhy || instrument.type.spl) {
 		ubyte instrumentIndex;
-		if (instrument.spl) {
+		if (instrument.type.spl) {
 			const keySplitTableOffset = instrument.keySplitTable.toAbsoluteArray(player.musicData);
 			instrumentIndex = keySplitTableOffset[track.key];
 		} else {
@@ -406,7 +407,7 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerTrack track
 		}
 
 		instrument = &instrument.group.toAbsoluteArray(player.musicData)[instrumentIndex];
-		if (instrument.rhy || instrument.spl) {
+		if (instrument.type.rhy || instrument.type.spl) {
 			return;
 		}
 		if (oldRhy) {
@@ -425,9 +426,9 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerTrack track
 
 	SoundChannel *chan;
 
-	if (instrument.cgbType != CGBType.directsound) {
+	if (instrument.type.cgbType != CGBType.directsound) {
 		// There's only one CgbChannel of a given type, so we don't need to loop to find it.
-		chan = &player.soundInfo.cgbChans[instrument.cgbType - 1];
+		chan = &player.soundInfo.cgbChans[instrument.type.cgbType - 1];
 
 		// If this channel is running and not stopped,
 		if (chan.isActive && !chan.stop) {
@@ -500,11 +501,11 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerTrack track
 	chan.key = key;
 	chan.rhythmPan = forcedPan;
 	chan.type = instrument.type;
-	if (instrument.cgbType == CGBType.directsound) {
+	if (instrument.type.cgbType == CGBType.directsound) {
 		const header = instrument.wav.toAbsoluteArray(player.musicData);
 		const waveData = (cast(const(byte)[])header)[WaveData.sizeof .. WaveData.sizeof + header[0].size];
 		chan.wav = Wave(header[0], waveData);
-	} else if (instrument.cgbType == CGBType.gbWave) {
+	} else if (instrument.type.cgbType == CGBType.gbWave) {
 		chan.gbWav = instrument.cgbSample.toAbsoluteArray(player.musicData)[0];
 	} else {
 		chan.squareNoiseConfig = instrument.squareNoiseConfig;
@@ -524,7 +525,7 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerTrack track
 		transposedKey = 0;
 	}
 
-	if (instrument.cgbType != CGBType.directsound) {
+	if (instrument.type.cgbType != CGBType.directsound) {
 		chan.length = instrument.length;
 		if (instrument.panSweep & 0x80 || (instrument.panSweep & 0x70) == 0) {
 			chan.sweep = 8;
@@ -532,13 +533,13 @@ void MP2K_event_nxx(ref M4APlayer player, uint clock, ref MusicPlayerTrack track
 			chan.sweep = instrument.panSweep;
 		}
 
-		chan.freq = cgbCalcFreqFunc(instrument.cgbType, cast(ubyte)transposedKey, track.pitchCalculated);
+		chan.freq = cgbCalcFreqFunc(instrument.type.cgbType, cast(ubyte)transposedKey, track.pitchCalculated);
 	} else {
 		chan.count = track.count;
 		chan.freq = MidiKeyToFreq(chan.wav, cast(ubyte)transposedKey, track.pitchCalculated);
 	}
 
-	chan.statusFlags = 0;
+	chan.clearStatusFlags();
 	chan.start = true;
 	track.pitchSet = false;
 	track.unknown8 = false;
@@ -558,8 +559,8 @@ void MP2K_event_endtie(ref M4APlayer, ref MusicPlayerTrack track) @safe pure {
 
 	SoundChannel *chan = track.chan;
 	while (chan != null) {
-		if (chan.statusFlags & 0x83 && (chan.statusFlags & 0x40) == 0 && chan.midiKey == key) {
-			chan.statusFlags |= 0x40;
+		if ((chan.start || chan.envelopeState) && !chan.stop && (chan.midiKey == key)) {
+			chan.stop = true;
 			return;
 		}
 		chan = chan.nextChannelPointer;

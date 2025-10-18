@@ -48,14 +48,15 @@ struct M4APlayer {
 	float playerCounter = 0; ///
 	///
 	void initialize(uint outputFrequency, const(ubyte)[] _music, uint _songTableAddress, uint _mode) @safe pure {
+		const mode = SoundMode(_mode);
 		musicData = _music;
 		songTableOffset = _songTableAddress;
 		int i;
 
 		SoundInit();
-		soundInfo.SampleFreqSet(cast(ubyte)(((_mode >> 16) & 0xF) - 1), outputFrequency);
+		soundInfo.SampleFreqSet(cast(ubyte)(mode.frequency - 1), outputFrequency);
 		MPlayExtender();
-		m4aSoundMode(&soundInfo, _mode);
+		m4aSoundMode(&soundInfo, mode);
 
 		MPlayOpen();
 		gb.initialize(outputFrequency);
@@ -79,12 +80,16 @@ struct M4APlayer {
 	}
 	///
 	void MPlayExtender() @safe pure {
-		soundInfo.reg.NR51 = 0; // set master volume to zero
+		soundInfo.reg.panCh1Right = 0;
+		soundInfo.reg.panCh2Right = 0;
+		soundInfo.reg.panCh3Right = 0;
+		soundInfo.reg.panCh4Right = 0;
+		soundInfo.reg.panCh1Left = 0;
+		soundInfo.reg.panCh2Left = 0;
+		soundInfo.reg.panCh3Left = 0;
+		soundInfo.reg.panCh4Left = 0;
 		soundInfo.reg.enableAPU = true;
-		soundInfo.reg.enableCh1 = true;
-		soundInfo.reg.enableCh2 = true;
-		soundInfo.reg.enableCh3 = true;
-		soundInfo.reg.enableCh4 = true;
+		soundInfo.reg.enabledChannels[] = true;
 		soundInfo.reg.NR12 = 0x8;
 		soundInfo.reg.NR22 = 0x8;
 		soundInfo.reg.NR42 = 0x8;
@@ -103,13 +108,13 @@ struct M4APlayer {
 			gb.trigger_note(i);
 		}
 
-		soundInfo.cgbChans[0].cgbType = CGBType.pulse1;
+		soundInfo.cgbChans[0].type.cgbType = CGBType.pulse1;
 		soundInfo.cgbChans[0].panMask = 0x11;
-		soundInfo.cgbChans[1].cgbType = CGBType.pulse2;
+		soundInfo.cgbChans[1].type.cgbType = CGBType.pulse2;
 		soundInfo.cgbChans[1].panMask = 0x22;
-		soundInfo.cgbChans[2].cgbType = CGBType.gbWave;
+		soundInfo.cgbChans[2].type.cgbType = CGBType.gbWave;
 		soundInfo.cgbChans[2].panMask = 0x44;
-		soundInfo.cgbChans[3].cgbType = CGBType.noise;
+		soundInfo.cgbChans[3].type.cgbType = CGBType.noise;
 		soundInfo.cgbChans[3].panMask = 0x88;
 	}
 	///
@@ -210,7 +215,8 @@ struct M4APlayer {
 					track.bendRange = 2;
 					track.volPublic = 64;
 					track.lfoSpeed = 22;
-					track.instrument.type = 1;
+					track.instrument.type = track.instrument.type.init;
+					track.instrument.type.cgbType = CGBType.pulse1;
 				}
 			}
 		}
@@ -227,22 +233,19 @@ struct M4APlayer {
 	///
 	void SoundInit() @safe pure {
 		soundInfo.reg.enableAPU = true;
-		soundInfo.reg.enableCh1 = true;
-		soundInfo.reg.enableCh2 = true;
-		soundInfo.reg.enableCh3 = true;
-		soundInfo.reg.enableCh4 = true;
+		soundInfo.reg.enabledChannels[] = true;
 		soundInfo.reg.resolution = 1;
 	}
 
 	///
 	void SoundClear() @safe pure {
 		foreach (ref chan; soundInfo.chans) {
-			chan.statusFlags = 0;
+			chan.clearStatusFlags();
 		}
 
 		foreach (idx, ref chan; soundInfo.cgbChans) {
 			cgbNoteOffFunc(cast(CGBType)(idx + 1));
-			chan.statusFlags = 0;
+			chan.clearStatusFlags();
 		}
 	}
 
@@ -288,7 +291,7 @@ struct M4APlayer {
 		}
 
 		if (SoundMode(song.header.reverb).reverbEnabled) {
-			m4aSoundMode(&soundInfo, song.header.reverb);
+			m4aSoundMode(&soundInfo, SoundMode(song.header.reverb));
 		}
 	}
 
@@ -385,17 +388,13 @@ struct M4APlayer {
 
 	///
 	private int CgbPan(ref SoundChannel chan) @safe pure {
-		uint rightVolume = chan.rightVolume;
-		uint leftVolume = chan.leftVolume;
-
-		if ((rightVolume = cast(ubyte)rightVolume) >= (leftVolume = cast(ubyte)leftVolume)) {
-			if (rightVolume / 2 >= leftVolume) {
+		if (chan.rightVolume >= chan.leftVolume) {
+			if (chan.rightVolume / 2 >= chan.leftVolume) {
 				chan.pan = 0x0F;
 				return 1;
 			}
-		}
-		else {
-			if (leftVolume / 2 >= rightVolume) {
+		} else {
+			if (chan.leftVolume / 2 >= chan.rightVolume) {
 				chan.pan = 0xF0;
 				return 1;
 			}
@@ -419,8 +418,6 @@ struct M4APlayer {
 
 	///
 	void cgbMixerFunc() @safe pure {
-		int envelopeStepTimeAndDir;
-		int prevC15;
 		ubyte *nrx0ptr;
 		ubyte *nrx1ptr;
 		ubyte *nrx2ptr;
@@ -482,13 +479,15 @@ struct M4APlayer {
 					break;
 			}
 
-			prevC15 = soundInfo.cgbCounter15;
-			envelopeStepTimeAndDir = *nrx2ptr;
+			int prevC15 = soundInfo.cgbCounter15;
+			int envelopeStepTimeAndDir = *nrx2ptr;
 
 			/* 2. calculate envelope volume */
 			if (channel.start) {
 				if (!channel.stop) {
-					channel.statusFlags = 0;
+					channel.start = false;
+					channel.echoEnabled = false;
+					channel.loop = false;
 					channel.envelopeState = EnvelopeState.attack;
 					channel.cgbVolumeChange = true;
 					channel.cgbPitchChange = true;
@@ -528,7 +527,7 @@ struct M4APlayer {
 							}
 							break;
 					}
-					gb.set_length(cast(ubyte)(idx), channel.length);
+					gb.set_length(cast(ubyte)idx, channel.length);
 					channel.envelopeCounter = channel.attack;
 					if (cast(byte)(channel.attack & mask)) {
 						channel.envelopeVolume = 0;
@@ -545,7 +544,11 @@ struct M4APlayer {
 				if (cast(byte)(channel.echoLength & mask) <= 0) {
 				oscillator_off:
 					cgbNoteOffFunc(cast(CGBType)(idx + 1));
-					channel.statusFlags = 0;
+					channel.start = false;
+					channel.loop = false;
+					channel.stop = false;
+					channel.echoEnabled = false;
+					channel.envelopeState = EnvelopeState.release;
 					continue;
 				}
 				goto envelope_complete;
@@ -600,7 +603,7 @@ struct M4APlayer {
 								channel.envelopeState = EnvelopeState.release;
 								goto envelope_pseudoecho_start;
 							} else {
-								channel.statusFlags--;
+								channel.envelopeState = cast(EnvelopeState)(channel.envelopeState - 1);
 								channel.cgbVolumeChange = true;
 								if (idx + 1 != 3) {
 									envelopeStepTimeAndDir = 0 | CGB_NRx2_ENV_DIR_INC;
@@ -614,7 +617,7 @@ struct M4APlayer {
 						channel.envelopeVolume++;
 						if ((ubyte)(channel.envelopeVolume & mask) >= channel.envelopeGoal) {
 						envelope_decay_start:
-							channel.statusFlags--;
+							channel.envelopeState = cast(EnvelopeState)(channel.envelopeState - 1);
 							channel.envelopeCounter = channel.decay;
 							if ((ubyte)(channel.envelopeCounter & mask)) {
 								channel.cgbVolumeChange = true;
@@ -644,7 +647,7 @@ struct M4APlayer {
 		envelope_complete:
 			/* 3. apply pitch to HW registers */
 			if (channel.cgbPitchChange) {
-				if ((idx + 1 < 4) && channel.fix) {
+				if ((idx + 1 < 4) && channel.type.fix) {
 					enum toAdd = [2, 1, 0, 0];
 					enum masks = [0x7FC, 0x7FE, 0x7FF, 0x7FF];
 					channel.freq = (channel.freq + toAdd[soundInfo.reg.resolution]) & masks[soundInfo.reg.resolution];
@@ -810,31 +813,29 @@ void MP2K_event_nothing(ref M4APlayer, ref MusicPlayerTrack) @safe pure {
 }
 
 ///
-void m4aSoundMode(SoundMixerState* soundInfo, uint mode) @safe pure {
-	const temp = SoundMode(mode);
-
-	if (temp.reverbVolume || temp.reverbEnabled) {
-		soundInfo.reverb = temp.reverbVolume;
+void m4aSoundMode(SoundMixerState* soundInfo, SoundMode mode) @safe pure {
+	if (mode.reverbVolume || mode.reverbEnabled) {
+		soundInfo.reverb = mode.reverbVolume;
 	}
 
-	if (temp.maxChannels) {
-		soundInfo.numChans = temp.maxChannels;
+	if (mode.maxChannels) {
+		soundInfo.numChans = mode.maxChannels;
 
 		foreach (i; 0 .. soundInfo.numChans) {
-			soundInfo.chans[i].statusFlags = 0;
+			soundInfo.chans[i].clearStatusFlags();
 		}
 	}
 
-	if (temp.masterVolume) {
-		soundInfo.masterVol = temp.masterVolume;
+	if (mode.masterVolume) {
+		soundInfo.masterVol = mode.masterVolume;
 	}
 
-	if (temp.biasEnable || temp.bias) {
-		soundInfo.reg.resolution = temp.bias;
+	if (mode.biasEnable || mode.bias) {
+		soundInfo.reg.resolution = mode.bias;
 	}
 
-	//if (temp.frequency) {
-	//	SampleFreqSet(temp.frequency);
+	//if (mode.frequency) {
+	//	SampleFreqSet(mode.frequency);
 	//}
 }
 
@@ -1002,7 +1003,7 @@ void ply_xwave(ref M4APlayer, ref MusicPlayerTrack track) @safe pure {
 
 ///
 void ply_xtype(ref M4APlayer, ref MusicPlayerTrack track) @safe pure {
-	track.instrument.type = track.cmdPtr[0];
+	track.instrument.type = ToneType(track.cmdPtr[0]);
 	track.cmdPtr = track.cmdPtr[1 .. $];
 }
 
