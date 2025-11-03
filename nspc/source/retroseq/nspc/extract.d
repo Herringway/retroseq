@@ -8,7 +8,10 @@ import retroseq.nspc.song;
 
 import std.algorithm.comparison;
 import std.algorithm.iteration;
+import std.algorithm.mutation;
 import std.algorithm.searching;
+import std.bitmanip;
+import std.format;
 import std.range;
 
 import siryul;
@@ -53,6 +56,62 @@ align(1) static struct PackPointerLH {
 struct ROMFile {
 	string title;
 	const ubyte[] data;
+}
+
+
+const(ubyte)[] extractROM(const(ubyte)[] data) @safe pure {
+	static ROMFile readROM(const(ubyte)[] data) {
+		immutable headerOffsets = [
+			0x7FB0: false, //lorom
+			0xFFB0: false, //hirom
+			0x81B0: true, //lorom + copier header
+			0x101B0: true, //hirom + copier header
+		];
+		foreach (offset, stripHeader; headerOffsets) {
+			const ushort checksum = (cast(const(ushort)[])data[offset + 44 .. offset + 46])[0];
+			const ushort checksumComplement = (cast(const(ushort)[])data[offset + 46 .. offset + 48])[0];
+			if ((checksum ^ checksumComplement) == 0xFFFF) {
+				return ROMFile((cast(const(char)[])data[offset + 16 .. offset + 37]).idup, data[stripHeader ? 0x200 : 0 .. $]);
+			}
+		}
+		return ROMFile.init;
+	}
+	const rom = readROM(data);
+	NSPC2Writer writer;
+	if (rom.title == "KIRBY SUPER DELUXE   ") {
+		extractKSS(writer, rom.data);
+	} else if (rom.title == "Kirby's Dream Course ") {
+		extractKDC(writer, rom.data);
+	} else if (rom.title == "KIRBY'S DREAM LAND 3 ") {
+		extractKDL3(writer, rom.data);
+	} else if (rom.title == "EARTH BOUND          ") {
+		extractEarthbound(writer, rom.data, false, 0x4F947, 0x4F70A);
+	} else if (rom.title == "MOTHER-2             ") {
+		extractEarthbound(writer, rom.data, true, 0x4CCE2, 0x4CAA5);
+	} else if (rom.title == "01 95.03.27          ") {
+		extractEarthbound(writer, rom.data, false, 0x4FBD4, 0x4F997);
+	} else if (rom.title == "SUPER MARIOWORLD     ") {
+		extractSMW(writer, rom.data);
+	} else if (rom.title == "PILOTWINGS           ") {
+		extractPilotWings(writer, rom.data);
+	} else if (rom.title == "F-ZERO               ") {
+		extractFZ(writer, rom.data);
+	} else if (rom.title == "THE LEGEND OF ZELDA  ") {
+		extractZ3(writer, rom.data);
+	} else if (rom.title == "SUPER MARIO ALL_STARS") {
+		extractSMAS(writer, rom.data);
+	} else if (rom.title == "Super Metroid        ") {
+		extractSMET(writer, rom.data);
+	} else if (rom.title == "YOSHI'S ISLAND       ") {
+		extractYI(writer, rom.data);
+	} else if (rom.title == "PARODIUS             ") {
+		extractParodius(writer, rom.data);
+	} else {
+		throw new Exception(format!"I don't know what '%s' is."(rom.title));
+	}
+	Appender!(ubyte[]) buffer;
+	writer.toBytes(buffer);
+	return buffer.data;
 }
 
 void extractEarthbound(ref NSPC2Writer writer,const scope ubyte[] data, bool m2packPointers, size_t packPointerTable, size_t packTableOffset) @safe pure {
