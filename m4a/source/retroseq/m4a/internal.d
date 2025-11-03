@@ -1,6 +1,7 @@
 ///
 module retroseq.m4a.internal;
 
+import retroseq.interpolation;
 import retroseq.utility;
 
 import retroseq.m4a.m4a;
@@ -249,6 +250,7 @@ struct SoundMixerState {
 	SoundIO reg; ///
 	auto chans() inout => allChannels[4 .. $]; ///
 	float[2][] outBuffer; ///
+	InterpolationMethod interpolationMethod = InterpolationMethod.linear;
 	void SampleFreqSet(ubyte runningFrequency, uint outputFrequency) @safe pure
 		in(runningFrequency < 15, "Invalid mode!")
 	{

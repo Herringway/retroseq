@@ -1,6 +1,7 @@
 ///
 module retroseq.m4a.cgb_audio;
 
+import retroseq.interpolation;
 import retroseq.m4a.cgb_tables;
 import retroseq.m4a.internal;
 
@@ -19,8 +20,9 @@ struct AudioCGB {
 	ubyte[4] EnvCounterI; ///
 	ubyte[4] EnvDir; ///
 	ubyte[4] DAC; ///
-	float[32] WAVRAM = 0; ///
+	float[33] WAVRAM = 0; ///
 	static immutable ushort[2] lfsrMax = [0x8000, 0x80]; ///
+	static immutable int[2] lfsrX = [-1, 1]; ///
 	ushort [2] ch4LFSR = lfsrMax; ///
 
 	float[4] soundChannelPos = [0, 1, 0, 0]; ///
@@ -152,33 +154,36 @@ struct AudioCGB {
 			samples[] = 0.0;
 			if (mixer.reg.enableAPU) {
 				if ((DAC[0]) && mixer.reg.enabledChannels[0]) {
+					float sample = interpolatedIndex(PU1Table[], soundChannelPos[0], InterpolationMethod.none);
 					if (mixer.reg.panCh1Left) {
-						samples[0] += Vol[0] * PU1Table[cast(int)(soundChannelPos[0])] / 15.0f;
+						samples[0] += Vol[0] * sample / 15.0f;
 					}
 					if (mixer.reg.panCh1Right) {
-						samples[1] += Vol[0] * PU1Table[cast(int)(soundChannelPos[0])] / 15.0f;
+						samples[1] += Vol[0] * sample / 15.0f;
 					}
 				}
 				if ((DAC[1]) && mixer.reg.enabledChannels[1]) {
+					float sample = interpolatedIndex(PU2Table[], soundChannelPos[1], InterpolationMethod.none);
 					if(mixer.reg.panCh2Left) {
-						samples[0] += Vol[1] * PU2Table[cast(int)(soundChannelPos[1])] / 15.0f;
+						samples[0] += Vol[1] * sample / 15.0f;
 					}
 					if(mixer.reg.panCh2Right) {
-						samples[1] += Vol[1] * PU2Table[cast(int)(soundChannelPos[1])] / 15.0f;
+						samples[1] += Vol[1] * sample / 15.0f;
 					}
 				}
 				if (mixer.reg.channel3DACEnable && mixer.reg.enabledChannels[2]) {
+					float sample = interpolatedIndex(WAVRAM[], soundChannelPos[2], InterpolationMethod.none);
 					if(mixer.reg.panCh3Left) {
-						samples[0] += Vol[2] * WAVRAM[cast(int)(soundChannelPos[2])] / 4.0f;
+						samples[0] += Vol[2] * sample / 4.0f;
 					}
 					if(mixer.reg.panCh3Right) {
-						samples[1] += Vol[2] * WAVRAM[cast(int)(soundChannelPos[2])] / 4.0f;
+						samples[1] += Vol[2] * sample / 4.0f;
 					}
 				}
 				if (DAC[3] && mixer.reg.enabledChannels[3]) {
 					uint lfsrMode = mixer.reg.thinnerLFSR;
 					ch4Samples += freqTableNoise[mixer.reg.NR43] / sampleRate;
-					int ch4Out = [-1, 1][ch4LFSR[lfsrMode] & 1];
+					int ch4Out = lfsrX[ch4LFSR[lfsrMode] & 1];
 					float avgDiv = 1.0f;
 					while (ch4Samples >= 1) {
 						avgDiv += 1.0f;
@@ -189,7 +194,7 @@ struct AudioCGB {
 						if (lfsrCarry) {
 							ch4LFSR[lfsrMode] |= lfsrMax[lfsrMode];
 						}
-						ch4Out += [-1, 1][ch4LFSR[lfsrMode] & 1];
+						ch4Out += lfsrX[ch4LFSR[lfsrMode] & 1];
 						ch4Samples--;
 					}
 					float sample = ch4Out;

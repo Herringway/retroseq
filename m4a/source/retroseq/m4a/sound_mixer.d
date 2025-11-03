@@ -185,13 +185,6 @@ private void generateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 	chan.envelopeVolumeRight = chan.rightVolume * v / 256;
 	chan.envelopeVolumeLeft = chan.leftVolume * v / 256;
 
-	// have the sample repeat infinitely, either with 0s if it doesn't loop or the sample starting at its loop point if it does
-	const(byte)[] loopStart = [0];
-	if (chan.loop && wav.sample.length) {
-		loopStart = wav.sample[wav.header.loopStart .. $];
-	}
-	auto samples = chan.currentPointer.chain(loopStart.cycle);
-
 	if (chan.type.fix) {
 		romSamplesPerOutputSample *= mixer.origFreq;
 	} else {
@@ -200,7 +193,7 @@ private void generateAudio(ref SoundMixerState mixer, ref SoundChannel chan, con
 
 	foreach (ref output; outBuffer) {
 		// Use linear interpolation to calculate a value between the currentPointer sample in the wav and the nextChannelPointer sample. Also cancel out the 9.23 stuff
-		float sample = linearInterpolation(samples[cast(uint)chan.samplePosition], samples[cast(uint)chan.samplePosition + 1], chan.samplePosition % 1);
+		float sample = interpolatedIndex(chan.currentPointer, chan.loop ? wav.sample[wav.header.loopStart .. $] : [], chan.samplePosition, mixer.interpolationMethod);
 
 		output[0] += (sample * chan.envelopeVolumeLeft) / 32768.0;
 		output[1] += (sample * chan.envelopeVolumeRight) / 32768.0;

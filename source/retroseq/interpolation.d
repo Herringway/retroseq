@@ -1,6 +1,8 @@
 ///
 module retroseq.interpolation;
 
+import std.range.primitives;
+
 ///
 enum InterpolationMethod {
 	none, ///
@@ -46,6 +48,40 @@ T linearInterpolation(T, X)(T a, T b, X position) {
 	assert(linearInterpolation(1.0, 0.0, 0.0) == 1.0);
 	assert(linearInterpolation(1.0, 0.0, 1.0) == 0.0);
 	assert(linearInterpolation(1.0, 0.0, 0.5) == 0.5);
+}
+///
+auto interpolatedIndex(T)(const(T)[] samples, const(T)[] loop, double index, InterpolationMethod method) {
+	import std.range : chain, cycle;
+	static immutable T[] noLoop = [0];
+	// repeat infinitely, either with 0s if it doesn't loop or the sample starting at its loop point if it does
+	if (!loop.length) {
+		loop = noLoop;
+	}
+	return interpolatedIndex(samples.chain(loop.cycle), index, method);
+}
+auto interpolatedIndex(R)(R range, double index, InterpolationMethod method) if (isRandomAccessRange!R) {
+	final switch (method) {
+		case InterpolationMethod.none: return range[cast(uint)index];
+		case InterpolationMethod.linear: return linearInterpolation(range[cast(uint)index], range[cast(uint)index + 1], index % 1);
+		case InterpolationMethod.cubic: assert(0, "NYI"); // return cubicInterpolationIndex(range, index);
+		case InterpolationMethod.sinc: assert(0, "NYI"); // return sincInterpolationIndex(range, index);
+		case InterpolationMethod.gaussianSNES: assert(0, "NYI");
+		//case InterpolationMethod.gaussianSNES: return gaussianSNESInterpolation(range[cast(uint)index], range[cast(uint)index + 1], range[cast(uint)index + 2], range[cast(uint)index + 3], index);
+	}
+}
+///
+auto gaussianSNESInterpolation(T)(T a, T b, T c, T d, double index) {
+	const pos = cast(ubyte)index;
+	const double[4] gauss = [gaussTableSNES[256 - pos], gaussTableSNES[511 - pos], gaussTableSNES[pos + 256], gaussTableSNES[pos]];
+	return vectorMultiplySum(gauss, [__traits(parameters)[0 .. 4]]);
+}
+///
+auto sincInterpolationIndex(R)(R array, double index) if (isRandomAccessRange!R) {
+	assert(0, "NYI");
+}
+///
+auto cubicInterpolationIndex(R)(R array, double index) if (isRandomAccessRange!R) {
+	assert(0, "NYI");
 }
 
 ///
