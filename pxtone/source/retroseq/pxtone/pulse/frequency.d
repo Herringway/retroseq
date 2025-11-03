@@ -5,15 +5,12 @@ import std.algorithm.comparison;
 
 private enum octaveNum = 16; /// octave num.
 private enum keyPerOctave = 12; /// key per octave
-private enum frequencyPerKey = 0x10; /// sample per key
-
-private enum basicFrequencyIndex = ((octaveNum / 2) * keyPerOctave * frequencyPerKey); ///
-private enum tableSize = (octaveNum * keyPerOctave * frequencyPerKey); ///
+private enum frequencyPerKey = 16; /// sample per key
 
 ///
 struct PxtnPulseFrequency {
 	///
-	static immutable float[] freqTable = genTables();
+	static immutable float[] freqTable = genTables(octaveNum, keyPerOctave, frequencyPerKey);
 
 	///
 	float get(int key) const nothrow @safe pure {
@@ -36,7 +33,7 @@ struct PxtnPulseFrequency {
 }
 
 ///
-private double getDivideOctaveRate(int divi) nothrow @safe {
+private double getDivideOctaveRate(int divi) nothrow @safe pure {
 	double parameter = 1.0;
 
 	// double is 17keta.
@@ -74,41 +71,14 @@ private double getDivideOctaveRate(int divi) nothrow @safe {
 	return parameter;
 }
 ///
-private float[] genTables() @safe {
-	float[] freqTable;
-	static immutable double[octaveNum] octTable = [0.00390625, //0  -8
-		0.0078125, //1  -7
-		0.015625, //2  -6
-		0.03125, //3  -5
-		0.0625, //4  -4
-		0.125, //5  -3
-		0.25, //6  -2
-		0.5, //7  -1
-		1, //8
-		2, //9   1
-		4, //a   2
-		8, //b   3
-		16, //c   4
-		32, //d   5
-		64, //e   6
-		128, //f   7
-	];
+private float[] genTables(ulong octaveNum, ulong keyPerOctave, ulong frequencyPerKey) @safe pure {
+	float[] freqTable = new float[](octaveNum * keyPerOctave * frequencyPerKey);
 
-	int key;
-	int f;
-	double octX24;
-	double work;
+	const octX24Count = cast(int)(keyPerOctave * frequencyPerKey);
+	const octX24 = getDivideOctaveRate(cast(int)octX24Count);
 
-	freqTable = new float[tableSize];
-
-	octX24 = getDivideOctaveRate(keyPerOctave * frequencyPerKey);
-
-	for (f = 0; f < octaveNum * (keyPerOctave * frequencyPerKey); f++) {
-		work = octTable[f / (keyPerOctave * frequencyPerKey)];
-		for (key = 0; key < f % (keyPerOctave * frequencyPerKey); key++) {
-			work *= octX24;
-		}
-		freqTable[f] = cast(float)work;
+	foreach (idx, ref freq; freqTable) {
+		freq = 2.0 ^^ (cast(int)idx / octX24Count - 8) * octX24 ^^ (idx % octX24Count);
 	}
 	return freqTable;
 }
