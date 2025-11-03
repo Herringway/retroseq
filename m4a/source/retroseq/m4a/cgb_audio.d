@@ -80,7 +80,7 @@ struct AudioCGB {
 		}
 	}
 	///
-	void generateAudio(ref SoundMixerState mixer, float[2][] outBuffer) @safe pure {
+	void generateAudio(ref SoundMixerState mixer, float[2][] outBuffer) @safe pure @nogc {
 		const PU1Table = pulseWaveTables[mixer.reg.NR11 >> 6];
 		const PU2Table = pulseWaveTables[mixer.reg.NR21 >> 6];
 		foreach (ref samples; outBuffer) {

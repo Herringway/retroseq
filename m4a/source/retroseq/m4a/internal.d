@@ -104,7 +104,7 @@ struct SoundChannel {
 	bool stop;
 	bool start;
 	bool isActive() const @safe pure => start || stop || echoEnabled || (envelopeState != EnvelopeState.release);
-	void clearStatusFlags() @safe pure {
+	void clearStatusFlags() @safe pure @nogc {
 		envelopeState = EnvelopeState.release;
 		echoEnabled = false;
 		loop = false;

@@ -180,7 +180,7 @@ private uint TickEnvelope(ref SoundChannel chan, const Wave wav) @safe pure {
 }
 
 ///
-private void generateAudio(ref SoundMixerState mixer, ref SoundChannel chan, const Wave wav, float[2][] outBuffer, float romSamplesPerOutputSample) @safe pure {
+private void generateAudio(ref SoundMixerState mixer, ref SoundChannel chan, const Wave wav, float[2][] outBuffer, float romSamplesPerOutputSample) @safe pure @nogc {
 	ubyte v = cast(ubyte)(chan.envelopeVolume * (mixer.masterVol + 1) / 16);
 	chan.envelopeVolumeRight = chan.rightVolume * v / 256;
 	chan.envelopeVolumeLeft = chan.leftVolume * v / 256;
