@@ -580,12 +580,8 @@ struct NSPCPlayer {
 		int tone = (note16 >> 8) % 12;
 		int freq = currentSong.noteFrequencyTable[tone];
 		freq += (currentSong.noteFrequencyTable[tone + 1] - freq) * (note16 & 0xFF) >> 8;
-		freq <<= 1;
-		freq >>= 6 - octave;
+		freq = cast(int)(((freq * c.tuning) / 2.0 ^^ (14 - octave - 1)));
 
-
-		freq *= c.tuning;
-		freq >>= 8;
 		freq &= 0x3fff;
 
 		c.noteFrequency = (freq * (nativeSamplingRate << (15 - 12))) / mixrate;
