@@ -34,6 +34,7 @@ union FixedPoint2(size_t size, size_t scaling) {
 		result.value = value;
 		return result;
 	}
+	auto ref asInteger() inout => value;
 	///
 	T opCast(T)() const @safe pure if(isFloatingPoint!T) {
 		return cast(T)(cast(UnderlyingType)value) / cast(double)scaleMultiplier;
@@ -189,6 +190,9 @@ union FixedPoint2(size_t size, size_t scaling) {
 	assert(cast(byte)sample == -32);
 	assert(cast(short)sample == -32);
 	assert(cast(long)sample == -32);
+
+	FP16 sample3 = 1.5;
+	assert(cast(byte)sample3 == 1);
 
 	FP016 fractOnly = 0.5;
 	assert(fractOnly * 0.25 == 0.125);
