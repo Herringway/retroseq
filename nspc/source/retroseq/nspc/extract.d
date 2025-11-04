@@ -198,12 +198,17 @@ uint loromToPC(uint addr) @safe pure {
 		return addr - 0x400000;
 	}
 }
+@safe unittest {
+	assert(loromToPC(0x97EDA8) == 0x57EDA8);
+}
+
 uint lorom80ToPC(uint addr) @safe pure {
 	return (((addr & 0x7FFFFF) >> 1) & 0xFF8000) + (addr & 0x7FFF);
 }
 
-@safe unittest {
-	assert(loromToPC(0x97EDA8) == 0x57EDA8);
+@safe pure unittest {
+	assert(lorom80ToPC(0x9B8000) == 0x0D8000);
+	assert(lorom80ToPC(0x1B8000) == 0x0D8000);
 }
 
 void extractKSS(ref NSPC2Writer writer, const scope ubyte[] data) @safe pure {
