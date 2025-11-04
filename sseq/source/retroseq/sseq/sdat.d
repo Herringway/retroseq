@@ -163,6 +163,9 @@ struct SDAT
 		const record = fatSection.file(fatSectionData, id);
 		return sdatData[record.offset .. record.offset + record.size];
 	}
+	bool isValid(uint prospectiveSSEQ) @safe {
+		return infoSection.SEQrecord(infoSectionData).isValid(prospectiveSSEQ);
+	}
 	///
 	Song getSSEQ(uint sseqToLoad) @safe {
 		Song song;
