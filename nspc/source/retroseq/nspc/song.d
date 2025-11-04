@@ -147,7 +147,7 @@ struct Song {
 		enforce!NSPCException(id < instruments.length, format!"Invalid instrument %s - Index out of bounds"(id));
 		const idata = instruments[id];
 		if (idata.sampleID < 0x7F) {
-			enforce!NSPCException(samples[idata.sampleID].isValid, format!"Invalid instrument %s - Invalid sample %s"(id, idata.sampleID));
+			enforce!NSPCException(samples[idata.sampleID].data.length > 0, format!"Invalid instrument %s - Sample %s has no valid data"(id, idata.sampleID));
 			if (idata.tuning == 0) {
 				debug(nspclogging) tracef("Suspicious instrument %s - no tuning (will be silent)", id);
 			}
