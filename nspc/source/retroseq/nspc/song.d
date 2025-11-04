@@ -377,14 +377,10 @@ Pack[] readPacks(return const(ubyte)[] data) @safe pure {
 
 /// Load an NSPC file
 Song[] loadNSPCFile(const(ubyte)[] data, ushort[] phrases = []) @safe {
-	try {
+	if (data[0 .. 8] == NSPC2FileHeader.init.magic) {
 		return loadNSPC2File(data, phrases);
-	} catch (Exception e) {
-		try {
-			return [loadNSPC1File(data, phrases)];
-		} catch (Exception e2) {
-			throw new NSPCException("Failed to load NSPC file");
-		}
+	} else {
+		return [loadNSPC1File(data, phrases)];
 	}
 }
 package void handleSpecialTag(ref Song song, const TagPair pair) @safe pure {
