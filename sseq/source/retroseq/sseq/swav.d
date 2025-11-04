@@ -4,8 +4,7 @@ module retroseq.sseq.swav;
 import retroseq.sseq.common;
 
 ///
-struct SWAV
-{
+struct SWAV {
 	///
 	static struct Header {
 		align(1):
@@ -25,8 +24,7 @@ short[] decode(const(ubyte)[] origData, ref SWAV.Header header) @safe {
 	uint size = (header.loopOffset + header.nonLoopLength) * 4;
 	short[] data;
 	// Convert data accordingly
-	if (!header.waveType)
-	{
+	if (!header.waveType) {
 		// PCM 8-bit . PCM signed 16-bit
 		data.length = size;
 		foreach (i; 0 .. size) {
@@ -34,9 +32,7 @@ short[] decode(const(ubyte)[] origData, ref SWAV.Header header) @safe {
 		}
 		header.loopOffset *= 4;
 		header.nonLoopLength *= 4;
-	}
-	else if (header.waveType == 1)
-	{
+	} else if (header.waveType == 1) {
 		// PCM signed 16-bit, no conversion
 		data.length = size / 2;
 		data[] = cast(const(short)[])origData[0 .. size];
@@ -44,14 +40,13 @@ short[] decode(const(ubyte)[] origData, ref SWAV.Header header) @safe {
 		//	data[i] = ReadLE!short(origData[2 * i .. $]);
 		header.loopOffset *= 2;
 		header.nonLoopLength *= 2;
-	}
-	else if (header.waveType == 2)
-	{
+	} else if (header.waveType == 2) {
 		// IMA ADPCM . PCM signed 16-bit
 		data.length = (size - 4) * 2;
 		DecodeADPCM(origData, data, size - 4);
-		if (header.loopOffset)
+		if (header.loopOffset) {
 			--header.loopOffset;
+		}
 		header.loopOffset *= 8;
 		header.nonLoopLength *= 8;
 	}
@@ -74,15 +69,13 @@ void DecodeADPCM(const(ubyte)[] origData, short[] finalData, uint len) @safe {
 }
 
 ///
-private immutable int[] ima_index_table =
-[
+private immutable int[] ima_index_table = [
 	-1, -1, -1, -1, 2, 4, 6, 8,
 	-1, -1, -1, -1, 2, 4, 6, 8
 ];
 
 ///
-private immutable int[] ima_step_table =
-[
+private immutable int[] ima_step_table = [
 	7, 8, 9, 10, 11, 12, 13, 14, 16, 17,
 	19, 21, 23, 25, 28, 31, 34, 37, 41, 45,
 	50, 55, 60, 66, 73, 80, 88, 97, 107, 118,
@@ -95,33 +88,38 @@ private immutable int[] ima_step_table =
 ];
 
 ///
-private void DecodeADPCMNibble(int nibble, ref int stepIndex, ref int predictedValue) @safe
-{
+private void DecodeADPCMNibble(int nibble, ref int stepIndex, ref int predictedValue) @safe {
 	int step = ima_step_table[stepIndex];
 
 	stepIndex += ima_index_table[nibble];
 
-	if (stepIndex < 0)
+	if (stepIndex < 0) {
 		stepIndex = 0;
-	else if (stepIndex > 88)
+	} else if (stepIndex > 88) {
 		stepIndex = 88;
+	}
 
 	int diff = step >> 3;
 
-	if (nibble & 4)
+	if (nibble & 4) {
 		diff += step;
-	if (nibble & 2)
+	}
+	if (nibble & 2) {
 		diff += step >> 1;
-	if (nibble & 1)
+	}
+	if (nibble & 1) {
 		diff += step >> 2;
-	if (nibble & 8)
+	}
+	if (nibble & 8) {
 		predictedValue -= diff;
-	else
+	} else {
 		predictedValue += diff;
+	}
 
-	if (predictedValue < -0x8000)
+	if (predictedValue < -0x8000) {
 		predictedValue = -0x8000;
-	else if (predictedValue > 0x7FFF)
+	} else if (predictedValue > 0x7FFF) {
 		predictedValue = 0x7FFF;
+	}
 }
 

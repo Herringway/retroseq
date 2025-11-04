@@ -17,8 +17,7 @@ import std.random;
 import std.typecons;
 
 ///
-struct Player
-{
+struct Player {
 	ubyte prio; ///
 	ubyte nTracks; ///
 	ushort tempo; ///
@@ -59,8 +58,9 @@ struct Player
 		this.song = &[song][0];
 
 		int firstTrack = this.TrackAlloc();
-		if (firstTrack == -1)
+		if (firstTrack == -1) {
 			return false;
+		}
 		this.tracks[firstTrack].Init(cast(ubyte)firstTrack, song.sseq.data, 0);
 
 		this.nTracks = 1;
@@ -84,8 +84,9 @@ struct Player
 	}
 	///
 	void FreeTracks() {
-		foreach (trackID; this.trackIds[0 .. this.nTracks])
+		foreach (trackID; this.trackIds[0 .. this.nTracks]) {
 			this.tracks[trackID].Free();
+		}
 		this.nTracks = 0;
 	}
 	///
@@ -95,12 +96,12 @@ struct Player
 			this.tracks[trackId].ClearState();
 			this.tracks[trackId].prio += this.prio;
 			foreach (ref channel; this.channels) {
-				if (channel.state != ChannelState.none && channel.trackId == trackId)
-				{
-					if (bKillSound)
+				if (channel.state != ChannelState.none && channel.trackId == trackId) {
+					if (bKillSound) {
 						channel.Kill();
-					else
+					} else {
 						channel.Release();
+					}
 				}
 			}
 		}
@@ -121,19 +122,21 @@ struct Player
 			Channel* thisChn = &this.channels[thisChnNo];
 			if (curChnNo != -1) {
 				Channel* curChn = &this.channels[curChnNo];
-				if (thisChn.prio >= curChn.prio)
-				{
-					if (thisChn.prio != curChn.prio)
+				if (thisChn.prio >= curChn.prio) {
+					if (thisChn.prio != curChn.prio) {
 						continue;
-					if (curChn.vol <= thisChn.vol)
+					}
+					if (curChn.vol <= thisChn.vol) {
 						continue;
+					}
 				}
 			}
 			curChnNo = thisChnNo;
 		}
 
-		if (curChnNo == -1 || priority < this.channels[curChnNo].prio)
+		if (curChnNo == -1 || priority < this.channels[curChnNo].prio) {
 			return -1;
+		}
 		this.channels[curChnNo].noteLength = -1;
 		this.channels[curChnNo].vol = 0x7FF;
 		this.channels[curChnNo].clearHistory();
@@ -154,8 +157,7 @@ struct Player
 	}
 	///
 	void Run() @safe {
-		while (this.tempoCount >= 240)
-		{
+		while (this.tempoCount >= 240) {
 			this.tempoCount -= 240;
 			foreach (trackID; this.trackIds[0 .. this.nTracks]) {
 				runTrack(trackID);
@@ -190,57 +192,53 @@ struct Player
 		track.updateFlags[TrackUpdateFlags.len] = true;
 
 		// Exit if the track has already ended
-		if (track.state[TrackState.end])
+		if (track.state[TrackState.end]) {
 			return;
-
-		if (track.wait)
-		{
-			--track.wait;
-			if (track.wait)
-				return;
 		}
 
-		while (!track.wait)
-		{
+		if (track.wait) {
+			--track.wait;
+			if (track.wait) {
+				return;
+			}
+		}
+
+		while (!track.wait) {
 			int cmd;
-			if (track.overriding.overriding)
+			if (track.overriding.overriding) {
 				cmd = track.overriding.cmd;
-			else
+			} else {
 				cmd = read8(track.trackDataCurrent);
-			if (cmd < 0x80)
-			{
+			}
+			if (cmd < 0x80) {
 				// Note on
 				int key = cmd + track.transpose;
 				int vel = track.overriding.val(track.trackDataCurrent, &read8, true);
 				int len = track.overriding.val(track.trackDataCurrent, &readvl);
-				if (track.state[TrackState.noteWait])
+				if (track.state[TrackState.noteWait]) {
 					track.wait = len;
-				if (track.state[TrackState.tie])
+				}
+				if (track.state[TrackState.tie]) {
 					NoteOnTie(*track, key, vel);
-				else
+				} else {
 					NoteOn(*track, key, vel, len);
-			}
-			else
-			{
+				}
+			} else {
 				int value;
-				switch (cmd)
-				{
+				switch (cmd) {
 					//-----------------------------------------------------------------
 					// Main commands
 					//-----------------------------------------------------------------
 
 					case SseqCommand.SSEQ_CMD_OPENTRACK:
-					{
 						int tNum = read8(track.trackDataCurrent);
 						auto trackPos = this.song.sseq.data[read24(track.trackDataCurrent) .. $];
 						int newTrack = this.TrackAlloc();
-						if (newTrack != -1)
-						{
+						if (newTrack != -1) {
 							this.tracks[newTrack].Init(cast(ubyte)newTrack, trackPos, tNum);
 							this.trackIds[this.nTracks++] = cast(ubyte)newTrack;
 						}
 						break;
-					}
 
 					case SseqCommand.SSEQ_CMD_REST:
 						track.wait = track.overriding.val(track.trackDataCurrent, &readvl);
@@ -259,8 +257,7 @@ struct Player
 
 					case SseqCommand.SSEQ_CMD_CALL:
 						value = read24(track.trackDataCurrent);
-						if (track.stackPos < FSS_TRACKSTACKSIZE)
-						{
+						if (track.stackPos < FSS_TRACKSTACKSIZE) {
 							const(ubyte)[] dest = this.song.sseq.data[value .. $];
 							track.stack[track.stackPos++] = StackValue(StackType.STACKTYPE_CALL, track.trackDataCurrent);
 							track.trackDataCurrent = dest;
@@ -268,8 +265,9 @@ struct Player
 						break;
 
 					case SseqCommand.SSEQ_CMD_RET:
-						if (track.stackPos && track.stack[track.stackPos - 1].type == StackType.STACKTYPE_CALL)
+						if (track.stackPos && track.stack[track.stackPos - 1].type == StackType.STACKTYPE_CALL) {
 							track.trackDataCurrent = track.stack[--track.stackPos].dest;
+						}
 						break;
 
 					case SseqCommand.SSEQ_CMD_PAN:
@@ -318,8 +316,7 @@ struct Player
 
 					case SseqCommand.SSEQ_CMD_LOOPSTART:
 						value = track.overriding.val(track.trackDataCurrent, &read8);
-						if (track.stackPos < FSS_TRACKSTACKSIZE)
-						{
+						if (track.stackPos < FSS_TRACKSTACKSIZE) {
 							track.loopCount[track.stackPos] = cast(ubyte)value;
 							track.stack[track.stackPos++] = StackValue(StackType.STACKTYPE_LOOP, track.trackDataCurrent);
 						}
@@ -329,15 +326,15 @@ struct Player
 						if (limitLoop()) {
 							goto case SseqCommand.SSEQ_CMD_END;
 						}
-						if (track.stackPos && track.stack[track.stackPos - 1].type == StackType.STACKTYPE_LOOP)
-						{
+						if (track.stackPos && track.stack[track.stackPos - 1].type == StackType.STACKTYPE_LOOP) {
 							const(ubyte)[] rPos = track.stack[track.stackPos - 1].dest;
 							ubyte* nR = &track.loopCount[track.stackPos - 1];
 							ubyte prevR = *nR;
-							if (!prevR || --*nR)
+							if (!prevR || --*nR) {
 								track.trackDataCurrent = rPos;
-							else
+							} else {
 								--track.stackPos;
+							}
 						}
 						break;
 
@@ -438,16 +435,15 @@ struct Player
 					//-----------------------------------------------------------------
 
 					case SseqCommand.SSEQ_CMD_RANDOM:
-					{
 						track.overriding.overriding = true;
 						track.overriding.cmd = read8(track.trackDataCurrent);
-						if ((track.overriding.cmd >= SseqCommand.SSEQ_CMD_SETVAR && track.overriding.cmd <= SseqCommand.SSEQ_CMD_CMP_NE) || track.overriding.cmd < 0x80)
+						if ((track.overriding.cmd >= SseqCommand.SSEQ_CMD_SETVAR && track.overriding.cmd <= SseqCommand.SSEQ_CMD_CMP_NE) || track.overriding.cmd < 0x80) {
 							track.overriding.extraValue = read8(track.trackDataCurrent);
+						}
 						short minVal = cast(short)read16(track.trackDataCurrent);
 						short maxVal = cast(short)read16(track.trackDataCurrent);
 						track.overriding.value = uniform(0, maxVal - minVal + 1) + minVal;
 						break;
-					}
 
 					//-----------------------------------------------------------------
 					// Variable-related commands
@@ -456,8 +452,9 @@ struct Player
 					case SseqCommand.SSEQ_CMD_FROMVAR:
 						track.overriding.overriding = true;
 						track.overriding.cmd = read8(track.trackDataCurrent);
-						if ((track.overriding.cmd >= SseqCommand.SSEQ_CMD_SETVAR && track.overriding.cmd <= SseqCommand.SSEQ_CMD_CMP_NE) || track.overriding.cmd < 0x80)
+						if ((track.overriding.cmd >= SseqCommand.SSEQ_CMD_SETVAR && track.overriding.cmd <= SseqCommand.SSEQ_CMD_CMP_NE) || track.overriding.cmd < 0x80) {
 							track.overriding.extraValue = read8(track.trackDataCurrent);
+						}
 						track.overriding.value = this.variables[read8(track.trackDataCurrent)];
 						break;
 
@@ -468,14 +465,13 @@ struct Player
 					case SseqCommand.SSEQ_CMD_DIVVAR:
 					case SseqCommand.SSEQ_CMD_SHIFTVAR:
 					case SseqCommand.SSEQ_CMD_RANDVAR:
-					{
 						byte varNo = cast(byte)track.overriding.val(track.trackDataCurrent, &read8, true);
 						value = track.overriding.val(track.trackDataCurrent, &read16);
-						if (cmd == SseqCommand.SSEQ_CMD_DIVVAR && !value) // Division by 0, skip it to prevent crashing
-						break;
+						if (cmd == SseqCommand.SSEQ_CMD_DIVVAR && !value) {// Division by 0, skip it to prevent crashing
+							break;
+						}
 						this.variables[varNo] = VarFunc(cmd)(this.variables[varNo], cast(short)value);
 						break;
-					}
 
 					//-----------------------------------------------------------------
 					// Conditional-related commands
@@ -487,40 +483,40 @@ struct Player
 					case SseqCommand.SSEQ_CMD_CMP_LE:
 					case SseqCommand.SSEQ_CMD_CMP_LT:
 					case SseqCommand.SSEQ_CMD_CMP_NE:
-					{
 						byte varNo = cast(byte)track.overriding.val(track.trackDataCurrent, &read8, true);
 						value = track.overriding.val(track.trackDataCurrent, &read16);
 						track.lastComparisonResult = CompareFunc(cmd)(this.variables[varNo], cast(short)value);
 						break;
-					}
 
 					case SseqCommand.SSEQ_CMD_IF:
-						if (!track.lastComparisonResult)
-						{
+						if (!track.lastComparisonResult) {
 							int nextCmd = read8(track.trackDataCurrent);
 							ubyte cmdBytes = SseqCommandByteCount(nextCmd);
 							bool variableBytes = !!(cmdBytes & VariableByteCount);
 							bool extraByte = !!(cmdBytes & ExtraByteOnNoteOrVarOrCmp);
 							cmdBytes &= ~(VariableByteCount | ExtraByteOnNoteOrVarOrCmp);
-							if (extraByte)
-							{
+							if (extraByte) {
 								int extraCmd = read8(track.trackDataCurrent);
-								if ((extraCmd >= SseqCommand.SSEQ_CMD_SETVAR && extraCmd <= SseqCommand.SSEQ_CMD_CMP_NE) || extraCmd < 0x80)
+								if ((extraCmd >= SseqCommand.SSEQ_CMD_SETVAR && extraCmd <= SseqCommand.SSEQ_CMD_CMP_NE) || extraCmd < 0x80) {
 									++cmdBytes;
+								}
 							}
 							track.trackDataCurrent = track.trackDataCurrent[cmdBytes .. $];
-							if (variableBytes)
+							if (variableBytes) {
 								readvl(track.trackDataCurrent);
+							}
 						}
 						break;
 
 					default:
 						track.trackDataCurrent = track.trackDataCurrent[SseqCommandByteCount(cmd) .. $];
+						break;
 				}
 			}
 
-			if (cmd != SseqCommand.SSEQ_CMD_RANDOM && cmd != SseqCommand.SSEQ_CMD_FROMVAR)
+			if (cmd != SseqCommand.SSEQ_CMD_RANDOM && cmd != SseqCommand.SSEQ_CMD_FROMVAR) {
 				track.overriding.overriding = false;
+			}
 		}
 	}
 	///
@@ -535,47 +531,43 @@ struct Player
 	///
 	void UpdateTrack(ref Channel channel) @safe {
 		int trkn = channel.trackId;
-		if (trkn == -1)
+		if (trkn == -1) {
 			return;
+		}
 
 		auto trk = &this.tracks[trkn];
 		auto trackFlags = trk.updateFlags;
 		//if (trackFlags.none())
 		//	return;
 
-		if (trackFlags[TrackUpdateFlags.len])
-		{
+		if (trackFlags[TrackUpdateFlags.len]) {
 			int st = channel.state;
-			if (st > ChannelState.start)
-			{
-				if (st < ChannelState.release && !--channel.noteLength)
+			if (st > ChannelState.start) {
+				if (st < ChannelState.release && !--channel.noteLength) {
 					channel.Release();
-				if (channel.manualSweep && channel.sweepCnt < channel.sweepLen)
+				}
+				if (channel.manualSweep && channel.sweepCnt < channel.sweepLen) {
 					++channel.sweepCnt;
+				}
 			}
 		}
-		if (trackFlags[TrackUpdateFlags.volume])
-		{
+		if (trackFlags[TrackUpdateFlags.volume]) {
 			this.UpdateVol(*trk, channel);
 			channel.flags[ChannelFlags.updateVolume] = true;
 		}
-		if (trackFlags[TrackUpdateFlags.pan])
-		{
+		if (trackFlags[TrackUpdateFlags.pan]) {
 			this.UpdatePan(*trk, channel);
 			channel.flags[ChannelFlags.updatePan] = true;
 		}
-		if (trackFlags[TrackUpdateFlags.timer])
-		{
+		if (trackFlags[TrackUpdateFlags.timer]) {
 			this.UpdateTune(*trk, channel);
 			channel.flags[ChannelFlags.updateTimer] = true;
 		}
-		if (trackFlags[TrackUpdateFlags.mod])
-		{
+		if (trackFlags[TrackUpdateFlags.mod]) {
 			int oldType = channel.modType;
 			int newType = trk.modType;
 			this.UpdateMod(*trk, channel);
-			if (oldType != newType)
-			{
+			if (oldType != newType) {
 				channel.flags[getModFlag(oldType)] = true;
 				channel.flags[getModFlag(newType)] = true;
 			}
@@ -593,8 +585,9 @@ struct Player
 	int NoteOn(ref Track track, int key, int vel, int len) @safe {
 		auto sbnk = this.song.sbnk;
 
-		if (track.patch >= sbnk.instruments.length)
+		if (track.patch >= sbnk.instruments.length) {
 			return -1;
+		}
 
 		bool bIsPCM = true;
 		Channel *chn = null;
@@ -604,55 +597,54 @@ struct Player
 		const(SBNKInstrumentRange) *noteDef = null;
 		int fRecord = instrument.record.type;
 
-		if (fRecord == 16)
-		{
-			if (!(instrument.ranges[0].lowNote <= key && key <= instrument.ranges[instrument.ranges.length - 1].highNote))
+		if (fRecord == 16) {
+			if (!(instrument.ranges[0].lowNote <= key && key <= instrument.ranges[instrument.ranges.length - 1].highNote)) {
 				return -1;
+			}
 			int rn = key - instrument.ranges[0].lowNote;
 			noteDef = &instrument.ranges[rn];
 			fRecord = noteDef.record;
-		}
-		else if (fRecord == 17)
-		{
+		} else if (fRecord == 17) {
 			size_t reg;
-			for (reg = 0; reg < instrument.ranges.length; ++reg)
-				if (key <= instrument.ranges[reg].highNote)
+			for (reg = 0; reg < instrument.ranges.length; ++reg) {
+				if (key <= instrument.ranges[reg].highNote) {
 					break;
-			if (reg == instrument.ranges.length)
+				}
+			}
+			if (reg == instrument.ranges.length) {
 				return -1;
+			}
 
 			noteDef = &instrument.ranges[reg];
 			fRecord = noteDef.record;
 		}
 
-		if (!fRecord)
+		if (!fRecord) {
 			return -1;
-		else if (fRecord == 1)
-		{
-			if (!noteDef)
+		} else if (fRecord == 1) {
+			if (!noteDef) {
 				noteDef = &instrument.ranges[0];
-		}
-		else if (fRecord < 4)
-		{
+			}
+		} else if (fRecord < 4) {
 			// PSG
 			// fRecord = 2 . PSG tone, pNoteDef.wavid . PSG duty
 			// fRecord = 3 . PSG noise
 			bIsPCM = false;
-			if (!noteDef)
+			if (!noteDef) {
 				noteDef = &instrument.ranges[0];
-			if (fRecord == 3)
-			{
+			}
+			if (fRecord == 3) {
 				nCh = this.ChannelAlloc(ChannelType.noise, track.prio);
-				if (nCh < 0)
+				if (nCh < 0) {
 					return -1;
+				}
 				chn = &this.channels[nCh];
 				chn.tempReg.CR = SOUND_FORMAT_PSG | SCHANNEL_ENABLE;
-			}
-			else
-			{
+			} else {
 				nCh = this.ChannelAlloc(ChannelType.psg, track.prio);
-				if (nCh < 0)
+				if (nCh < 0) {
 					return -1;
+				}
 				chn = &this.channels[nCh];
 				chn.tempReg.CR = SOUND_FORMAT_PSG | SCHANNEL_ENABLE | SOUND_DUTY(noteDef.header.swav & 0x7);
 			}
@@ -661,11 +653,11 @@ struct Player
 			chn.reg.psgX = 0x7FFF;
 		}
 
-		if (bIsPCM)
-		{
+		if (bIsPCM) {
 			nCh = this.ChannelAlloc(ChannelType.pcm, track.prio);
-			if (nCh < 0)
+			if (nCh < 0) {
 				return -1;
+			}
 			chn = &this.channels[nCh];
 
 			auto swav = (*this.song.swar[noteDef.header.swar])[noteDef.header.swav];
@@ -710,16 +702,17 @@ struct Player
 		// Find an existing note
 		int i;
 		Channel *chn = null;
-		for (i = 0; i < this.channels.length; ++i)
-		{
+		for (i = 0; i < this.channels.length; ++i) {
 			chn = &this.channels[i];
-			if (chn.state > ChannelState.none && chn.trackId == track.trackId && chn.state != ChannelState.release)
+			if (chn.state > ChannelState.none && chn.trackId == track.trackId && chn.state != ChannelState.release) {
 				break;
+			}
 		}
 
-		if (i == 16)
+		if (i == 16) {
 			// Can't find note . create an endless one
 			return NoteOn(track, key, vel, -1);
+		}
 
 		chn.flags = false;
 		chn.prio = track.prio;
@@ -762,17 +755,18 @@ struct Player
 
 			// I need to advance the sound channels here
 			foreach (idx, ref channel; this.channels) {
-				if (channel.state > ChannelState.none)
-				{
+				if (channel.state > ChannelState.none) {
 					int sample = GenerateSample(channel);
 					channel.IncrementSample();
 
-					if (mute[idx])
+					if (mute[idx]) {
 						continue;
+					}
 
 					ubyte datashift = channel.reg.volumeDiv;
-					if (datashift == 3)
+					if (datashift == 3) {
 						datashift = 4;
+					}
 					sample = muldiv7(sample, channel.reg.volumeMul) >> datashift;
 
 					leftChannel += muldiv7(sample, cast(ubyte)(127 - channel.reg.panning));
@@ -785,8 +779,7 @@ struct Player
 
 			samples = [cast(short)leftChannel, cast(short)rightChannel];
 
-			if (this.secondsIntoPlayback > this.secondsUntilNextClock)
-			{
+			if (this.secondsIntoPlayback > this.secondsUntilNextClock) {
 				this.Timer();
 				this.secondsUntilNextClock += SecondsPerClockCycle;
 			}
@@ -798,8 +791,9 @@ struct Player
 		finalVol += sseqVol;
 		finalVol += Cnv_Sust(track.vol);
 		finalVol += Cnv_Sust(track.expr);
-		if (finalVol < -AMPL_K)
+		if (finalVol < -AMPL_K) {
 			finalVol = -AMPL_K;
+		}
 		channel.extAmpl = cast(short)finalVol;
 	}
 	///
@@ -825,8 +819,7 @@ struct Player
 		channel.manualSweep = false;
 		channel.sweepPitch = trk.sweepPitch;
 		channel.sweepCnt = 0;
-		if (!trk.state[TrackState.porta])
-		{
+		if (!trk.state[TrackState.porta]) {
 			channel.sweepLen = 0;
 			return;
 		}
@@ -834,13 +827,10 @@ struct Player
 		int diff = (cast(int)(trk.portaKey) - cast(int)(channel.key)) << 22;
 		channel.sweepPitch += diff >> 16;
 
-		if (!trk.portaTime)
-		{
+		if (!trk.portaTime) {
 			channel.sweepLen = channel.noteLength;
 			channel.manualSweep = true;
-		}
-		else
-		{
+		} else {
 			int sq_time = cast(uint)(trk.portaTime) * cast(uint)(trk.portaTime);
 			int abs_sp = abs(channel.sweepPitch);
 			channel.sweepLen = (abs_sp * sq_time) >> 11;
@@ -850,8 +840,7 @@ struct Player
 	///
 	void UpdateChannel(ref Channel channel) @safe {
 		// Kill active channels that aren't physically active
-		if (channel.state > ChannelState.start && !channel.reg.enable)
-		{
+		if (channel.state > ChannelState.start && !channel.reg.enable) {
 			channel.Kill();
 			return;
 		}
@@ -865,8 +854,7 @@ struct Player
 		bool bTmrNeedUpdate = channel.flags[ChannelFlags.updateTimer] || bInStart || bPitchSweep;
 		int modParam = 0;
 
-		final switch (channel.state)
-		{
+		final switch (channel.state) {
 			case ChannelState.none:
 				return;
 			case ChannelState.start:
@@ -879,32 +867,27 @@ struct Player
 				channel.state = ChannelState.attack;
 				goto case;
 			case ChannelState.attack:
-			{
 				int newAmpl = channel.ampl;
 				int oldAmpl = channel.ampl >> 7;
-				do
+				do {
 					newAmpl = (newAmpl * cast(int)(channel.attackLvl)) / 256;
-				while ((newAmpl >> 7) == oldAmpl);
+				} while ((newAmpl >> 7) == oldAmpl);
 				channel.ampl = newAmpl;
-				if (!channel.ampl)
+				if (!channel.ampl) {
 					channel.state = ChannelState.decay;
+				}
 				break;
-			}
 			case ChannelState.decay:
-			{
 				channel.ampl -= cast(int)(channel.decayRate);
 				int sustLvl = Cnv_Sust(channel.sustainLvl) << 7;
-				if (channel.ampl <= sustLvl)
-				{
+				if (channel.ampl <= sustLvl) {
 					channel.ampl = sustLvl;
 					channel.state = ChannelState.sustain;
 				}
 				break;
-			}
 			case ChannelState.release:
 				channel.ampl -= cast(int)(channel.releaseRate);
-				if (channel.ampl <= AMPL_THRESHOLD)
-				{
+				if (channel.ampl <= AMPL_THRESHOLD) {
 					channel.Kill();
 					return;
 				}
@@ -913,16 +896,13 @@ struct Player
 				break;
 		}
 
-		if (bModulation && channel.modDelayCnt < channel.modDelay)
-		{
+		if (bModulation && channel.modDelayCnt < channel.modDelay) {
 			++channel.modDelayCnt;
 			bModulation = false;
 		}
 
-		if (bModulation)
-		{
-			switch (channel.modType)
-			{
+		if (bModulation) {
+			switch (channel.modType) {
 				case 0:
 					bTmrNeedUpdate = true;
 					break;
@@ -938,74 +918,77 @@ struct Player
 			// Get the current modulation parameter
 			modParam = Cnv_Sine(channel.modCounter >> 8) * channel.modRange * channel.modDepth; // 7.14
 
-			if (channel.modType == 1)
+			if (channel.modType == 1) {
 				modParam = cast(long)(modParam * 60) >> 14; // vol: adjust range to 6dB = 60cB (no fractional bits)
-			else
+			} else {
 				modParam >>= 8; // tmr/pan: adjust to 7.6
+			}
 
 			// Update the modulation variables
 			uint counter = channel.modCounter + (channel.modSpeed << 6);
-			while (counter >= 0x8000)
+			while (counter >= 0x8000) {
 				counter -= 0x8000;
+			}
 			channel.modCounter = cast(ushort)counter;
 		}
 
-		if (bTmrNeedUpdate)
-		{
+		if (bTmrNeedUpdate) {
 			int totalAdj = channel.extTune;
-			if (bModulation && !channel.modType)
+			if (bModulation && !channel.modType) {
 				totalAdj += modParam;
-			if (bPitchSweep)
-			{
+			}
+			if (bPitchSweep) {
 				int len = channel.sweepLen;
 				int cnt = channel.sweepCnt;
 				totalAdj += (cast(long)(channel.sweepPitch) * (len - cnt)) / len;
-				if (!channel.manualSweep)
+				if (!channel.manualSweep) {
 					++channel.sweepCnt;
+				}
 			}
 			ushort tmr = channel.tempReg.TIMER;
 
-			if (totalAdj)
+			if (totalAdj) {
 				tmr = Timer_Adjust(tmr, totalAdj);
+			}
 			channel.reg.timer = cast(ushort)-tmr;
 			channel.reg.sampleIncrease = (ARM7_CLOCK / cast(double)(this.sampleRate * 2)) / (0x10000 - channel.reg.timer);
 			channel.flags[ChannelFlags.updateTimer] = false;
 		}
 
-		if (bVolNeedUpdate || bPanNeedUpdate)
-		{
+		if (bVolNeedUpdate || bPanNeedUpdate) {
 			uint cr = channel.tempReg.CR;
-			if (bVolNeedUpdate)
-			{
+			if (bVolNeedUpdate) {
 				int totalVol = channel.ampl >> 7;
 				totalVol += channel.extAmpl;
 				totalVol += channel.velocity;
-				if (bModulation && channel.modType == 1)
+				if (bModulation && channel.modType == 1) {
 					totalVol += modParam;
+				}
 				totalVol += AMPL_K;
 				totalVol = clamp(totalVol, 0, AMPL_K);
 
 				cr &= ~(SOUND_VOL(0x7F) | SOUND_VOLDIV(3));
 				cr |= SOUND_VOL(cast(int)(getvoltbl[totalVol]));
 
-				if (totalVol < AMPL_K - 240)
+				if (totalVol < AMPL_K - 240) {
 					cr |= SOUND_VOLDIV(3);
-				else if (totalVol < AMPL_K - 120)
+				} else if (totalVol < AMPL_K - 120) {
 					cr |= SOUND_VOLDIV(2);
-				else if (totalVol < AMPL_K - 60)
+				} else if (totalVol < AMPL_K - 60) {
 					cr |= SOUND_VOLDIV(1);
+				}
 
 				channel.vol = cast(ushort)(((cr & SOUND_VOL(0x7F)) << 4) >> calcVolDivShift((cr & SOUND_VOLDIV(3)) >> 8));
 
 				channel.flags[ChannelFlags.updateVolume] = false;
 			}
 
-			if (bPanNeedUpdate)
-			{
+			if (bPanNeedUpdate) {
 				int realPan = channel.pan;
 				realPan += channel.extPan;
-				if (bModulation && channel.modType == 2)
+				if (bModulation && channel.modType == 2) {
 					realPan += modParam;
+				}
 				realPan += 64;
 				realPan = clamp(realPan, 0, 127);
 
@@ -1034,15 +1017,15 @@ struct Player
 				int step = channel.reg.sampleIncrease > 1.0 ? cast(int)(SINC_RESOLUTION / channel.reg.sampleIncrease) : SINC_RESOLUTION;
 				int shift_adj = shift * step / SINC_RESOLUTION;
 				const int window_step = SINC_RESOLUTION;
-				for (; i >= -cast(int)(SINC_WIDTH - 1); --i)
-				{
+				for (; i >= -cast(int)(SINC_WIDTH - 1); --i) {
 					int pos = i * step;
 					int window_pos = i * window_step;
 					kernel_sum += kernel[i + SINC_WIDTH - 1] = sinc_lut[abs(shift_adj - pos)] * window_lut[abs(shift - window_pos)];
 				}
 				double sum = 0.0;
-				for (i = 0; i < cast(int)(SINC_WIDTH * 2); ++i)
+				for (i = 0; i < cast(int)(SINC_WIDTH * 2); ++i) {
 					sum += channel.sampleHistory[channel.sampleHistoryPtr + 16 + i - cast(int)(SINC_WIDTH) + 1] * kernel[i];
+				}
 				return cast(int)(sum / kernel_sum);
 			case Interpolation.lagrange6Point:
 				double c0, c1, c2, c3, c4, c5;
@@ -1106,14 +1089,12 @@ struct Player
 }
 
 ///
-private int muldiv7(int val, ubyte mul) @safe
-{
+private int muldiv7(int val, ubyte mul) @safe {
 	return mul == 127 ? val : ((val * mul) >> 7);
 }
 
 ///
-enum SseqCommand
-{
+enum SseqCommand {
 	SSEQ_CMD_ALLOCTRACK = 0xFE, /// Silently ignored
 	SSEQ_CMD_OPENTRACK = 0x93, ///
 
@@ -1180,13 +1161,11 @@ static const ubyte VariableByteCount = 1 << 7; ///
 static const ubyte ExtraByteOnNoteOrVarOrCmp = 1 << 6; ///
 
 ///
-static ubyte SseqCommandByteCount(int cmd) @safe
-{
-	if (cmd < 0x80)
+static ubyte SseqCommandByteCount(int cmd) @safe {
+	if (cmd < 0x80) {
 		return 1 | VariableByteCount;
-	else
-		switch (cmd)
-		{
+	} else {
+		switch (cmd) {
 			case SseqCommand.SSEQ_CMD_REST:
 			case SseqCommand.SSEQ_CMD_PATCH:
 				return VariableByteCount;
@@ -1252,6 +1231,7 @@ static ubyte SseqCommandByteCount(int cmd) @safe
 			default:
 				return 0;
 		}
+	}
 }
 
 ///
@@ -1341,10 +1321,8 @@ unittest {
 }
 
 ///
-private int getModFlag(int type) @safe
-{
-	switch (type)
-	{
+private int getModFlag(int type) @safe {
+	switch (type) {
 		case 0:
 			return ChannelFlags.updateTimer;
 		case 1:
@@ -1357,52 +1335,51 @@ private int getModFlag(int type) @safe
 }
 
 ///
-private ushort Timer_Adjust(ushort basetmr, int pitch) @safe
-{
+private ushort Timer_Adjust(ushort basetmr, int pitch) @safe {
 	int shift = 0;
 	pitch = -pitch;
 
-	while (pitch < 0)
-	{
+	while (pitch < 0) {
 		--shift;
 		pitch += 0x300;
 	}
 
-	while (pitch >= 0x300)
-	{
+	while (pitch >= 0x300) {
 		++shift;
 		pitch -= 0x300;
 	}
 
 	ulong tmr = cast(ulong)(basetmr) * (cast(uint)(getpitchtbl[pitch]) + 0x10000);
 	shift -= 16;
-	if (shift <= 0)
+	if (shift <= 0) {
 		tmr >>= -shift;
-	else if (shift < 32)
-	{
-		if (tmr & ((~ulong(0)) << (32 - shift)))
+	} else if (shift < 32) {
+		if (tmr & ((~ulong(0)) << (32 - shift))) {
 			return 0xFFFF;
+		}
 		tmr <<= shift;
+	} else {
+		return 0xFFFF;
 	}
-	else
-		return 0xFFFF;
 
-	if (tmr < 0x10)
+	if (tmr < 0x10) {
 		return 0x10;
-	if (tmr > 0xFFFF)
+	}
+	if (tmr > 0xFFFF) {
 		return 0xFFFF;
+	}
 	return cast(ushort)(tmr);
 }
 
 ///
-private int calcVolDivShift(int x) @safe
-{
-	// VOLDIV(0) /1  >>0
-	// VOLDIV(1) /2  >>1
-	// VOLDIV(2) /4  >>2
+private int calcVolDivShift(int x) @safe {
+	// VOLDIV(0) /1 >>0
+	// VOLDIV(1) /2 >>1
+	// VOLDIV(2) /4 >>2
 	// VOLDIV(3) /16 >>4
-	if (x < 3)
+	if (x < 3) {
 		return x;
+	}
 	return 4;
 }
 

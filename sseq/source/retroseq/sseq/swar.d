@@ -9,8 +9,7 @@ import retroseq.sseq.ndsstdheader;
 import retroseq.sseq.common;
 
 ///
-struct SWAR
-{
+struct SWAR {
 	///
 	static struct DataHeader {
 		align(1):
@@ -52,12 +51,12 @@ struct SWAR
 	}
 
 	int opApply(scope int delegate(uint, const SWAV) dg) const {
-	    foreach (idx, swav; swavs) {
-	        int result = dg(idx, swav);
-	        if (result) {
-	            return result;
-	        }
-	    }
-	    return 0;
+		foreach (idx, swav; swavs) {
+			int result = dg(idx, swav);
+			if (result) {
+				return result;
+			}
+		}
+		return 0;
 	}
 }

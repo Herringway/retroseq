@@ -44,8 +44,7 @@ enum ChannelType {
 }
 
 ///
-enum Interpolation
-{
+enum Interpolation {
 	none, ///
 	linear, ///
 	lagrange4Point, ///

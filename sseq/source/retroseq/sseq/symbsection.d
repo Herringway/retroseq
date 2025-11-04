@@ -5,8 +5,7 @@ import retroseq.sseq.common;
 import std.string;
 
 ///
-struct SYMBSection
-{
+struct SYMBSection {
 	align(1):
 	char[4] type; ///
 	uint blockSize; ///

@@ -50,10 +50,8 @@ struct SBNKInstrument {
 	///
 	void read(const(ubyte)[] file, Record record) @safe {
 		this.record = record;
-		if (record.type)
-		{
-			if (record.type == 16)
-			{
+		if (record.type) {
+			if (record.type == 16) {
 				ubyte lowNote = file.pop!ubyte();
 				ubyte highNote = file.pop!ubyte();
 				foreach (i; 0 .. cast(ubyte)(highNote - lowNote + 1)) {
@@ -62,13 +60,10 @@ struct SBNKInstrument {
 					range.header = file.pop!(SBNKInstrumentRange.Header)();
 					this.ranges ~= range;
 				}
-			}
-			else if (record.type == 17)
-			{
+			} else if (record.type == 17) {
 				ubyte[8] thisRanges = file.pop!(ubyte[8])();
 				ubyte i = 0;
-				while (i < 8 && thisRanges[i])
-				{
+				while (i < 8 && thisRanges[i]) {
 					ushort thisRecord = file.pop!ushort();
 					ubyte lowNote = i ? cast(ubyte)(thisRanges[i - 1] + 1) : 0;
 					ubyte highNote = thisRanges[i];
@@ -77,9 +72,7 @@ struct SBNKInstrument {
 					this.ranges ~= range;
 					++i;
 				}
-			}
-			else
-			{
+			} else {
 				auto range = SBNKInstrumentRange(0, 127, record.type);
 				range.header = file.pop!(SBNKInstrumentRange.Header)();
 				this.ranges ~= range;

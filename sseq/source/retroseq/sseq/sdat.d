@@ -27,8 +27,7 @@ struct Song {
 }
 
 ///
-struct SDAT
-{
+struct SDAT {
 	///
 	private static struct Block {
 		align(1):
@@ -176,8 +175,9 @@ struct SDAT
 		// Read SSEQ
 		ushort fileID = infoSection.SEQrecord(infoSectionData)[sseqToLoad].fileID;
 		const(char)[] name = "SSEQ" ~ NumToHexString(fileID)[2 .. $];
-		if (!symbSection.isNull)
+		if (!symbSection.isNull) {
 			name = NumToHexString(sseqToLoad)[6 .. $] ~ " - " ~ symbSection.get.record(symbSectionData, RecordName.REC_SEQ)[sseqToLoad];
+		}
 		auto sseqFile = readFile(fileID);
 		SSEQ* newSSEQ = new SSEQ(name);
 		newSSEQ.header = sseqFile.pop!NDSStdHeader();
@@ -192,8 +192,9 @@ struct SDAT
 		ushort bank = newSSEQ.info.bank;
 		fileID = infoSection.BANKrecord(infoSectionData)[bank].fileID;
 		name = "SBNK" ~ NumToHexString(fileID)[2 .. $];
-		if (!symbSection.isNull)
+		if (!symbSection.isNull) {
 			name = NumToHexString(bank)[2 .. $] ~ " - " ~ symbSection.get.record(symbSectionData, RecordName.REC_BANK)[bank];
+		}
 		auto sbnkFile = readFile(fileID);
 		SBNK *newSBNK = new SBNK(name);
 		newSBNK.header = sbnkFile.pop!NDSStdHeader();
@@ -208,8 +209,9 @@ struct SDAT
 			if (waveArc != 0xFFFF) {
 				fileID = infoSection.WAVEARCrecord(infoSectionData)[waveArc].fileID;
 				name = "SWAR" ~ NumToHexString(fileID)[2 .. $];
-				if (!symbSection.isNull)
+				if (!symbSection.isNull) {
 					name = NumToHexString(waveArc)[2 .. $] ~ " - " ~ symbSection.get.record(symbSectionData, RecordName.REC_WAVEARC)[waveArc];
+				}
 				auto swarFile = readFile(fileID);
 				SWAR *newSWAR = new SWAR(name);
 				newSWAR.header = swarFile.pop!NDSStdHeader();

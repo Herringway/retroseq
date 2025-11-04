@@ -11,40 +11,36 @@ import std.random;
 import std.typecons;
 
 ///
-enum StackType
-{
+enum StackType {
 	STACKTYPE_CALL, ///
 	STACKTYPE_LOOP, ///
 }
 
 ///
-struct StackValue
-{
+struct StackValue {
 	StackType type = StackType.STACKTYPE_CALL; ///
 	const(ubyte)[] dest = null; ///
 }
 
 ///
-struct Override
-{
+struct Override {
 	bool overriding = false; ///
 	int cmd; ///
 	int value; ///
 	int extraValue; ///
 
 	///
-	int val(ref const(ubyte)[] pData, int function(ref const(ubyte)[]) @safe reader, bool returnExtra = false) @safe
-	{
-		if (this.overriding)
+	int val(ref const(ubyte)[] pData, int function(ref const(ubyte)[]) @safe reader, bool returnExtra = false) @safe {
+		if (this.overriding) {
 			return returnExtra ? this.extraValue : this.value;
-		else
+		} else {
 			return reader(pData);
+		}
 	}
 }
 
 ///
-struct Track
-{
+struct Track {
 	byte trackId = -1; ///
 
 	ubyte[TrackState.max + 1] state; ///

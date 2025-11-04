@@ -10,12 +10,11 @@ import std.math;
 
 /**
  * This structure is meant to be similar to what is stored in the actual
- * Nintendo DS's sound registers.  Items that were not being used by this
+ * Nintendo DS's sound registers. Items that were not being used by this
  * player have been removed, and items which help the simulated registers
  * have been added.
  */
-struct NDSSoundRegister
-{
+struct NDSSoundRegister {
 	// Control Register
 	ubyte volumeMul; ///
 	ubyte volumeDiv; ///
@@ -67,12 +66,11 @@ struct NDSSoundRegister
 
 /**
  * From FeOS Sound System, this is temporary storage of what will go into
- * the Nintendo DS sound registers.  It is kept separate as the original code
+ * the Nintendo DS sound registers. It is kept separate as the original code
  * from FeOS Sound System utilized this to hold data prior to passing it into
  * the DS's registers.
  */
-struct TempSndReg
-{
+struct TempSndReg {
 	uint CR; ///
 	const(SWAV) *SOURCE; ///
 	ushort TIMER; ///
@@ -80,8 +78,7 @@ struct TempSndReg
 }
 
 ///
-struct Channel
-{
+struct Channel {
 	byte chnId = -1; ///
 
 	TempSndReg tempReg; ///
@@ -163,36 +160,35 @@ struct Channel
 	void IncrementSample() @safe {
 		double samplePosition = this.reg.samplePosition + this.reg.sampleIncrease;
 
-		if (this.reg.format != 3 && this.reg.samplePosition >= 0)
-		{
+		if (this.reg.format != 3 && this.reg.samplePosition >= 0) {
 			uint loc = cast(uint)(this.reg.samplePosition);
 			uint newloc = cast(uint)(samplePosition);
 
-			if (newloc >= this.reg.totalLength)
+			if (newloc >= this.reg.totalLength) {
 				newloc -= this.reg.length;
+			}
 
-			while (loc != newloc)
-			{
+			while (loc != newloc) {
 				this.sampleHistory[this.sampleHistoryPtr] = this.sampleHistory[this.sampleHistoryPtr + 32] = this.reg.source.data[loc++];
 
 				this.sampleHistoryPtr = (this.sampleHistoryPtr + 1) & 31;
 
-				if (loc >= this.reg.totalLength)
+				if (loc >= this.reg.totalLength) {
 					loc -= this.reg.length;
+				}
 			}
 		}
 
 		this.reg.samplePosition = samplePosition;
 
-		if (this.reg.format != 3 && this.reg.samplePosition >= this.reg.totalLength)
-		{
-			if (this.reg.repeatMode == 1)
-			{
-				while (this.reg.samplePosition >= this.reg.totalLength)
+		if (this.reg.format != 3 && this.reg.samplePosition >= this.reg.totalLength) {
+			if (this.reg.repeatMode == 1) {
+				while (this.reg.samplePosition >= this.reg.totalLength) {
 					this.reg.samplePosition -= this.reg.length;
-			}
-			else
+				}
+			} else {
 				this.Kill();
+			}
 		}
 	}
 	///
@@ -354,8 +350,7 @@ immutable ubyte[] getvoltbl = [
 
 
 ///
-immutable short[8][8] wavedutytbl =
-[
+immutable short[8][8] wavedutytbl = [
 	[ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, 0x7FFF ],
 	[ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, 0x7FFF, 0x7FFF ],
 	[ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF ],
