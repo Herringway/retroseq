@@ -125,6 +125,30 @@ struct M4APlayer {
 		return sliceMax!SongPointer(musicData, songTableOffset);
 	}
 	///
+	bool isValidSong(ushort id) const @safe pure {
+		if (!songTable[id].header.isValid(musicData)) {
+			return false;
+		}
+		const data = cast(const ubyte[])songTable[id].header.toAbsoluteArray(musicData);
+		if (data.length == 0) {
+			return false;
+		}
+		const trackData = data[SongHeader.sizeof .. $].sliceMax!(RelativePointer!(ubyte, uint))(0);
+		const song = Song((cast(const SongHeader[])data[0 .. SongHeader.sizeof])[0], trackData);
+		if (!song.header.instrument.isValid(musicData)) {
+			return false;
+		}
+		if (song.parts.length == 0) {
+			return false;
+		}
+		foreach (part; song.parts[0 .. song.header.trackCount]) {
+			if (!part.isValid(musicData)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	///
 	Song readSong(const SongPointer ptr) const @safe pure {
 		assert(ptr.header.isValid(musicData));
 		const ubyte[] data = (cast(const(ubyte)[])ptr.header.toAbsoluteArray(musicData));
