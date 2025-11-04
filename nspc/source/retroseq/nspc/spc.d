@@ -236,6 +236,12 @@ DetectionResult detectParameters(scope const(ubyte)[] data, scope const(ubyte)[]
 				trackPointerAddress = data[i + 15];
 				result.songTableAddress = data[i + 12] + (data[i + 13] << 8);
 			}
+			// konami song table
+			if ((data[i .. i + 5] == [0x2D, 0x6D, 0x4D, 0x1C, 0x90]) && (data[i + 6 .. i + 8] == [0x5D, 0xF5]) && (data[i + 12 .. i + 14] == [0xFD, 0xF5])) {
+				result.header.variant = Variant.konami;
+				trackPointerAddress = data[i + 17];
+				result.songTableAddress = data[i + 14] + (data[i + 15] << 8);
+			}
 			// prototype song table
 			if ((data[i .. i + 3] == [0x1C, 0xFD, 0xF6]) && (data[i + 5] == 0xC4) && (data[i + 7] == 0xF6) && (data[i + 10] == 0xC4) && (data[i + 12] == 0xCD)) {
 				trackPointerAddress = data[i + 6];
@@ -292,7 +298,7 @@ DetectionResult detectParameters(scope const(ubyte)[] data, scope const(ubyte)[]
 				songID = songIDCandidate;
 				break;
 			}
-			if(songID != 0) {
+			if ((result.header.variant != Variant.konami) && (songID != 0)) {
 				debug tracef("Found song id: %s (%04X)", songID, songTable[songID]);
 				result.header.songBase = songTable[songID];
 			} else { // scan the song table for something close to the loaded pointer
