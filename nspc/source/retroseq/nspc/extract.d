@@ -104,8 +104,6 @@ const(ubyte)[] extractROM(const(ubyte)[] data) @safe pure {
 		extractSMET(writer, rom.data);
 	} else if (rom.title == "YOSHI'S ISLAND       ") {
 		extractYI(writer, rom.data);
-	} else if (rom.title == "PARODIUS             ") {
-		extractParodius(writer, rom.data);
 	} else {
 		throw new Exception(format!"I don't know what '%s' is."(rom.title));
 	}
