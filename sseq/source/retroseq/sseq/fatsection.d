@@ -21,7 +21,7 @@ struct FATSection {
 	uint fileCount; ///
 
 	///
-	FATRecord file(const(ubyte)[] fatBlock, size_t idx) const @safe
+	FATRecord file(const(ubyte)[] fatBlock, size_t idx) const @safe pure
 		in (idx < fileCount, format!"File ID %s out of range"(idx))
 	{
 		return (cast(const(FATRecord)[])(fatBlock[FATSection.sizeof .. FATSection.sizeof + FATRecord.sizeof * fileCount]))[idx];

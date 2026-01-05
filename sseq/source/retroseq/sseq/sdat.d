@@ -42,7 +42,6 @@ struct SDAT {
 	const(ubyte)[] symbSectionData; ///
 	const(ubyte)[] infoSectionData; ///
 	const(ubyte)[] fatSectionData; ///
-	const(ubyte)[] fileSectionData; ///
 
 	///
 	this(const(ubyte)[] data) @safe {
@@ -158,7 +157,7 @@ struct SDAT {
 		return Result(infoSection, fatSection, sdatData, symbSection, symbSectionData, fatSectionData, infoSectionData);
 	}
 	///
-	const(ubyte)[] readFile(size_t id) const @safe /*pure*/ {
+	const(ubyte)[] readFile(size_t id) const @safe pure {
 		const record = fatSection.file(fatSectionData, id);
 		return sdatData[record.offset .. record.offset + record.size];
 	}
