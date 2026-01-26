@@ -1,0 +1,19 @@
+{
+	"description": "Command line song player",
+	"license": "BSL-1",
+	"name": "player",
+	"targetType": "executable",
+	"dependencies": {
+		"retroseq:m4a": "*",
+		"retroseq:nspc": "*",
+		"retroseq:organya": "*",
+		"retroseq:piyopiyo": "*",
+		"retroseq:pxtone": "*",
+		"retroseq:sseq": "*",
+		"libgamefs": "*",
+		"bindbc-sdl": "~>2.0"
+	},
+	"subConfigurations": {
+		"retroseq:pxtone": "vorbis"
+	}
+}
