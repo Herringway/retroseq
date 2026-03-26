@@ -8,17 +8,11 @@
 	"name": "retroseq",
 	"subPackages": [
 		"m4a",
-		"m4a_player",
 		"sseq",
-		"sseq_player",
 		"nspc",
-		"nspc_player",
 		"piyopiyo",
-		"piyopiyo_player",
 		"organya",
-		"organya_player",
 		"pxtone",
-		"pxtone_player",
 		"player",
 		"extract",
 		"mknspc"
